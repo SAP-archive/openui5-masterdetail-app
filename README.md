@@ -1,8 +1,8 @@
 ![openui5](http://openui5.org/images/OpenUI5_new_big_side.png)
 
-# openui5-worklist-app
+# openui5-masterdetail-app
 
-> [OpenUI5](https://github.com/SAP/openui5) worklist skeleton app using Grunt & Bower
+> [OpenUI5](https://github.com/SAP/openui5) master-detail skeleton app using Grunt & Bower
 
 ## Getting started
 
