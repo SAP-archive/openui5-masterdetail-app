@@ -1,1 +1,1 @@
-Initial commit of master-detal skeleton app
+Correction of master-detail skeleton app
