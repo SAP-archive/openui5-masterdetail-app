@@ -17,7 +17,7 @@ npm install grunt-cli bower -g
 
    ```sh
 git clone https://github.com/SAP/openui5-masterdetail-app.git
-cd openui5-worklist-app
+cd openui5-masterdetail-app
 ```
 
 1. Install all npm dependencies
