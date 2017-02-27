@@ -46,21 +46,18 @@ sap.ui.define([
 			},
 
 			/**
-			 * Event handler  for navigating back.
-			 * It checks if there is a history entry. If yes, history.go(-1) will happen.
+			 * Event handler for navigating back.
+			 * It there is a history entry we go one step back in the browser history
 			 * If not, it will replace the current entry of the browser history with the master route.
 			 * @public
 			 */
 			onNavBack : function() {
 				var sPreviousHash = History.getInstance().getPreviousHash();
 
-				if (sPreviousHash !== undefined) {
-					// The history contains a previous entry
+					if (sPreviousHash !== undefined) {
 					history.go(-1);
 				} else {
-					// Otherwise we go backwards with a forward history
-					var bReplace = true;
-					this.getRouter().navTo("master", {}, bReplace);
+					this.getRouter().navTo("master", {}, true);
 				}
 			}
 

@@ -1,9 +1,7 @@
 sap.ui.define([
 		"sap/ui/demo/masterdetail/model/grouper",
 		"sap/ui/model/resource/ResourceModel",
-		"jquery.sap.global",
-		"sap/ui/thirdparty/sinon",
-		"sap/ui/thirdparty/sinon-qunit"
+		"jquery.sap.global"
 	], function (Grouper, ResourceModel, $) {
 	"use strict";
 
@@ -36,7 +34,7 @@ sap.ui.define([
 			oGrouperReturn;
 
 		// System under test
-		var fnGroup = Grouper.UnitNumber(this._oResourceModel.getResourceBundle());
+		var fnGroup = Grouper.groupUnitNumber(this._oResourceModel.getResourceBundle());
 
 		// Assert
 		oGrouperReturn = fnGroup(oContextObject);
@@ -50,7 +48,7 @@ sap.ui.define([
 			oGrouperReturn;
 
 		// System under test
-		var fnGroup = Grouper.UnitNumber(this._oResourceModel.getResourceBundle());
+		var fnGroup = Grouper.groupUnitNumber(this._oResourceModel.getResourceBundle());
 
 		// Assert
 		oGrouperReturn = fnGroup(oContextObject);

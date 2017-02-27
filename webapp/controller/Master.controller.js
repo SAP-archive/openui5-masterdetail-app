@@ -33,7 +33,7 @@ sap.ui.define([
 					// taken care of by the master list itself.
 					iOriginalBusyDelay = oList.getBusyIndicatorDelay();
 
-				this._oGroupSortState = new GroupSortState(oViewModel, grouper.UnitNumber(this.getResourceBundle()));
+				this._oGroupSortState = new GroupSortState(oViewModel, grouper.groupUnitNumber(this.getResourceBundle()));
 
 				this._oList = oList;
 				// keeps the filter and search state
@@ -227,6 +227,15 @@ sap.ui.define([
 				});
 			},
 
+			/**
+			 * Event handler for navigating back.
+			 * We navigate back in the browser historz
+			 * @public
+			 */
+			onNavBack : function() {
+				history.go(-1);
+			},
+
 			/* =========================================================== */
 			/* begin: internal methods                                     */
 			/* =========================================================== */
@@ -283,7 +292,7 @@ sap.ui.define([
 
 			/**
 			 * Sets the item count on the master list header
-			 * @param {integer} iTotalItems the total number of items in the list
+			 * @param {int} iTotalItems the total number of items in the list
 			 * @private
 			 */
 			_updateListItemCount : function (iTotalItems) {
