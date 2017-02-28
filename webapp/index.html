@@ -22,10 +22,10 @@
 				"sap/ui/demo/masterdetail/localService/mockserver",
 				"sap/m/Shell",
 				"sap/ui/core/ComponentContainer"
-			], function (server, Shell, ComponentContainer) {
+			], function (mockserver, Shell, ComponentContainer) {
 				// set up test service for local testing
 				// TODO: remove this when switching to a real service
-				server.init();
+				mockserver.init();
 				// initialize the UI component
 				new Shell({
 					app: new ComponentContainer({
