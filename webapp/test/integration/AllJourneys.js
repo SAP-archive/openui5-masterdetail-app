@@ -1,3 +1,5 @@
+/*global QUnit*/
+
 jQuery.sap.require("sap.ui.qunit.qunit-css");
 jQuery.sap.require("sap.ui.thirdparty.qunit");
 jQuery.sap.require("sap.ui.qunit.qunit-junit");
@@ -27,8 +29,7 @@ sap.ui.require([
 	sap.ui.require([
 		"sap/ui/demo/masterdetail/test/integration/MasterJourney",
 		"sap/ui/demo/masterdetail/test/integration/NavigationJourney",
-		"sap/ui/demo/masterdetail/test/integration/NotFoundJourney",
-		"sap/ui/demo/masterdetail/test/integration/BusyJourney"
+		"sap/ui/demo/masterdetail/test/integration/NotFoundJourney"
 	], function () {
 		QUnit.start();
 	});

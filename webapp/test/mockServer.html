@@ -12,6 +12,7 @@
 			data-sap-ui-libs="sap.m"
 			data-sap-ui-theme="sap_belize"
 			data-sap-ui-compatVersion="edge"
+			data-sap-ui-preload="async"
 			data-sap-ui-resourceroots='{"sap.ui.demo.masterdetail": "../"}'
 			data-sap-ui-frameOptions='allow'> 	// NON-SECURE setting for testing environment
 	</script>
@@ -28,8 +29,11 @@
 				// initialize the UI component
 				new Shell({
 					app: new ComponentContainer({
-						height : "100%",
-						name : "sap.ui.demo.masterdetail"
+						height: "100%",
+						name: "sap.ui.demo.masterdetail",
+						settings: {
+							id: "masterdetail"
+						}
 					})
 				}).placeAt("content");
 			});
