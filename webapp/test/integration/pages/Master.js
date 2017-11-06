@@ -312,7 +312,7 @@ sap.ui.define([
 					return this.waitFor({
 						viewName : sViewName,
 						id : "page",
-						matchers : new PropertyStrictEquals({name : "title", value : "<Objects> (0)"}),
+						matchers : new PropertyStrictEquals({name : "title", value : "Objects (0)"}),
 						success : function () {
 							Opa5.assert.ok(true, "The list header displays zero hits");
 						},
@@ -520,7 +520,7 @@ sap.ui.define([
 							this.waitFor({
 								id : "page",
 								viewName : sViewName,
-								matchers : new PropertyStrictEquals({name : "title", value : "<Objects> (" + iExpectedLength + ")"}),
+								matchers : new PropertyStrictEquals({name : "title", value : "Objects (" + iExpectedLength + ")"}),
 								success : function () {
 									Opa5.assert.ok(true, "The master page header displays " + iExpectedLength + " items");
 								},
