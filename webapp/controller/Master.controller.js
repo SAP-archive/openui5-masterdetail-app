@@ -199,8 +199,13 @@ sap.ui.define([
 			 * @public
 			 */
 			onSelectionChange : function (oEvent) {
+				var oList = oEvent.getSource(),
+					bSelected = oEvent.getParameter("selected");
+
 				// get the list item, either from the listItem parameter or from the event's source itself (will depend on the device-dependent mode).
-				this._showDetail(oEvent.getParameter("listItem") || oEvent.getSource());
+				if (!(oList.getMode() === "MultiSelect" && !bSelected)) {
+					this._showDetail(oEvent.getParameter("listItem") || oEvent.getSource());
+				}
 			},
 
 			/**
