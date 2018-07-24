@@ -1,5 +1,5 @@
 {
-	"_version": "1.8.0",
+	"_version": "1.9.0",
 
 	"sap.app": {
 		"id": "sap.ui.demo.masterdetail",
@@ -9,7 +9,7 @@
 		"description": "{{appDescription}}",
 
 		"applicationVersion": {
-			"version": "1.0.0"
+		"version": "1.0.0"
 		},
 		"dataSources": {
 			"mainService": {
@@ -54,6 +54,8 @@
 				"sap.ui.core": {
 				},
 				"sap.m": {
+				},
+				"sap.f": {
 				}
 			}
 		},
@@ -78,16 +80,13 @@
 
 		"routing": {
 			"config": {
-				"routerClass": "sap.m.routing.Router",
+				"routerClass": "sap.f.routing.Router",
 				"viewType": "XML",
 				"viewPath": "sap.ui.demo.masterdetail.view",
-				"controlId": "idAppControl",
-				"controlAggregation": "detailPages",
+				"controlId": "layout",
+				"controlAggregation": "beginColumnPages",
 				"bypassed": {
-					"target": [
-						"master",
-						"notFound"
-					]
+					"target": "notFound"
 				},
 				"async": true
 			},
@@ -96,10 +95,7 @@
 				{
 					"pattern": "",
 					"name": "master",
-					"target": [
-						"object",
-						"master"
-					]
+					"target": "master"
 				},
 				{
 					"pattern": "Objects/{objectId}",
@@ -115,21 +111,18 @@
 				"master": {
 					"viewName": "Master",
 					"viewLevel": 1,
-					"viewId": "master",
-					"controlAggregation": "masterPages"
+					"viewId": "master"
 				},
 				"object": {
 					"viewName": "Detail",
 					"viewId": "detail",
-					"viewLevel": 2
+					"viewLevel": 1,
+					"controlAggregation": "midColumnPages"
 				},
 				"detailObjectNotFound": {
 					"viewName": "DetailObjectNotFound",
-					"viewId": "detailObjectNotFound"
-				},
-				"detailNoObjectsAvailable": {
-					"viewName": "DetailNoObjectsAvailable",
-					"viewId": "detailNoObjectsAvailable"
+					"viewId": "detailObjectNotFound",
+					"controlAggregation": "midColumnPages"
 				},
 				"notFound": {
 					"viewName": "NotFound",

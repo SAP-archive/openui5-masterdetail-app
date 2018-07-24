@@ -1,7 +1,7 @@
 sap.ui.define([
 	"sap/ui/test/Opa5",
 	"sap/ui/test/actions/Press",
-	"sap/ui/demo/masterdetail/test/integration/pages/Common",
+	"./Common",
 	"sap/ui/test/matchers/AggregationLengthEquals",
 	"sap/ui/test/matchers/AggregationFilled",
 	"sap/ui/test/matchers/PropertyStrictEquals"
@@ -12,38 +12,27 @@ sap.ui.define([
 
 	Opa5.createPageObjects({
 		onTheDetailPage : {
+
 			baseClass : Common,
 
 			actions : {
 
-				iPressTheBackButton : function () {
+				iPressTheHeaderActionButton: function (sId) {
 					return this.waitFor({
-						id : "page",
+						id : sId,
 						viewName : sViewName,
 						actions: new Press(),
-						errorMessage : "Did not find the nav button on detail page"
+						errorMessage : "Did not find the button with id" + sId + " on detail page"
 					});
 				}
-
 			},
 
 			assertions : {
 
-				iShouldSeeTheBusyIndicator : function () {
-					return this.waitFor({
-						id : "page",
-						viewName : sViewName,
-						success : function (oPage) {
-							// we set the view busy, so we need to query the parent of the app
-							Opa5.assert.ok(oPage.getBusy(), "The detail view is busy");
-						},
-						errorMessage : "The detail view is not busy."
-					});
-				},
 
 				iShouldSeeNoBusyIndicator : function () {
 					return this.waitFor({
-						id : "page",
+						id : "detailPage",
 						viewName : sViewName,
 						matchers : function (oPage) {
 							return !oPage.getBusy();
@@ -90,7 +79,7 @@ sap.ui.define([
 
 				_waitForPageBindingPath : function (sBindingPath) {
 					return this.waitFor({
-						id : "page",
+						id : "detailPage",
 						viewName : sViewName,
 						matchers : function (oPage) {
 							return oPage.getBindingContext() && oPage.getBindingContext().getPath() === sBindingPath;
@@ -134,24 +123,22 @@ sap.ui.define([
 								success : function () {
 									Opa5.assert.ok(true, "The list has the correct number of items");
 								},
-								errorMessage : "The list does not have the correct number of items."
+								errorMessage : "The list does not have the correct number of items.\nHint: This test needs suitable mock data in localService directory which can be generated via SAP Web IDE"
 							});
 						}
 					}));
 				},
 
 				theDetailViewShouldContainOnlyFormattedUnitNumbers : function () {
-					return this.theUnitNumbersShouldHaveTwoDecimals("sap.m.ObjectHeader",
-						sViewName,
-						"Object header are properly formatted",
-						"Object view has no entries which can be checked for their formatting");
-				},
-
-				theLineItemsTableShouldContainOnlyFormattedUnitNumbers : function () {
-					return this.theUnitNumbersShouldHaveTwoDecimals("sap.m.ObjectNumber",
-						sViewName,
-						"Object numbers are properly formatted",
-						"LineItmes Table has no entries which can be checked for their formatting");
+					var rTwoDecimalPlaces =  /^-?\d+\.\d{2}$/;
+					return this.waitFor({
+						id : "objectHeaderNumber",
+						viewName : sViewName,
+						success : function (oNumberControl) {
+							Opa5.assert.ok(rTwoDecimalPlaces.test(oNumberControl.getNumber()), "Object numbers are properly formatted");
+						},
+						errorMessage : "Object view has no entries which can be checked for their formatting"
+					});
 				},
 
 				theLineItemsHeaderShouldDisplayTheAmountOfEntries : function () {
@@ -162,9 +149,9 @@ sap.ui.define([
 						success : function (oList) {
 							var iNumberOfItems = oList.getItems().length;
 							return this.waitFor({
-								id : "lineItemsHeader",
+								id : "lineItemsTitle",
 								viewName : sViewName,
-								matchers : new PropertyStrictEquals({name: "text", value: "Line Items (" + iNumberOfItems + ")"}),
+								matchers : new PropertyStrictEquals({name: "text", value: "<LineItemsPlural> (" + iNumberOfItems + ")"}),
 								success : function () {
 									Opa5.assert.ok(true, "The line item list displays " + iNumberOfItems + " items");
 								},
@@ -173,17 +160,37 @@ sap.ui.define([
 						}
 					});
 				},
-
-				iShouldSeeTheShareEmailButton : function () {
+				iShouldSeeHeaderActionButtons: function () {
 					return this.waitFor({
-						id : "shareEmail",
+						id : ["closeColumn", "enterFullScreen"],
 						viewName : sViewName,
 						success : function () {
-							Opa5.assert.ok(true, "The E-Mail button is visible");
+							Opa5.assert.ok(true, "The action buttons are visible");
 						},
-						errorMessage : "The E-Mail button was not found"
+						errorMessage : "The action buttons were not found"
+					});
+				},
+
+				theAppShowsFCLDesign: function (sLayout) {
+					return this.waitFor({
+						id : "layout",
+						viewName : "App",
+						matchers : new PropertyStrictEquals({name: "layout", value: sLayout}),
+						success : function () {
+							Opa5.assert.ok(true, "the app shows " + sLayout + " layout");
+						},
+						errorMessage : "The app does not show " + sLayout + " layout"
+					});
+				},
+
+				iShouldSeeTheFullScreenToggleButton : function (sId) {
+					return this.waitFor({
+						id : sId,
+						viewName : sViewName,
+						errorMessage : "The toggle button" + sId + "was not found"
 					});
 				}
+
 			}
 
 		}

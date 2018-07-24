@@ -1,7 +1,9 @@
 /*global QUnit*/
 
 sap.ui.define([
-	"sap/ui/test/opaQunit"
+	"sap/ui/test/opaQunit",
+	"./pages/App",
+	"./pages/Master"
 ], function (opaTest) {
 	"use strict";
 
@@ -11,17 +13,16 @@ sap.ui.define([
 		// Arrangements
 		Given.iStartTheAppWithDelay("", 5000);
 
-		// Actions
-		When.onTheAppPage.iLookAtTheScreen();
-
 		// Assertions
-		Then.onTheAppPage.iShouldSeeTheBusyIndicator().
-			and.iTeardownMyAppFrame();
+		Then.onTheAppPage.iShouldSeeTheBusyIndicator();
+
+		// Cleanup
+		Then.iTeardownMyAppFrame();
 	});
 
-	opaTest("Should see a busy indication on the master and detail after loading the metadata", function (Given, When, Then) {
+	opaTest("Should see a busy indication on the master after loading the metadata", function (Given, When, Then) {
 		// Arrangements
-		Given.iStartTheAppWithDelay("", 2000);
+		Given.iStartTheAppWithDelay("", 5000);
 
 		// Actions
 		When.onTheAppPage.iWaitUntilTheBusyIndicatorIsGone();
@@ -29,8 +30,9 @@ sap.ui.define([
 		// Assertions
 		Then.onTheMasterPage.iShouldSeeTheBusyIndicator().
 			and.theListHeaderDisplaysZeroHits();
-		Then.onTheDetailPage.iShouldSeeTheBusyIndicator().
-			and.iTeardownMyAppFrame();
+
+		// Cleanup
+		Then.iTeardownMyAppFrame();
 	});
 
 });

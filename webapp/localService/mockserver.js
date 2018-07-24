@@ -8,6 +8,7 @@ sap.ui.define([
 			_sJsonFilesModulePath = _sAppModulePath + "localService/mockdata";
 
 		return {
+
 			/**
 			 * Initializes the mock server.
 			 * You can configure the delay with the URL parameter "serverDelay".
@@ -17,14 +18,14 @@ sap.ui.define([
 
 			init : function () {
 				var oUriParameters = jQuery.sap.getUriParameters(),
-					sJsonFilesUrl = jQuery.sap.getModulePath(_sJsonFilesModulePath),
-					sManifestUrl = jQuery.sap.getModulePath(_sAppModulePath + "manifest", ".json"),
+					sJsonFilesUrl = sap.ui.require.toUrl(_sJsonFilesModulePath),
+					sManifestUrl = sap.ui.require.toUrl(_sAppModulePath + "manifest.json"),
 					sEntity = "Objects",
 					sErrorParam = oUriParameters.get("errorType"),
 					iErrorCode = sErrorParam === "badRequest" ? 400 : 500,
 					oManifest = jQuery.sap.syncGetJSON(sManifestUrl).data,
 					oMainDataSource = oManifest["sap.app"].dataSources.mainService,
-					sMetadataUrl = jQuery.sap.getModulePath(_sAppModulePath + oMainDataSource.settings.localUri.replace(".xml", ""), ".xml"),
+					sMetadataUrl = sap.ui.require.toUrl(_sAppModulePath + oMainDataSource.settings.localUri),
 					// ensure there is a trailing slash
 					sMockServerUrl = /.*\/$/.test(oMainDataSource.uri) ? oMainDataSource.uri : oMainDataSource.uri + "/";
 
@@ -38,6 +39,7 @@ sap.ui.define([
 					autoRespondAfter : (oUriParameters.get("serverDelay") || 1000)
 				});
 
+				// Simulate a manual back-end call
 				oMockServer.simulate(sMetadataUrl, {
 					sMockdataBaseUrl : sJsonFilesUrl,
 					bGenerateMissingMockData : true
@@ -67,6 +69,7 @@ sap.ui.define([
 						}
 					});
 				}
+				oMockServer.setRequests(aRequests);
 				oMockServer.start();
 
 				jQuery.sap.log.info("Running the app with mock data");

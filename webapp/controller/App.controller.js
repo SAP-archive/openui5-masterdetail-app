@@ -9,12 +9,18 @@ sap.ui.define([
 			onInit : function () {
 				var oViewModel,
 					fnSetAppNotBusy,
-					oListSelector = this.getOwnerComponent().oListSelector,
 					iOriginalBusyDelay = this.getView().getBusyIndicatorDelay();
 
 				oViewModel = new JSONModel({
 					busy : true,
-					delay : 0
+					delay : 0,
+					layout : "OneColumn",
+					previousLayout : "",
+					actionButtonsInfo : {
+						midColumn : {
+							fullScreen : false
+						}
+					}
 				});
 				this.setModel(oViewModel, "appView");
 
@@ -23,20 +29,14 @@ sap.ui.define([
 					oViewModel.setProperty("/delay", iOriginalBusyDelay);
 				};
 
-				this.getOwnerComponent().getModel().metadataLoaded()
-						.then(fnSetAppNotBusy);
-
-				// Makes sure that master view is hidden in split app
-				// after a new list entry has been selected.
-				oListSelector.attachListSelectionChange(function () {
-					this.byId("idAppControl").hideMaster();
-				}, this);
+				// since then() has no "reject"-path attach to the MetadataFailed-Event to disable the busy indicator in case of an error
+				this.getOwnerComponent().getModel().metadataLoaded().then(fnSetAppNotBusy);
+				this.getOwnerComponent().getModel().attachMetadataFailed(fnSetAppNotBusy);
 
 				// apply content density mode to root view
 				this.getView().addStyleClass(this.getOwnerComponent().getContentDensityClass());
 			}
 
 		});
-
 	}
 );

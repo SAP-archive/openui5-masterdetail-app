@@ -1,12 +1,10 @@
 sap.ui.define([
-	"sap/ui/test/Opa5",
-	"sap/ui/demo/masterdetail/test/integration/pages/Common"
-], function(Opa5, Common) {
+	"sap/ui/test/Opa5"
+], function(Opa5) {
 	"use strict";
 
 	Opa5.createPageObjects({
 		onTheBrowserPage : {
-			baseClass : Common,
 
 			actions : {
 
@@ -46,11 +44,10 @@ sap.ui.define([
 						success : function (aEntitySet) {
 							var oHashChanger = Opa5.getHashChanger(),
 								sHash = oHashChanger.getHash();
-							Opa5.assert.strictEqual(sHash, "Objects/" + aEntitySet[iObjIndex].ObjectID, "The Hash is not correct");
+							Opa5.assert.strictEqual(sHash, "Objects/" + aEntitySet[iObjIndex].ObjectID, "The Hash is correct");
 						}
 					}));
 				},
-
 				iShouldSeeTheHashForTheRememberedObject : function () {
 					return this.waitFor({
 						success : function () {
@@ -61,7 +58,6 @@ sap.ui.define([
 						}
 					});
 				},
-
 				iShouldSeeAnEmptyHash : function () {
 					return this.waitFor({
 						success : function () {

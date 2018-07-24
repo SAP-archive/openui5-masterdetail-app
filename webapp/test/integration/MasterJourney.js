@@ -1,7 +1,8 @@
 /*global QUnit*/
 
 sap.ui.define([
-	"sap/ui/test/opaQunit"
+	"sap/ui/test/opaQunit",
+	"./pages/Master"
 ], function (opaTest) {
 	"use strict";
 
@@ -10,9 +11,6 @@ sap.ui.define([
 	opaTest("Should see the master list with all entries", function (Given, When, Then) {
 		// Arrangements
 		Given.iStartTheApp();
-
-		//Actions
-		When.onTheMasterPage.iLookAtTheScreen();
 
 		// Assertions
 		Then.onTheMasterPage.iShouldSeeTheList().
@@ -54,14 +52,6 @@ sap.ui.define([
 		Then.onTheMasterPage.theListShouldHaveAllEntries();
 	});
 
-	opaTest("MasterList Sorting on UnitNumber", function(Given, When, Then) {
-		// Actions
-		When.onTheMasterPage.iSortTheListOnUnitNumber();
-
-		// Assertions
-		Then.onTheMasterPage.theListShouldBeSortedAscendingOnUnitNumber();
-	});
-
 	opaTest("MasterList Sorting on Name", function(Given, When, Then) {
 		// Actions
 		When.onTheMasterPage.iSortTheListOnName();
@@ -71,35 +61,30 @@ sap.ui.define([
 	});
 
 	opaTest("MasterList Filtering on UnitNumber less than 100", function(Given, When, Then) {
-
 		// Action
-		When.onTheMasterPage.iOpenViewSettingsDialog().
-			and.iSelectListItemInViewSettingsDialog("UnitNumber").
-			and.iSelectListItemInViewSettingsDialog("<100 UnitOfMeasure").
-			and.iPressOKInViewSelectionDialog();
+		When.onTheMasterPage.iFilterTheListOnUnitNumber();
 
 		// Assertion
-		Then.onTheMasterPage.theMasterListShouldBeFilteredOnUnitNumberValueLessThanTheGroupBoundary();
-	});
-
-	opaTest("MasterList Filtering on UnitNumber more than 100", function(Given, When, Then) {
-		// Action
-		When.onTheMasterPage.iOpenViewSettingsDialog().
-			and.iSelectListItemInViewSettingsDialog(">100 UnitOfMeasure").
-			and.iPressOKInViewSelectionDialog();
-
-		// Assertion
-		Then.onTheMasterPage.theMasterListShouldBeFilteredOnUnitNumberValueMoreThanTheGroupBoundary();
+		Then.onTheMasterPage.theListShouldBeFilteredOnUnitNumber();
 	});
 
 	opaTest("MasterList remove filter should display all items", function(Given, When, Then) {
 		// Action
 		When.onTheMasterPage.iOpenViewSettingsDialog().
-			and.iPressResetInViewSelectionDialog().
-			and.iPressOKInViewSelectionDialog();
+		and.iPressResetInViewSelectionDialog().
+		and.iPressOKInViewSelectionDialog();
 
 		// Assertion
 		Then.onTheMasterPage.theListShouldHaveAllEntries();
+	});
+
+
+	opaTest("MasterList Sorting on UnitNumber", function(Given, When, Then) {
+		// Actions
+		When.onTheMasterPage.iSortTheListOnUnitNumber();
+
+		// Assertions
+		Then.onTheMasterPage.theListShouldBeSortedAscendingOnUnitNumber();
 	});
 
 	opaTest("MasterList grouping created group headers", function(Given, When, Then) {
@@ -119,14 +104,16 @@ sap.ui.define([
 			and.theListShouldHaveAllEntries();
 	});
 
-	opaTest("Grouping the master list and filtering it by the object identifier should deliver the initial list", function(Given, When, Then) {
+	opaTest("Grouping the master list and sorting it should deliver the initial list", function(Given, When, Then) {
 		// Action
 		When.onTheMasterPage.iGroupTheList().
-			and.iSortTheListOnName();
+		and.iSortTheListOnUnitNumber();
 
 		// Assertion
-		Then.onTheMasterPage.theListShouldNotContainGroupHeaders().
-			and.iTeardownMyAppFrame();
+		Then.onTheMasterPage.theListShouldContainAGroupHeader();
+
+		// Cleanup
+		Then.iTeardownMyAppFrame();
 	});
 
 });
