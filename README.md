@@ -2,7 +2,7 @@
 
 # openui5-masterdetail-app
 
-> [OpenUI5](https://github.com/SAP/openui5) master-detail skeleton app using Grunt & Bower. The Master-Detail application template implements a typical split-screen layout, one of the design patterns that is specified by the [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/). It includes generic application functionality and tests that can be easily extended with custom functionality if needed. You can find more documentation on this template [here](https://sapui5.hana.ondemand.com/#docs/guide/8ed9339f3a99418e82a02f0fb4b5d6b9.html).
+> [OpenUI5](https://github.com/SAP/openui5) master-detail skeleton app using Grunt & Bower. The Master-Detail application template implements a typical flexible column layout with two pages, one of the design patterns that is specified by the [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/). It includes generic application functionality and tests that can be easily extended with custom functionality if needed. You can find more documentation on this template [here](https://openui5.hana.ondemand.com/#docs/guide/8ed9339f3a99418e82a02f0fb4b5d6b9.html).
 
 ## Getting started
 
