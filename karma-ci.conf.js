@@ -1,12 +1,12 @@
-// Karma configuration
-// Generated on Wed Jun 13 2018 14:38:44 GMT+0200 (CEST)
+/* global module require*/
 
 module.exports = function(config) {
+	"use strict";
+
 	require("./karma.conf")(config);
+
 	config.set({
 
-		// preprocess matching files before serving them to the browser
-		// available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
 		preprocessors: {
 			'{webapp,webapp/!(test)}/*.js': ['coverage']
 		},
@@ -38,18 +38,10 @@ module.exports = function(config) {
 			}
 		},
 
-		// test results reporter to use
-		// possible values: 'dots', 'progress'
-		// available reporters: https://npmjs.org/browse/keyword/karma-reporter
 		reporters: ['progress', 'coverage'],
 
-		// start these browsers
-		// available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-		browsers: ['PhantomJS'],
+		browsers: ['ChromeHeadless'],
 
-		// Continuous Integration mode
-		// if true, Karma captures browsers, runs the tests and exits
-		singleRun: true,
-
+		singleRun: true
 	});
 };
