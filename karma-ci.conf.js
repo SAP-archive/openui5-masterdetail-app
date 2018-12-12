@@ -8,7 +8,7 @@ module.exports = function(config) {
 	config.set({
 
 		preprocessors: {
-			'{webapp,webapp/!(test)}/*.js': ['coverage']
+			'{,!(test)}/*.js': ['coverage']
 		},
 
 		coverageReporter: {
@@ -23,11 +23,11 @@ module.exports = function(config) {
 				}
 			],
 			check: {
-				each: {
-					statements: 100,
-					branches: 100,
-					functions: 100,
-					lines: 100
+				global: {
+					statements: 90,
+					branches: 70,
+					functions: 90,
+					lines: 90
 				}
 			}
 		},
