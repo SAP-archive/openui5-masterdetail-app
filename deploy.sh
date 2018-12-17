@@ -48,7 +48,4 @@ ${TRAVIS_COMMIT_MESSAGE}"
 echo "*** Push the changes ***"
 ## Now that we're all set up, we can push.
 
-## Use ssh url as the authentication is done using ssh key
-git remote set-url origin git@github.com:SAP/openui5-masterdetail-app.git
-
 git push origin $TARGET_BRANCH
