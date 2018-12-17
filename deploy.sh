@@ -32,10 +32,6 @@ git fetch origin $TARGET_BRANCH
 git checkout FETCH_HEAD -b $TARGET_BRANCH
 
 
-# Config the user to commit in behalf of.
-# git config user.name "Travis CI"
-# git config user.email "DL_542D3DC8DF15DB1ECA00000C@exchange.sap.corp"
-
 echo "*** Remove existing files ***"
  find . ! -path "./dist" ! -path "./.git" ! -path . -maxdepth 1 -exec rm -rf {} \;
  ls -la
@@ -51,4 +47,8 @@ ${TRAVIS_COMMIT_MESSAGE}"
 
 echo "*** Push the changes ***"
 ## Now that we're all set up, we can push.
+
+## Use ssh url as the authentication is done using ssh key
+git remote set-url origin git@github.com:SAP/openui5-masterdetail-app.git
+
 git push origin $TARGET_BRANCH
