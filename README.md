@@ -7,7 +7,7 @@
 This template implements a typical flexible column layout with two pages, one of the design patterns that is specified by the [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/). 
 It includes generic application functionality and tests that can be easily extended. You can find more documentation on this template [here](https://openui5.hana.ondemand.com/#/topic/8ed9339f3a99418e82a02f0fb4b5d6b9).
 
-You can also see the [Template](http://sap.github.io/openui5-masterdetail-app/test/mockServer.html) live.
+You can also see the [template](http://sap.github.io/openui5-masterdetail-app/test/mockServer.html) live.
 
 ## Prerequisites
 The **UI5 build and development tooling command line interface (UI5 CLI)** has to be installed.
