@@ -1,0 +1,83 @@
+{
+  "_version": "1.9.0",
+  "sap.app": {
+    "id": "sap.f",
+    "type": "library",
+    "embeds": [
+      "cards"
+    ],
+    "applicationVersion": {
+      "version": "1.61.0"
+    },
+    "title": "SAPUI5 library with Fiori controls.",
+    "description": "SAPUI5 library with Fiori controls.",
+    "ach": "CA-UI5-CTR",
+    "resources": "resources.json",
+    "offline": true
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "supportedThemes": [
+      "base",
+      "sap_hcb"
+    ]
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.61",
+      "libs": {
+        "sap.ui.core": {
+          "minVersion": "1.61.0"
+        },
+        "sap.m": {
+          "minVersion": "1.61.0"
+        }
+      }
+    },
+    "library": {
+      "i18n": "messagebundle.properties",
+      "content": {
+        "controls": [
+          "sap.f.Avatar",
+          "sap.f.Card",
+          "sap.f.DynamicPage",
+          "sap.f.DynamicPageHeader",
+          "sap.f.DynamicPageTitle",
+          "sap.f.FlexibleColumnLayout",
+          "sap.f.semantic.SemanticPage",
+          "sap.f.GridList"
+        ],
+        "elements": [
+          "sap.f.semantic.AddAction",
+          "sap.f.semantic.CloseAction",
+          "sap.f.semantic.CopyAction",
+          "sap.f.semantic.DeleteAction",
+          "sap.f.semantic.DiscussInJamAction",
+          "sap.f.semantic.EditAction",
+          "sap.f.semantic.ExitFullScreenAction",
+          "sap.f.semantic.FavoriteAction",
+          "sap.f.semantic.FlagAction",
+          "sap.f.semantic.FooterMainAction",
+          "sap.f.semantic.FullScreenAction",
+          "sap.f.semantic.MessagesIndicator",
+          "sap.f.semantic.NegativeAction",
+          "sap.f.semantic.PositiveAction",
+          "sap.f.semantic.PrintAction",
+          "sap.f.semantic.SemanticButton",
+          "sap.f.semantic.SemanticControl",
+          "sap.f.semantic.SemanticToggleButton",
+          "sap.f.semantic.SendEmailAction",
+          "sap.f.semantic.SendMessageAction",
+          "sap.f.semantic.ShareInJamAction",
+          "sap.f.semantic.TitleMainAction"
+        ],
+        "types": [
+          "sap.f.LayoutType",
+          "sap.f.DynamicPageTitleArea",
+          "sap.f.DynamicPageTitleShrinkRatio"
+        ],
+        "interfaces": []
+      }
+    }
+  }
+}

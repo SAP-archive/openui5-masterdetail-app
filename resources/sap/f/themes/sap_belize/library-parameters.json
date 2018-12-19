@@ -1,0 +1,15 @@
+{
+	"default": {
+		"sapUiContentPadding": "1rem",
+		"sapUiCardHeaderIconColor": "#6a6d70",
+		"_sap_f_Avatar_Color": "#ffffff",
+		"_sap_f_FlexibleColumnLayout_ButtonBackground": "#e4ecf5",
+		"_sap_f_FlexibleColumnLayout_ButtonHoverBackground": "#d1e0ee"
+	},
+	"scopes": {
+		"sapContrast": {
+			"_sap_f_FlexibleColumnLayout_ButtonBackground": "#45596a",
+			"_sap_f_FlexibleColumnLayout_ButtonHoverBackground": "#4f667a"
+		}
+	}
+}
