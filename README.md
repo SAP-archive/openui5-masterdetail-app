@@ -2,7 +2,8 @@
 ![OpenUI5 logo](http://openui5.org/images/OpenUI5_new_big_side.png)
 
 # openui5-masterdetail-app
-OpenUI5 masterdetail app using the UI5 Build and Development Tooling. 
+OpenUI5 masterdetail app using the UI5 Build and Development Tooling.
+
 This template implements a typical flexible column layout with two pages, one of the design patterns that is specified by the SAP Fiori Design Guidelines. 
 It includes generic application functionality and tests that can be easily extended.
 
