@@ -7,7 +7,7 @@ OpenUI5 masterdetail app using the UI5 Build and Development Tooling.
 This template implements a typical flexible column layout with two pages, one of the design patterns that is specified by the SAP Fiori Design Guidelines. 
 It includes generic application functionality and tests that can be easily extended.
 
-More information
+## More information
 * [Live Demo](http://sap.github.io/openui5-masterdetail-app/test/mockServer.html)
 * [Documentation](https://openui5.hana.ondemand.com/#/topic/8ed9339f3a99418e82a02f0fb4b5d6b9)
 * [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/)
