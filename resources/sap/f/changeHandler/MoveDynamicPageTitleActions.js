@@ -1,6 +1,6 @@
 /*!
  * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define(["sap/ui/fl/Utils"],function(e){"use strict";var t={};var n="actions";t.applyChange=function(e,t,o){var r=o.modifier,i=o.view,g=o.appComponent,a=e.getDefinition().content.movedElements[0];var c=r.bySelector(a.selector,g,i),d=a.targetIndex;r.getAggregation(t,n).forEach(function(e){if(r.getId(e)===r.getId(c)){r.removeAggregation(t,n,e);r.insertAggregation(t,"dependents",e,undefined,i)}});r.insertAggregation(t,n,c,d,i);return true};t.revertChange=function(e,t,o){var r=o.modifier,i=o.view,g=o.appComponent,a=e.getDefinition().content.movedElements[0];var c=r.bySelector(a.selector,g,i),d=a.targetIndex,s=a.sourceIndex;r.removeAggregation(t,n,c,d,i);r.insertAggregation(t,n,c,s,i);return true};t.completeChangeContent=function(e,t,n){var o=n.modifier,r=n.appComponent,i=e.getDefinition();i.content={movedElements:[]};t.movedElements.forEach(function(e){var t=e.element||o.bySelector(e.id,r);i.content.movedElements.push({selector:o.getSelector(t,r),sourceIndex:e.sourceIndex,targetIndex:e.targetIndex})})};return t},true);

@@ -7,7 +7,7 @@
       "cards"
     ],
     "applicationVersion": {
-      "version": "1.61.0"
+      "version": "1.61.2"
     },
     "title": "SAPUI5 library with Fiori controls.",
     "description": "SAPUI5 library with Fiori controls.",
@@ -27,10 +27,10 @@
       "minUI5Version": "1.61",
       "libs": {
         "sap.ui.core": {
-          "minVersion": "1.61.0"
+          "minVersion": "1.61.2"
         },
         "sap.m": {
-          "minVersion": "1.61.0"
+          "minVersion": "1.61.2"
         }
       }
     },
