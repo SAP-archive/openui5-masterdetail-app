@@ -51,6 +51,18 @@ sap.ui.define([
 							Opa5.assert.ok(true, "The correct MessageBox was shown");
 						}
 					});
+				},
+
+				theAppShowsFCLDesign: function (sLayout) {
+					return this.waitFor({
+						id : "layout",
+						viewName : "App",
+						matchers : new PropertyStrictEquals({name: "layout", value: sLayout}),
+						success : function () {
+							Opa5.assert.ok(true, "the app shows " + sLayout + " layout");
+						},
+						errorMessage : "The app does not show " + sLayout + " layout"
+					});
 				}
 
 			}
