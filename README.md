@@ -11,7 +11,7 @@ It includes generic application functionality and tests that can be easily exten
 * [Live Demo](http://sap.github.io/openui5-masterdetail-app/test/mockServer.html)
 * [Documentation](https://openui5.hana.ondemand.com/#/topic/8ed9339f3a99418e82a02f0fb4b5d6b9)
 * [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/)
-* [UI5 Build and Development Tooling](https://github.com/SAP/ui5-tooling)
+* [UI5 Tooling](https://github.com/SAP/ui5-tooling)
 * [OpenUI5](https://github.com/SAP/openui5)
 
 ## Prerequisites
