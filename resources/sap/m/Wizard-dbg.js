@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -63,7 +63,7 @@ sap.ui.define([
 		 * On mobile devices the steps in the StepNavigator are grouped together and overlap. Tapping on them will show a popover to select the step to navigate to.
 		 * @extends sap.ui.core.Control
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -185,6 +185,7 @@ sap.ui.define([
 			var step = this._getStartingStep();
 			if (step && this._stepPath.indexOf(step) < 0) {
 				this._activateStep(step);
+				step._setNumberInvisibleText(1);
 				this._updateProgressNavigator();
 			}
 		};
@@ -312,6 +313,7 @@ sap.ui.define([
 				return this;
 			}
 
+			step._setNumberInvisibleText(this.getProgress());
 			var that = this,
 				scrollProps = {
 					scrollTop: this._getStepScrollOffset(step)
@@ -387,7 +389,7 @@ sap.ui.define([
 			this._updateProgressNavigator();
 			this.setAssociation("currentStep", step);
 
-			lastStep._oNextButton.setVisible(true);
+			this.getShowNextButton() && lastStep._oNextButton.setVisible(true);
 
 			return this;
 		};

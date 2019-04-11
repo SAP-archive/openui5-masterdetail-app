@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -19,6 +19,7 @@ sap.ui.define([
 	'sap/ui/core/format/DateFormat',
 	'sap/ui/core/ResizeHandler',
 	'sap/ui/core/Locale',
+	'sap/ui/events/KeyCodes',
 	"./CalendarRenderer",
 	"sap/ui/dom/containsOrEquals",
 	"sap/base/util/deepEqual",
@@ -39,6 +40,7 @@ sap.ui.define([
 	DateFormat,
 	ResizeHandler,
 	Locale,
+	KeyCodes,
 	CalendarRenderer,
 	containsOrEquals,
 	deepEqual,
@@ -47,6 +49,9 @@ sap.ui.define([
 ) {
 	"use strict";
 
+	// get resource translation bundle;
+	var oLibraryResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.unified");
+	var sLanguage = sap.ui.getCore().getConfiguration().getLocale().getLanguage();
 	/*
 	 * Inside the Calendar CalendarDate objects are used. But in the API JS dates are used.
 	 * So conversion must be done on API functions.
@@ -62,7 +67,7 @@ sap.ui.define([
 	 * Basic Calendar.
 	 * This calendar is used for DatePickers
 	 * @extends sap.ui.core.Control
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -990,17 +995,16 @@ sap.ui.define([
 
 	Calendar.prototype.onmousedown = function(oEvent){
 
-		oEvent.preventDefault(); // to prevent focus set outside of DatePicker
+		if (oEvent.cancelable) {
+			oEvent.preventDefault(); // to prevent focus set outside of DatePicker
+		}
 		oEvent.setMark("cancelAutoClose");
 
 	};
 
-	Calendar.prototype.onsapescape = function(oEvent){
+	Calendar.prototype.onsapescape = function(oEvent) {
 
-		if (this._iMode == 0) {
-			this.fireCancel();
-		}
-
+		this.fireCancel();
 		this._closedPickers();
 
 	};
@@ -1016,6 +1020,21 @@ sap.ui.define([
 		}
 
 	};
+
+	// Handles F4 (Opens Month Picker) or Shift+F4(Opens Year Picker)
+	Calendar.prototype.onkeydown = function(oEvent) {
+		var iKC = oEvent.which || oEvent.keyCode,
+			bShift = oEvent.shiftKey;
+
+		// if there is a a popup for picking dates, we should not handle F4
+		if (this._getSucessorsPickerPopup() || iKC !== KeyCodes.F4) {
+			return;
+		}
+
+		oEvent.preventDefault(); //ie expands the address bar on F4
+		bShift ? this._showYearPicker() : this._showMonthPicker();
+	};
+
 
 	Calendar.prototype.onsaphide = Calendar.prototype.onsapshow;
 
@@ -1966,6 +1985,7 @@ sap.ui.define([
 		var aMonthNames = [];
 		var aMonthNamesWide = [];
 		var aMonthNamesSecondary = [];
+		var aMonthNamesSecondaryWide = [];
 		var sAriaLabel;
 		var bShort = false;
 		var sFirstMonthName;
@@ -1975,6 +1995,8 @@ sap.ui.define([
 		var sPattern;
 		var sPrimaryCalendarType = this.getPrimaryCalendarType();
 		var sSecondaryCalendarType = this._getSecondaryCalendarType();
+		var sSecondaryMonthInfo = "";
+
 		if (this._bLongMonth || !this._bNamesLengthChecked) {
 			aMonthNames = oLocaleData.getMonthsStandAlone("wide", sPrimaryCalendarType);
 		} else {
@@ -1987,12 +2009,17 @@ sap.ui.define([
 			// always use short month names because in most cases 2 months are displayed
 			aMonthNamesSecondary = oLocaleData.getMonthsStandAlone("abbreviated", sSecondaryCalendarType);
 
+			// always use wide month names for the screen reader
+			aMonthNamesSecondaryWide = oLocaleData.getMonthsStandAlone("wide", sSecondaryCalendarType);
+
 			var oSecondaryMonths = this._getDisplayedSecondaryMonths(sPrimaryCalendarType, sSecondaryCalendarType);
 			if (oSecondaryMonths.start == oSecondaryMonths.end) {
 				sText = aMonthNamesSecondary[oSecondaryMonths.start];
+				sSecondaryMonthInfo = aMonthNamesSecondaryWide[oSecondaryMonths.start];
 			} else {
 				sPattern = oLocaleData.getIntervalPattern();
 				sText = sPattern.replace(/\{0\}/, aMonthNamesSecondary[oSecondaryMonths.start]).replace(/\{1\}/, aMonthNamesSecondary[oSecondaryMonths.end]);
+				sSecondaryMonthInfo = sPattern.replace(/\{0\}/, aMonthNamesSecondaryWide[oSecondaryMonths.start]).replace(/\{1\}/, aMonthNamesSecondaryWide[oSecondaryMonths.end]);
 			}
 		}
 		oHeader.setAdditionalTextButton1(sText);
@@ -2012,6 +2039,15 @@ sap.ui.define([
 		} else {
 			sText = sFirstMonthName;
 			sAriaLabel = aMonthNamesWide[aMonths[0]] || sText;
+		}
+
+		if (!this._getSucessorsPickerPopup()) {
+			// Add info for the secondary month
+			if (sSecondaryMonthInfo) {
+				sAriaLabel += ", " + sSecondaryMonthInfo;
+			}
+
+			sAriaLabel += ". " + oLibraryResourceBundle.getText("CALENDAR_MONTH_PICKER_OPEN_HINT");
 		}
 
 		oHeader.setTextButton1(sText);
@@ -2281,9 +2317,17 @@ sap.ui.define([
 	 */
 	Calendar.prototype._toggleTwoMonthsInTwoColumnsCSS = function () {
 		if (this._isTwoMonthsInTwoColumns()) {
-			this.addStyleClass("sapUiCalTwoMonthsTwoColumns");
+			if (sLanguage.toLowerCase() === "ja" || sLanguage.toLowerCase() === "zh") {
+				this.addStyleClass("sapUiCalTwoMonthsTwoColumnsJaZh");
+			} else {
+				this.addStyleClass("sapUiCalTwoMonthsTwoColumns");
+			}
 		} else {
-			this.removeStyleClass("sapUiCalTwoMonthsTwoColumns");
+			if (sLanguage.toLowerCase() === "ja" || sLanguage.toLowerCase() === "zh") {
+				this.removeStyleClass("sapUiCalTwoMonthsTwoColumnsJaZh");
+			} else {
+				this.removeStyleClass("sapUiCalTwoMonthsTwoColumns");
+			}
 		}
 	};
 
@@ -2311,10 +2355,16 @@ sap.ui.define([
 
 	Calendar.prototype._updateHeadersYearPrimaryText = function (sYear) {
 		var oHeader = this.getAggregation("header"),
-			oSecondMonthHeader = this.getAggregation("secondMonthHeader");
+			oSecondMonthHeader = this.getAggregation("secondMonthHeader"),
+			sAriaLabel = sYear;
+
+		if (!this._getSecondaryCalendarType()) {
+			// If secondary type is set, than placing the hint should be done in the end.
+			sAriaLabel += (this._getSucessorsPickerPopup() ? "" : ". " + oLibraryResourceBundle.getText("CALENDAR_YEAR_PICKER_OPEN_HINT"));
+		}
 
 		oHeader.setTextButton2(sYear);
-		oHeader.setAriaLabelButton2(sYear);
+		oHeader.setAriaLabelButton2(sAriaLabel);
 		oHeader._setTextButton4(sYear);
 		oHeader._setAriaLabelButton4(sYear);
 		oSecondMonthHeader.setTextButton2(sYear);
@@ -2323,7 +2373,15 @@ sap.ui.define([
 
 	Calendar.prototype._updateHeadersYearAdditionalText = function (sYear) {
 		var oHeader = this.getAggregation("header"),
-			oSecondMonthHeader = this.getAggregation("secondMonthHeader");
+			oSecondMonthHeader = this.getAggregation("secondMonthHeader"),
+			sAriaLabel = oHeader.getAriaLabelButton2(); // Get what's already set with the primary text
+
+		if (sYear) {
+			// Add the secondary year info, as well as the hint.
+			// Keep in mind this method might be called from _handleNext/Previous without a year
+			sAriaLabel += ", " + sYear + (this._getSucessorsPickerPopup() ? "" : ". " + oLibraryResourceBundle.getText("CALENDAR_YEAR_PICKER_OPEN_HINT"));
+			oHeader.setAriaLabelButton2(sAriaLabel);
+		}
 
 		oHeader.setAdditionalTextButton2(sYear);
 		oHeader._setAdditionalTextButton4(sYear);

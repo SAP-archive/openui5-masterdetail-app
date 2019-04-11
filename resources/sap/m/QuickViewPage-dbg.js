@@ -1,5 +1,5 @@
 /*
- * ! UI development toolkit for HTML5 (OpenUI5)
+ * ! OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -88,7 +88,7 @@ sap.ui.define([
 			* @extends sap.ui.core.Control
 			*
 			* @author SAP SE
-			* @version 1.61.2
+			* @version 1.64.0
 			*
 			* @constructor
 			* @public
@@ -676,10 +676,20 @@ sap.ui.define([
 					};
 				});
 
-			QuickViewPage.prototype.setProperty = function () {
-				Control.prototype.setProperty.apply(this, arguments);
+			QuickViewPage.prototype.setProperty = function (sName, oValue) {
+
+				var mNavContext = this.getNavContext(),
+					bSupressInvalidate = true;
+
+				if (mNavContext && mNavContext.quickView && mNavContext.quickView.isA('sap.m.QuickViewCard')) {
+					bSupressInvalidate = false;
+				}
+
+				Control.prototype.setProperty.call(this, sName, oValue, bSupressInvalidate);
 
 				this._updatePage();
+
+				return this;
 			};
 
 			return QuickViewPage;

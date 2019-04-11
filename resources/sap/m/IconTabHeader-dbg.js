@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -79,7 +79,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -1169,11 +1169,11 @@ function(
 		var sSuffix = this._bTextOnly ? "TextOnly" : "";
 		var sLeftArrowClass = "sapMITBArrowScrollLeft" + sSuffix;
 		var sRightArrowClass = "sapMITBArrowScrollRight" + sSuffix;
+		//sapMITHVerticallyCenteredArrow class is implemented only in fiori 3.0 theme. It aligns all arrows vertically
+		var aCssClassesToAddLeft = ["sapMITBArrowScroll", sLeftArrowClass, "sapMITHVerticallyCenteredArrow"];
+		var aCssClassesToAddRight = ["sapMITBArrowScroll", sRightArrowClass, "sapMITHVerticallyCenteredArrow"];
 
-		var aCssClassesToAddLeft = ["sapMITBArrowScroll", sLeftArrowClass];
-		var aCssClassesToAddRight = ["sapMITBArrowScroll", sRightArrowClass];
-
-		if (this._bInLine) {
+		if (this._bInLine || this.isInlineMode()) {
 			aCssClassesToAddLeft.push('sapMITBArrowScrollLeftInLine');
 			aCssClassesToAddRight.push('sapMITBArrowScrollRightInLine');
 		}
@@ -1197,6 +1197,9 @@ function(
 	 * @private
 	 */
 	IconTabHeader.prototype._checkOverflow = function() {
+		if (this.bIsDestroyed) {
+			return;
+		}
 
 		var oBarHead = this.getDomRef("head");
 		var $bar = this.$();
@@ -1315,6 +1318,9 @@ function(
 	 * @return {sap.m.IconTabHeader} this pointer for chaining
 	 */
 	IconTabHeader.prototype._scrollIntoView = function(oItem, iDuration) {
+		if (this.bIsDestroyed) {
+			return;
+		}
 
 		var $item = oItem.$(),
 			iScrollLeft,

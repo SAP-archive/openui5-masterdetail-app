@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -47,7 +47,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 * @since 1.48
 		 *
 		 * @constructor
@@ -111,7 +111,7 @@ sap.ui.define([
 						* <ul>
 						* <li>If set to <code>Link</code>, the PDF viewer appears as a toolbar with a download
 						* button that can be used to download the PDF file.<br>
-						* When the {@link open} method is called, the user can either open the PDF file in a
+						* When the {@link #open} method is called, the user can either open the PDF file in a
 						* new tab or download it.</li>
 						* <li>If set to <code>Embedded</code>, the PDF viewer appears embedded in the parent
 						* container and displays either the PDF document or the message defined by the

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -10,6 +10,7 @@
 sap.ui.define(["sap/ui/base/DataType",
 	"sap/ui/Global",
 	"sap/ui/core/library",
+	"sap/ui/layout/library", // library dependency
 	"sap/m/library"], // library dependency
 	function(DataType) {
 
@@ -18,9 +19,14 @@ sap.ui.define(["sap/ui/base/DataType",
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.f",
-		version: "1.61.2",
+		version: "1.64.0",
 		dependencies : ["sap.ui.core", "sap.m", "sap.ui.layout"],
 		designtime: "sap/f/designtime/library.designtime",
+		interfaces: [
+			"sap.f.cards.IHeader",
+			"sap.f.ICard",
+			"sap.f.IShellBar"
+		],
 		types: [
 			"sap.f.LayoutType",
 			"sap.f.DynamicPageTitleArea",
@@ -28,15 +34,21 @@ sap.ui.define(["sap/ui/base/DataType",
 		],
 		controls: [
 			"sap.f.Avatar",
+			"sap.f.cards.Header",
+			"sap.f.cards.NumericHeader",
+			"sap.f.cards.NumericSideIndicator",
 			"sap.f.Card",
+			"sap.f.CardContainer",
 			"sap.f.DynamicPage",
 			"sap.f.DynamicPageHeader",
 			"sap.f.DynamicPageTitle",
 			"sap.f.FlexibleColumnLayout",
 			"sap.f.semantic.SemanticPage",
-			"sap.f.GridList"
+			"sap.f.GridList",
+			"sap.f.ShellBar"
 		],
 		elements: [
+			"sap.f.CardItemLayoutData",
 			"sap.f.semantic.AddAction",
 			"sap.f.semantic.CloseAction",
 			"sap.f.semantic.CopyAction",
@@ -86,7 +98,7 @@ sap.ui.define(["sap/ui/base/DataType",
 	 * @namespace
 	 * @alias sap.f
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 * @public
 	 */
 	var thisLib = sap.f;
@@ -376,6 +388,7 @@ sap.ui.define(["sap/ui/base/DataType",
 		 */
 		Initials: "Initials"
 	};
+
 	/**
 	 * Types of image size and position that determine how an image fits in the {@link sap.f.Avatar} control area.
 	 *
@@ -396,6 +409,56 @@ sap.ui.define(["sap/ui/base/DataType",
 		 */
 		Contain: "Contain"
 	};
+
+	/**
+	 * Interface for card controls
+	 *
+	 * @since 1.62
+	 * @public
+	 * @interface
+	 * @name sap.f.ICard
+	 */
+
+	/**
+	 * The function is used to allow for a common header renderer between different card implementations
+	 *
+	 * @returns {sap.f.cards.IHeader} The header of the card
+	 * @since 1.62
+	 * @public
+	 * @function
+	 * @name sap.f.ICard.getCardHeader
+	 */
+
+	/**
+	 * The function is used to allow for a common content renderer between different card implementations
+	 *
+	 * @returns {sap.ui.core.Control} The content of the card
+	 * @since 1.62
+	 * @public
+	 * @function
+	 * @name sap.f.ICard.getCardContent
+	 */
+
+	/**
+	 * Marker interface for card headers
+	 *
+	 * @since 1.62
+	 * @public
+	 * @interface
+	 * @name sap.f.cards.IHeader
+	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
+	 */
+
+	/**
+	 * Interface for controls suitable for the <code>additionalContent</code> aggregation of <code>{@link sap.f.ShellBar}</code>.
+	 *
+	 * @since 1.63
+	 * @name sap.f.IShellBar
+	 * @experimental Since 1.63, that provides only limited functionality. Also, it can be removed in future versions.
+	 * @public
+	 * @interface
+	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
+	 */
 
 	return thisLib;
 

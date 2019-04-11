@@ -1,5 +1,5 @@
 /*!
-* UI development toolkit for HTML5 (OpenUI5)
+* OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
 */
@@ -12,6 +12,7 @@ sap.ui.define([
 	'sap/ui/core/IconPool',
 	'sap/ui/core/delegate/ItemNavigation',
 	'sap/ui/core/InvisibleText',
+	'sap/ui/core/IntervalTrigger',
 	'sap/ui/Device',
 	'sap/ui/base/ManagedObject',
 	'sap/ui/core/Icon',
@@ -36,6 +37,7 @@ sap.ui.define([
 		IconPool,
 		ItemNavigation,
 		InvisibleText,
+		IntervalTrigger,
 		Device,
 		ManagedObject,
 		Icon,
@@ -138,7 +140,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IShrinkable
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -499,7 +501,7 @@ sap.ui.define([
 	 */
 	FacetFilter.prototype.exit = function() {
 		var oCtrl;
-		sap.ui.getCore().detachIntervalTimer(this._checkOverflow, this);
+		IntervalTrigger.removeListener(this._checkOverflow, this);
 
 		if (this.oItemNavigation) {
 			this.removeDelegate(this.oItemNavigation);
@@ -527,11 +529,10 @@ sap.ui.define([
 			var oSummaryBar = this.getAggregation("summaryBar");
 			var oText = oSummaryBar.getContent()[0];
 			oText.setText(this._getSummaryText());
-			oText.setTooltip(this._getSummaryText());
 		}
 
-			// Detach the interval timer attached in onAfterRendering
-			sap.ui.getCore().detachIntervalTimer(this._checkOverflow, this);
+		// Detach the interval timer attached in onAfterRendering
+		IntervalTrigger.removeListener(this._checkOverflow, this);
 	};
 
 	/**
@@ -542,7 +543,7 @@ sap.ui.define([
 		if (this.getType() !== FacetFilterType.Light && !Device.system.phone) {
 			// Attach an interval timer that periodically checks overflow of the "head" div in the event that the window is resized or the device orientation is changed. This is ultimately to
 			// see if carousel arrows should be displayed.
-			sap.ui.getCore().attachIntervalTimer(this._checkOverflow, this); // proxy() is needed for the additional parameters, not for "this"
+			IntervalTrigger.addListener(this._checkOverflow, this);
 		}
 
 		if (this.getType() !== FacetFilterType.Light) {
@@ -1912,6 +1913,10 @@ sap.ui.define([
 				content : [ oText ], // Text is set before rendering
 				active : this.getType() === FacetFilterType.Light ? true : false,
 				design : ToolbarDesign.Info,
+				ariaLabelledBy : [
+					InvisibleText.getStaticId("sap.m", "FACETFILTER_TITLE"),
+					oText
+				],
 				press : function(oEvent) {
 						that.openFilterDialog();
 				}

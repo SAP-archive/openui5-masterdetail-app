@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -53,7 +53,7 @@ sap.ui.define(['sap/ui/core/Core', "sap/base/util/ObjectPath", "sap/base/Log", "
 	 * @namespace
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @public
 	 * @since 1.48.0
@@ -72,6 +72,7 @@ sap.ui.define(['sap/ui/core/Core', "sap/base/util/ObjectPath", "sap/base/Log", "
 		"sap.ui.core.mvc.TemplateView",
 		"sap.ui.core.mvc.View",
 		"sap.ui.core.tmpl.Template",
+		"sap.m.ColumnHeaderPopover",
 		"sap.m.FacetFilterItem",
 		"sap.m.LightBox",
 		"sap.m.Menu",
@@ -182,7 +183,7 @@ sap.ui.define(['sap/ui/core/Core', "sap/base/util/ObjectPath", "sap/base/Log", "
 
 	var aKnownRuntimeLayerLibraries = ["sap.ui.core","sap.chart","sap.f","sap.m","sap.makit","sap.me","sap.ndc",
 		   "sap.suite.ui.microchart","sap.tnt","sap.ui.codeeditor","sap.ui.commons","sap.ui.comp","sap.ui.dt",
-		   "sap.ui.fl","sap.ui.generic.app","sap.ui.generic.template","sap.ui.layout","sap.ui.mdc",
+		   "sap.ui.fl","sap.ui.integration","sap.ui.generic.app","sap.ui.generic.template","sap.ui.layout","sap.ui.mdc",
 		   "sap.ui.richtexteditor","sap.ui.rta","sap.ui.suite","sap.ui.table",
 		   "sap.ui.unified","sap.ui.ux3","sap.uxap","sap.viz"];
 

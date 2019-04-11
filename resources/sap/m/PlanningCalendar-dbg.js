@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -172,7 +172,7 @@ sap.ui.define([
 	 * {@link sap.m.PlanningCalendarView PlanningCalendarView}'s properties.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -633,7 +633,8 @@ sap.ui.define([
 		});
 
 		var oTableHeaderToolbar = new OverflowToolbar(this.getId() + "-Toolbar", {
-			design: ToolbarDesign.Transparent
+			design: ToolbarDesign.Transparent,
+			visible: false
 		});
 		oTableHeaderToolbar._oPlanningCalendar = this;
 
@@ -846,6 +847,41 @@ sap.ui.define([
 			$Table.style.height = sStyle;
 		}
 	};
+
+	PlanningCalendar.prototype.addToolbarContent = function(oContent) {
+		this.addAggregation("toolbarContent", oContent);
+		_switchTableHeaderToolbarVisibility.call(this);
+		return this;
+	 };
+
+	 PlanningCalendar.prototype.insertToolbarContent = function(oContent, iIndex) {
+		this.insertAggregation("toolbarContent", oContent, iIndex);
+		_switchTableHeaderToolbarVisibility.call(this);
+		return this;
+	 };
+
+	 PlanningCalendar.prototype.removeToolbarContent = function(vObject) {
+		var oRemoved = this.removeAggregation("toolbarContent", vObject);
+		_switchTableHeaderToolbarVisibility.call(this);
+		return oRemoved;
+	 };
+
+	 PlanningCalendar.prototype.removeAllToolbarContent = function() {
+		var aRemoved = this.removeAllAggregation("toolbarContent");
+		_switchTableHeaderToolbarVisibility.call(this);
+		return aRemoved;
+	 };
+
+	 PlanningCalendar.prototype.destroyToolbarContent = function() {
+		var destroyed = this.destroyAggregation("toolbarContent");
+		_switchTableHeaderToolbarVisibility.call(this);
+		return destroyed;
+	 };
+
+	 function _switchTableHeaderToolbarVisibility () {
+		this._getTableHeaderToolbar().setVisible(!!this.getToolbarContent().length);
+	 }
+
 
 	/**
 	 * Sets the given date as start date. The current date is used as default.
@@ -2022,6 +2058,15 @@ sap.ui.define([
 	 */
 	PlanningCalendar.prototype._handleStartDateChange = function(oEvent){
 		var oStartDate = oEvent.oSource.getStartDate();
+
+		if (this.getViewKey() !== CalendarIntervalType.Hour) {
+			var oCurrentStartDate = this.getStartDate();
+
+			oStartDate.setHours(oCurrentStartDate.getHours());
+			oStartDate.setMinutes(oCurrentStartDate.getMinutes());
+			oStartDate.setSeconds(oCurrentStartDate.getSeconds());
+		}
+
 		this._changeStartDate(oStartDate);
 	};
 
@@ -2594,7 +2639,8 @@ sap.ui.define([
 		oRowHeader = new PlanningCalendarRowHeader(oRow.getId() + "-Head", {
 			icon : oRow.getIcon(),
 			description : oRow.getText(),
-			title : oRow.getTitle()
+			title : oRow.getTitle(),
+			tooltip : oRow.getTooltip()
 		});
 
 		oRowTimeline = new PlanningCalendarRowTimeline(oRow.getId() + "-CalRow", {
@@ -2670,6 +2716,9 @@ sap.ui.define([
 	};
 
 	PlanningCalendarRowHeaderRenderer.renderTabIndex = function(oRm, oLI) {
+	};
+
+	PlanningCalendarRowHeaderRenderer.getAriaRole = function (oRm, oLI) {
 	};
 
 	var PlanningCalendarRowTimelineRenderer = Renderer.extend(CalendarRowRenderer);
@@ -2791,7 +2840,8 @@ sap.ui.define([
 			aggregations : {
 				intervalHeaders : {type : "sap.ui.unified.CalendarAppointment", multiple : true},
 				_intervalPlaceholders : {type : "IntervalPlaceholder", multiple : true, visibility : "hidden", dnd : {droppable: true}}
-			}
+			},
+			dnd: true
 		},
 		renderer: PlanningCalendarRowTimelineRenderer
 	});
@@ -2878,6 +2928,14 @@ sap.ui.define([
 		return getRow(this).getCustomData();
 	};
 	// ************************************* PRIVATE CLASSES END *******************************************************
+	PlanningCalendar.prototype._getSelectedDates = function () {
+		var sViewKey = this.getViewKey(),
+			oCurrentView = this._getView(sViewKey),
+			sCurrentViewIntervalType = oCurrentView.getIntervalType(),
+			oIntervalMetadata = INTERVAL_METADATA[sCurrentViewIntervalType];
+
+		return this[oIntervalMetadata.sInstanceName].getSelectedDates();
+	};
 
 	PlanningCalendar.prototype._enableAppointmentsDragAndDrop = function (oRow) {
 		var oTimeline = getRowTimeline(oRow),

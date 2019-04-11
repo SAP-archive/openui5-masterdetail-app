@@ -3,11 +3,9 @@
   "sap.app": {
     "id": "sap.f",
     "type": "library",
-    "embeds": [
-      "cards"
-    ],
+    "embeds": [],
     "applicationVersion": {
-      "version": "1.61.2"
+      "version": "1.64.0"
     },
     "title": "SAPUI5 library with Fiori controls.",
     "description": "SAPUI5 library with Fiori controls.",
@@ -24,13 +22,16 @@
   },
   "sap.ui5": {
     "dependencies": {
-      "minUI5Version": "1.61",
+      "minUI5Version": "1.64",
       "libs": {
         "sap.ui.core": {
-          "minVersion": "1.61.2"
+          "minVersion": "1.64.0"
+        },
+        "sap.ui.layout": {
+          "minVersion": "1.64.0"
         },
         "sap.m": {
-          "minVersion": "1.61.2"
+          "minVersion": "1.64.0"
         }
       }
     },
@@ -39,15 +40,21 @@
       "content": {
         "controls": [
           "sap.f.Avatar",
+          "sap.f.cards.Header",
+          "sap.f.cards.NumericHeader",
+          "sap.f.cards.NumericSideIndicator",
           "sap.f.Card",
+          "sap.f.CardContainer",
           "sap.f.DynamicPage",
           "sap.f.DynamicPageHeader",
           "sap.f.DynamicPageTitle",
           "sap.f.FlexibleColumnLayout",
           "sap.f.semantic.SemanticPage",
-          "sap.f.GridList"
+          "sap.f.GridList",
+          "sap.f.ShellBar"
         ],
         "elements": [
+          "sap.f.CardItemLayoutData",
           "sap.f.semantic.AddAction",
           "sap.f.semantic.CloseAction",
           "sap.f.semantic.CopyAction",
@@ -76,7 +83,11 @@
           "sap.f.DynamicPageTitleArea",
           "sap.f.DynamicPageTitleShrinkRatio"
         ],
-        "interfaces": []
+        "interfaces": [
+          "sap.f.cards.IHeader",
+          "sap.f.ICard",
+          "sap.f.IShellBar"
+        ]
       }
     }
   }

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -85,7 +85,7 @@ sap.ui.define([
 		 * Whether the current operating system is Windows Phone
 		 * @type {boolean}
 		 * @public
-		 * @deprecated since 1.20 use {@link sap.ui.Device.os.winphone} instead
+		 * @deprecated since 1.20 use {@link sap.ui.Device.os.windows_phone} instead
 		 * @name jQuery.os.winphone
 		 */
 

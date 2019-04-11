@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -9,11 +9,12 @@ sap.ui.define([
 	'./NavContainer',
 	'./library',
 	'./AppRenderer',
+	'sap/ui/base/DataType',
 	"sap/ui/util/Mobile",
 	"sap/base/Log",
 	"sap/ui/thirdparty/jquery"
 ],
-	function(NavContainer, library, AppRenderer, Mobile, Log, jQuery) {
+	function(NavContainer, library, AppRenderer, DataType, Mobile, Log, jQuery) {
 
 	"use strict";
 
@@ -46,7 +47,7 @@ sap.ui.define([
 	 * @extends sap.m.NavContainer
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -227,6 +228,21 @@ sap.ui.define([
 		}
 		this.$("BG").css("opacity", fOpacity);
 		return this.setProperty("backgroundOpacity", fOpacity, true); // no rerendering - live opacity change looks cooler
+	};
+
+	/**
+	 * Returns the <code>backgroundColor</code> value that passed validation for type <code>sap.ui.core.CSSColor</code>
+	 * (required as the public property itself is of the more generic <code>string</code> type)
+	 *
+	 * @private
+	 * @returns {string} sValue the value that passed the check, or empty string
+	 */
+	App.prototype._getValidatedBackgroundColor = function () {
+		var sBackgroundColor = this.getBackgroundColor();
+		if (!DataType.getType("sap.ui.core.CSSColor").isValid(sBackgroundColor)) {
+			sBackgroundColor = "";
+		}
+		return sBackgroundColor;
 	};
 
 

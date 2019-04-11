@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -66,7 +66,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -162,6 +162,7 @@ sap.ui.define([
 		this._sActualType = null;
 		// Property that determines if the created icon is going to be the default one
 		this._bIsDefaultIcon = true;
+		this._sImageFallbackType = null;
 	};
 
 	Avatar.prototype.exit = function () {
@@ -309,7 +310,15 @@ sap.ui.define([
 			this._sActualType = AvatarType.Icon;
 			this._bIsDefaultIcon = false;
 		} else {
+			this._bIsDefaultIcon = true;
 			this._sActualType = AvatarType.Image;
+
+		// we perform this action in order to validate the image source and
+		// take further actions depending on that
+			this.preloadedImage = new window.Image();
+			this.preloadedImage.src = sSrc;
+			this.preloadedImage.onload = this._onImageLoad.bind(this);
+			this.preloadedImage.onerror = this._onImageError.bind(this);
 		}
 
 		return this;
@@ -336,6 +345,23 @@ sap.ui.define([
 		}
 
 		return this._sActualType;
+	};
+
+	/**
+	 * Indicates what type of fallback we should show if there is invalid image source.
+	 *
+	 * @returns {sap.f.AvatarType}
+	 * @private
+	 */
+	Avatar.prototype._getImageFallbackType = function () {
+		var sInitials = this.getInitials();
+
+		if (this._sActualType === AvatarType.Image) {
+			this._sImageFallbackType = sInitials && this._areInitialsValid(sInitials) ?
+			AvatarType.Initials : AvatarType.Icon;
+		}
+
+		return this._sImageFallbackType;
 	};
 
 	/**
@@ -397,6 +423,32 @@ sap.ui.define([
 
 	Avatar.prototype._getDefaultTooltip = function() {
 		return sap.ui.getCore().getLibraryResourceBundle("sap.f").getText("AVATAR_TOOLTIP");
+	};
+
+
+	/**
+	 * We use this callback to make sure we hide fallback content if our original image source
+	 * is loaded.
+	 *
+	 * @private
+	 */
+	Avatar.prototype._onImageLoad = function() {
+		//we need to remove fallback content
+		delete this.preloadedImage;
+	};
+
+	/**
+	 * We use the negative callback to clean the useless property.
+	 *
+	 * @private
+	 */
+	 Avatar.prototype._onImageError = function() {
+		 var sFallBackType = this._getImageFallbackType();
+
+		 this.$().removeClass("sapFAvatarImage")
+				.addClass("sapFAvatar" + sFallBackType);
+
+		delete this.preloadedImage;
 	};
 
 	return Avatar;

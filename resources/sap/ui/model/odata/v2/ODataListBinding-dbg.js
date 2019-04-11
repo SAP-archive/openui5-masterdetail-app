@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -305,7 +305,9 @@ sap.ui.define([
 				break;
 			}
 			oContext = this.oModel.getContext('/' + sKey);
+			oContext.sDeepPath = this.oModel.resolveDeep(this.sPath, this.oContext) + sKey.substr(sKey.indexOf("("));
 			aContexts.push(oContext);
+
 		}
 
 		return aContexts;
@@ -492,6 +494,8 @@ sap.ui.define([
 				this.iLength = oRef.length;
 				this.bLengthFinal = true;
 				this.bDataAvailable = true;
+				// ensure sorters/filters for an expanded list are initialized
+				this._initSortersFilters();
 				this.applyFilter();
 				this.applySort();
 			} else { // means that expanded data has no data available e.g. for 0..n relations

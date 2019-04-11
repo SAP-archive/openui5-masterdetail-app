@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -17,6 +17,7 @@ sap.ui.define([
 	"sap/m/Title",
 	"sap/m/Button",
 	"sap/m/List",
+	"sap/m/BusyIndicator",
 	"sap/m/StandardListItem",
 	"sap/ui/unified/FileUploaderParameter",
 	"sap/ui/unified/FileUploader",
@@ -49,6 +50,7 @@ sap.ui.define([
 	Title,
 	Button,
 	List,
+	BusyIndicator,
 	StandardListItem,
 	FileUploaderParameter,
 	FileUploader,
@@ -80,10 +82,13 @@ sap.ui.define([
 	 * This control allows you to upload single or multiple files from your devices (desktop, tablet or phone) and attach them to the application.
 	 *
 	 * The consuming application needs to take into account that the consistency checks of the model during the upload of the file need to be performed, for example, if the user is editing or deleting a file.
+	 * <br> As of version 1.62, there is an {@link sap.m.upload.UploadSet} control available that is based on this control.
+	 * {@link sap.m.upload.UploadSet} provides enhanced handling of headers and requests, unified behavior of instant
+	 * and deferred uploads, as well as improved progress indication.
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -1430,8 +1435,7 @@ sap.ui.define([
 		}
 
 		if (item._status === "Edit") {
-			var sItemId = item.getId() + "-cli";
-			this.$().find("#" + sItemId).find(".sapMUCObjectMarkerContainer").attr("style", "display: none");// the markers are not displayed in edit mode
+			item._oListItem.$().find(".sapMUCObjectMarkerContainer").attr("style", "display: none");
 			return;
 		}
 		var iMarkersWidth = 0;
@@ -1441,7 +1445,7 @@ sap.ui.define([
 			iMarkersWidth = iMarkersWidth + aMarkers[i].$().width() + UploadCollection._markerMargin;
 		}
 		if (iMarkersWidth > 0) {
-			var $FileName = this.$().find("#" + item.getId() + "-ta_filenameHL");
+			var $FileName = item._oFileNameLink.$();
 			if ($FileName) {
 				sStyle = "max-width: calc(100% - " + iMarkersWidth + "px)";
 				if ($FileName.attr("style") !== sStyle) {
@@ -1548,9 +1552,10 @@ sap.ui.define([
 		sFileNameLong = item.getFileName();
 
 		if (sStatus === UploadCollection._uploadingStatus) {
-			oBusyIndicator = item._getBusyIndicator ? item._getBusyIndicator() : item._getControl("sap.m.BusyIndicator", {
+			oBusyIndicator = new BusyIndicator({
 				id: sItemId + "-ia_indicator"
-			}, "BusyIndicator").addStyleClass("sapMUCloadingIcon");
+			});
+			oBusyIndicator.addStyleClass("sapMUCloadingIcon");
 		} else {
 			oItemIcon = this._createIcon(item, sItemId, sFileNameLong);
 		}
@@ -1576,6 +1581,8 @@ sap.ui.define([
 		oListItem._status = sStatus;
 		oListItem.addStyleClass("sapMUCItem");
 		oListItem.setTooltip(item.getTooltip_Text());
+		item._oListItem = oListItem;
+
 		return oListItem;
 	};
 
@@ -1717,6 +1724,8 @@ sap.ui.define([
 			oFileName.addStyleClass("sapMUCFileName");
 			oFileName.setModel(item.getModel());
 			oFileName.setText(sFileNameLong);
+			item._oFileNameLink = oFileName;
+
 			return oFileName;
 		} else {
 			oFile = UploadCollection._splitFilename(sFileNameLong);

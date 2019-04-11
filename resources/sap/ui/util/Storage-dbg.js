@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -193,10 +193,12 @@ sap.ui.define(["sap/base/assert"], function (assert) {
 			return hasExecuted(function () {
 				var key, p = sPrefix + (sIdPrefix || "");
 
-				for (var i = 0, max = oStorageImpl.length; i < max; i++) {
+				for (var i = 0, max = oStorageImpl.length; i < max;) {
 					key = oStorageImpl.key(i);
 					if (key && key.startsWith(p)) {
 						oStorageImpl.removeItem(key);
+					} else {
+						i++;
 					}
 				}
 			});
@@ -241,7 +243,7 @@ sap.ui.define(["sap/base/assert"], function (assert) {
 	 *
 	 * @enum {string}
 	 * @public
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 */
 	Storage.Type = {
 		/**

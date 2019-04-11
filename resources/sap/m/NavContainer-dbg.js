@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -43,7 +43,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -511,7 +511,6 @@ sap.ui.define([
 	NavContainer.prototype._applyAutoFocus = function (oNavInfo) {
 		var sPageId = oNavInfo.toId,
 			domRefRememberedFocusSubject,
-			bAutoFocus = this.getAutoFocus(),
 			bNavigatingBackToPreviousLocation = oNavInfo.isBack || oNavInfo.isBackToPage || oNavInfo.isBackToTop;
 
 		// BCP: 1780071998 - If focus is not inside the From page we don't do any focus manipulation
@@ -526,10 +525,10 @@ sap.ui.define([
 			domRefRememberedFocusSubject = this._mFocusObject != null ? this._mFocusObject[sPageId] : null;
 			if (domRefRememberedFocusSubject) {
 				domRefRememberedFocusSubject.focus();
-			} else if (bAutoFocus) {
+			} else {
 				NavContainer._applyAutoFocusTo(sPageId);
 			}
-		} else if (oNavInfo.isTo && bAutoFocus) {
+		} else if (oNavInfo.isTo) {
 			// set focus to first focusable object in "to page"
 			NavContainer._applyAutoFocusTo(sPageId);
 		}
@@ -548,7 +547,12 @@ sap.ui.define([
 
 		this._iTransitionsCompleted++;
 		this._bNavigating = false;
-		this._applyAutoFocus(oNavInfo);
+
+		// BCP: 1870488179 - We call _applyAutoFocus only if autoFocus property is true
+		if (this.getAutoFocus()) {
+			this._applyAutoFocus(oNavInfo);
+		}
+
 		this.fireAfterNavigate(oNavInfo);
 		// TODO: destroy HTML? Remember to destroy ALL HTML of several pages when backToTop has been called
 
@@ -1677,7 +1681,28 @@ sap.ui.define([
 		return fnScanForPopup(this);
 	};
 
-	NavContainer.prototype.removePage = function (oPage) {
+	/**
+	 * Removes a page.
+	 *
+	 * @param {int | string | sap.ui.core.Control}
+	 *            vPage the position or ID of the <code>Control</control> that should be removed
+	 *            or that <code>Control</control> itself;
+	 *            if <code>vPage</code> is invalid, a negative value or a value greater or equal than the current size
+	 *            of the aggregation, nothing is removed.
+	 * @return {sap.ui.core.Control} the removed page or null
+	 * @protected
+	 * @override
+	 */
+	NavContainer.prototype.removePage = function (vPage) {
+		var oPage;
+		if (typeof (vPage) == "number") {
+			oPage = this.getPages()[vPage];
+		} else if (typeof (vPage) == "string") {
+			oPage = sap.ui.getCore().byId(vPage);
+		} else {
+			oPage = vPage;
+		}
+
 		// when removing a page that's not the currently displayed page, there's no need to invalidate the NavContainer
 		oPage = this.removeAggregation("pages", oPage, oPage !== this.getCurrentPage());
 

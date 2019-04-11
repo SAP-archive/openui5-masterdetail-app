@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -10,10 +10,11 @@ sap.ui.define([
 	'sap/ui/core/Control',
 	'sap/ui/core/library',
 	'sap/m/Text',
+	'sap/ui/events/KeyCodes',
 	'./ObjectAttributeRenderer',
 	"sap/base/Log"
 ],
-function(library, Control, coreLibrary, Text, ObjectAttributeRenderer, Log) {
+function(library, Control, coreLibrary, Text, KeyCodes, ObjectAttributeRenderer, Log) {
 	"use strict";
 
 	// shortcut for sap.ui.core.TextDirection
@@ -35,7 +36,7 @@ function(library, Control, coreLibrary, Text, ObjectAttributeRenderer, Log) {
 	 * <code>text</code> property is styled and acts as a link. In this case the <code>text</code>
 	 * property must also be set, as otherwise there will be no link displayed for the user.
 	 * @extends sap.ui.core.Control
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -99,7 +100,8 @@ function(library, Control, coreLibrary, Text, ObjectAttributeRenderer, Log) {
 					domRef : {type : "string"}
 				}
 			}
-		}
+		},
+		dnd: { draggable: true, droppable: false }
 	}});
 
 	/**
@@ -135,7 +137,6 @@ function(library, Control, coreLibrary, Text, ObjectAttributeRenderer, Log) {
 		}
 		sText = oppositeDirectionMarker + sText + oppositeDirectionMarker;
 		if (sTitle) {
-			sText = sText.replace(new RegExp(sTitle + ":\\s+", "gi"), "");
 			sText = sTitle + ": " + sText;
 		}
 		oAttrAggregation.setProperty('text', sText, true);
@@ -198,7 +199,13 @@ function(library, Control, coreLibrary, Text, ObjectAttributeRenderer, Log) {
 	 * @param {object} oEvent The fired event
 	 */
 	ObjectAttribute.prototype.onsapspace = function(oEvent) {
-		this.onsapenter(oEvent);
+		oEvent.preventDefault();
+	};
+
+	ObjectAttribute.prototype.onkeyup = function (oEvent) {
+		if (oEvent.which === KeyCodes.SPACE) {
+			this.onsapenter(oEvent);
+		}
 	};
 
 	/**

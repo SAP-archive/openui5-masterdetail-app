@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -45,6 +45,10 @@ sap.ui.define([
 				aggregations : {
 					child : {multiple : false, type : "sap.ui.core.util._with"}
 				}
+			},
+			updateProperty : function () {
+				// Avoid Promise processing in ManagedObject and set Promise as value directly
+				this.setAny(this.mBindingInfos.any.binding.getExternalValue());
 			}
 		}),
 		/**

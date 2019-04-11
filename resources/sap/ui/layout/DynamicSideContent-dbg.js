@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -89,7 +89,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -163,7 +163,8 @@ sap.ui.define([
 				 */
 				sideContent : {type: "sap.ui.core.Control", multiple:  true}
 			},
-			designTime: "sap/ui/layout/designtime/DynamicSideContent.designtime"
+			designTime: "sap/ui/layout/designtime/DynamicSideContent.designtime",
+			dnd: { draggable: false, droppable: true }
 		}});
 
 		var	S = "S",
@@ -218,6 +219,10 @@ sap.ui.define([
 		 * @public
 		 */
 		DynamicSideContent.prototype.setShowSideContent = function (bVisible, bSuppressVisualUpdate) {
+			if (bVisible === this.getShowSideContent()) {
+				return this;
+			}
+
 			this.setProperty("showSideContent", bVisible, true);
 			this._SCVisible = bVisible;
 			if (!bSuppressVisualUpdate && this.$().length) {
@@ -239,6 +244,10 @@ sap.ui.define([
 		 * @public
 		 */
 		DynamicSideContent.prototype.setShowMainContent = function (bVisible, bSuppressVisualUpdate) {
+			if (bVisible === this.getShowMainContent()) {
+				return this;
+			}
+
 			this.setProperty("showMainContent", bVisible, true);
 			this._MCVisible = bVisible;
 			if (!bSuppressVisualUpdate && this.$().length) {
@@ -252,12 +261,11 @@ sap.ui.define([
 		};
 
 		/**
-		 * Gets the value of showSideContent property.
+		 * Checks if the side content is visible.
 		 * @returns {boolean} Side content visibility state
-		 * @override
 		 * @public
 		 */
-		DynamicSideContent.prototype.getShowSideContent = function () {
+		DynamicSideContent.prototype.isSideContentVisible = function () {
 			if (this._currentBreakpoint === S) {
 				return this._SCVisible && this.getProperty("showSideContent");
 			} else {
@@ -266,12 +274,11 @@ sap.ui.define([
 		};
 
 		/**
-		 * Gets the value of showMainContent property.
-		 * @returns {boolean} Side content visibility state
-		 * @override
+		 * Checks if the main content is visible.
+		 * @returns {boolean} Main content visibility state
 		 * @public
 		 */
-		DynamicSideContent.prototype.getShowMainContent = function () {
+		DynamicSideContent.prototype.isMainContentVisible = function () {
 			if (this._currentBreakpoint === S) {
 				return this._MCVisible && this.getProperty("showMainContent");
 			} else {

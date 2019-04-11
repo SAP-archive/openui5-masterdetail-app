@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -36,9 +36,13 @@ sap.ui.define([
 	 *
 	 * @class
 	 * Status information that can be either text with a value state, or an icon.
+	 *
+	 *
+	 * With 1.63, large design of the control is supported by setting <code>sapMObjectStatusLarge</code> CSS class to the <code>ObjectStatus</code>.
+	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IFormContent
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -109,7 +113,8 @@ sap.ui.define([
 			 * @since 1.54
 			 */
 			press : {}
-		}
+		},
+		dnd: { draggable: true, droppable: false }
 	}});
 
 	/**

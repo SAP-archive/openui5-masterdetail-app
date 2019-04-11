@@ -1,10 +1,10 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(['./ComboBoxBaseRenderer', 'sap/ui/core/Renderer'],
-	function(ComboBoxBaseRenderer, Renderer) {
+sap.ui.define(['./ComboBoxBaseRenderer','./ComboBoxTextFieldRenderer', 'sap/ui/core/Renderer', 'sap/ui/Device'],
+	function(ComboBoxBaseRenderer, ComboBoxTextFieldRenderer, Renderer, Device) {
 	"use strict";
 
 	/**
@@ -34,20 +34,17 @@ sap.ui.define(['./ComboBoxBaseRenderer', 'sap/ui/core/Renderer'],
 			oRm.addClass("sapMMultiComboBoxHasToken");
 		}
 	};
-
 	/**
-	 * Add attributes to the element.
+	 * Returns the inner aria describedby ids for the accessibility.
 	 *
-	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
-	 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered.
+	 * @param {sap.ui.core.Control} oControl an object representation of the control.
+	 * @returns {String|undefined}
 	 */
-	MultiComboBoxRenderer.writeInnerAttributes = function(oRm, oControl) {
-		if (sap.ui.getCore().getConfiguration().getAccessibility()) {
-			var oInvisibleTextId = oControl._oTokenizer && oControl._oTokenizer.getTokensInfoId();
-			oRm.writeAttribute("aria-describedby", oInvisibleTextId);
-		}
+	MultiComboBoxRenderer.getAriaDescribedBy = function(oControl) {
+		var sAriaDescribedBy = ComboBoxTextFieldRenderer.getAriaDescribedBy.apply(this, arguments),
+		oInvisibleTextId = oControl._oTokenizer && oControl._oTokenizer.getTokensInfoId();
 
-		ComboBoxBaseRenderer.writeInnerAttributes.apply(this, arguments);
+		return (sAriaDescribedBy || "") + " " + oInvisibleTextId;
 	};
 
 	MultiComboBoxRenderer.prependInnerContent = function (oRm, oControl) {

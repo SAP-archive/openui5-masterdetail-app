@@ -8,19 +8,6 @@
 	position: relative;
 }
 
-.sapFAvatarImage {
-	background: no-repeat center;
-}
-
-.sapFAvatarImageCover {
-	background-size: cover;
-}
-
-.sapFAvatarImageContain {
-	background-size: contain;
-	background-color: @sapUiContentImagePlaceholderBackground;
-}
-
 .sapFAvatarIcon {
 	text-align: center;
 	background-color: @sapUiContentImagePlaceholderBackground;
@@ -43,13 +30,45 @@
 	-webkit-transform: translate(-50%, -50%);
 }
 
-.sapFAvatarCircle {
-	border-radius: 100%;
-	-webkit-border-radius: 100%;
+.sapFAvatarImage {
+	text-align: center;
 
-	.sapMImg {
-		border-radius: 100%;
-		-webkit-border-radius: 100%;
+	.sapUiIcon, .sapFAvatarInitialsHolder {
+		display: none;
+	}
+}
+
+.sapFAvatarImageHolder {
+	background: no-repeat center;
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	.sapFAvatar:not(.sapFAvatarImage) &
+	{
+		display: none;
+	}
+}
+
+.sapFAvatarImageCover {
+	background-size: cover;
+}
+
+.sapFAvatarImageContain {
+	background-size: contain;
+	background-color: @sapUiContentImagePlaceholderBackground;
+}
+
+.sapFAvatarCircle {
+	border-radius: 50%;
+	-webkit-border-radius: 50%;
+
+	.sapMImg,
+	.sapFAvatarImageHolder {
+		border-radius: 50%;
+		-webkit-border-radius: 50%;
 	}
 }
 
@@ -105,16 +124,21 @@
 
 .sapFAvatarFocusable:focus {
 	outline: 1px dotted @sapUiContentFocusColor;
-	outline-offset: -1px;
 }
 
 .sapFAvatarInitials {
 	background-color: @sapUiContentImagePlaceholderBackground;
+}
 
-	.sapFAvatarInitialsHolder {
-		color: @sapUiContentIconColor;
-	}
+.sapFAvatarInitialsHolder {
+	color: @sapUiContentIconColor;
 }
 
 // Apply LightBox Magnifying glass mixin to control
 .lightBoxMagnifyingGlassMixing(~".sapFAvatar", ~".sapFAvatarMagnifyingGlass");
+
+
+//restrinct inner elements of blocking press event of the whole control
+.sapFAvatar * {
+	pointer-events: none;
+}

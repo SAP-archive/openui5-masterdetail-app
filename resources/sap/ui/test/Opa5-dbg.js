@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -22,8 +22,9 @@ sap.ui.define([
 		'sap/ui/base/EventProvider',
 		'sap/ui/qunit/QUnitUtils',
 		'sap/ui/test/autowaiter/_autoWaiter',
-		"sap/ui/dom/includeStylesheet",
-		"sap/ui/thirdparty/jquery"
+		'sap/ui/dom/includeStylesheet',
+		'sap/ui/thirdparty/jquery',
+		'sap/ui/test/_OpaUriParameterParser'
 	],
 	function(Opa,
 			 OpaPlugin,
@@ -43,7 +44,8 @@ sap.ui.define([
 			 QUnitUtils,
 			 _autoWaiter,
 			 includeStylesheet,
-	         $) {
+			 $,
+			 _OpaUriParameterParser) {
 		"use strict";
 
 		var oLogger = _OpaLogger.getLogger("sap.ui.test.Opa5"),
@@ -57,6 +59,8 @@ sap.ui.define([
 				"visible",
 				"viewNamespace",
 				"viewName",
+				"viewId",
+				"fragmentId",
 				"autoWait"
 			].concat(Opa._aConfigValuesForWaitFor),
 			aPropertiesThatShouldBePassedToOpaWaitFor = [
@@ -65,46 +69,20 @@ sap.ui.define([
 			aExtensions = [],
 			aEventProvider = new EventProvider();
 
-		Opa._extractAppParams = function() {
-			// extract all uri parameters except opa* and qunit parameters
-			var aBlacklistPatterns = [
-				/^opa((?!(Frame)).*)$/,
-				/hidepassed/,
-				/noglobals/,
-				/notrycatch/,
-				/coverage/,
-				/module/,
-				/filter/
-			];
-			var oParams = {};
-			var oUriParams = new URI().search(true);
-			Object.keys(oUriParams).forEach(function (sUriParamName) {
-				var bBlacklistedPattern = false;
-				aBlacklistPatterns.forEach(function (oPattern) {
-					if (!bBlacklistedPattern && sUriParamName.match(oPattern)) {
-						oLogger.debug("Skipping uri parameter: " + sUriParamName + " as blacklisted with pattern: " + oPattern);
-						bBlacklistedPattern = true;
-					}
-				});
-				if (!bBlacklistedPattern) {
-					oParams[sUriParamName] = Opa._parseParam(oUriParams[sUriParamName]);
-				}
-			});
-			return oParams;
-		};
-
-		// parse app params from uri
-		var appParamsFromURL = Opa._extractAppParams();
+		var appUriParams = _OpaUriParameterParser._getAppParams();
 
 		/**
-		 * Helps you when writing tests for UI5 applications.
-		 * Provides convenience to wait and retrieve for UI5 controls without relying on global IDs.
-		 * Makes it easy to wait until your UI is in the state you need for testing, e.g.: waiting for backend data.
+		 * @class
+		 * UI5 extension of the OPA framework.
 		 *
-		 * @class UI5 extension of the OPA framework
+		 * Helps you when writing tests for UI5 apps.
+		 * Provides convenience to wait and retrieve for UI5 controls without relying on global IDs.
+		 * Makes it easy to wait until your UI is in the state you need for testing, for example waiting for back-end data.
+		 *
 		 * @extends sap.ui.base.Object
 		 * @public
 		 * @alias sap.ui.test.Opa5
+		 * @see {@link topic:2696ab50faad458f9b4027ec2f9b884d Opa5}
 		 * @author SAP SE
 		 * @since 1.22
 		 */
@@ -176,7 +154,7 @@ sap.ui.define([
 		/**
 		 * Starts a UIComponent.
 		 * @param {object} oOptions An Object that contains the configuration for starting up a UIComponent.
-		 * @param {object} oOptions.componentConfig Will be passed to {@link sap.ui.component component}, please read the respective documentation.
+		 * @param {object} oOptions.componentConfig Will be passed to {@link sap.ui.core.UIComponent UIComponent}, please read the respective documentation.
 		 * @param {string} [oOptions.hash] Sets the hash {@link sap.ui.core.routing.HashChanger#setHash} to the given value.
 		 * If this parameter is omitted, the hash will always be reset to the empty hash - "".
 		 * @param {number} [oOptions.timeout=15] The timeout for loading the UIComponent in seconds - {@link sap.ui.test.Opa5#waitFor}.
@@ -267,11 +245,11 @@ sap.ui.define([
 				componentLauncher.teardown();
 			};
 
-			// restore URL before component launch in order to remove any appParams added by extendConfig
+			// restore URL after component teardown in order to remove any appParams added by extendConfig
 			var oParamsWaitForOptions = createWaitForObjectWithoutDefaults();
 			oParamsWaitForOptions.success = function() {
 				var uri = new URI();
-				uri.search(appParamsFromURL);
+				uri.search(appUriParams);
 				window.history.replaceState({}, "", uri.toString());
 			};
 
@@ -280,7 +258,7 @@ sap.ui.define([
 
 		/**
 		 * Tears down the started application regardless of how it was started.
-		 * Removes the IFrame launched by {@link sap.ui.test.Opa5#iStartMyAppInAFrame}
+		 * Removes the iframe launched by {@link sap.ui.test.Opa5#iStartMyAppInAFrame}
 		 * or destroys the UIComponent launched by {@link sap.ui.test.Opa5#iStartMyUIComponent}.
 		 * This function is designed to make the test's teardown independent of the startup.
 		 * Use {@link sap.ui.test.Opa5#hasAppStarted} to ensure that the application has been started and teardown can be safely performed.
@@ -316,22 +294,30 @@ sap.ui.define([
 		};
 
 		/**
-		 * Starts an app in an IFrame. Only works reliably if running on the same server.
+		 * Starts an app in an iframe. Only works reliably if running on the same server.
 		 *
 		 * @since 1.48 If appParams are provided in {@link sap.ui.test.Opa.config}, they are
 		 * merged in the query params of app URL
 		 *
-		 * @param {string} sSource The source of the IFrame.
-		 * @param {number} [iTimeout=80] The timeout for loading the IFrame in seconds - default is 80.
+		 * @param {string|object} vSourceOrOptions The source URL of the iframe or, since 1.53, you can provide a
+		 * startup configuration object as the only parameter.
+		 * @param {number} [iTimeout=80] The timeout for loading the iframe in seconds - default is 80.
 		 * @param {boolean} [autoWait=false] Since 1.53, activates autoWait while the application is starting up.
 		 * This allows more time for application startup and stabilizes tests for slow-loading applications.
 		 * This parameter is false by default, regardless of the global autoWait value, to prevent issues in existing tests.
-		 * @param {string|number} width Since 1.57, sets a fixed width for the iFrame.
-		 * @param {string|number} height Since 1.57, sets a fixed height for the iFrame.
+		 * @param {string|number} [width=Opa.config.frameWidth] Since 1.57, sets a fixed width for the iframe.
+		 * @param {string|number} [height=Opa.config.frameHeight] Since 1.57, sets a fixed height for the iframe.
 		 * Setting width and/or height is useful when testing responsive applications on screens of varying sizes.
-		 * By default, the iFrame dimensions are 60% of the outer window dimensions.
-		 * @param {object} [oOptions] Since 1.53, you can provide a startup configuration object as an only parameter.
-		 * oOptions is expected to have keys among: source, timeout, autoWait, width, height.
+		 * By default, the iframe dimensions are 60% of the outer window dimensions.
+		 * @param {string} vSourceOrOptions.source The source of the iframe
+		 * @param {number} [vSourceOrOptions.timeout=80] The timeout for loading the iframe in seconds - default is 80
+		 * @param {boolean} [vSourceOrOptions.autoWait=false] Since 1.53, activates autoWait while the application is starting up.
+		 * This allows more time for application startup and stabilizes tests for slow-loading applications.
+		 * This parameter is false by default, regardless of the global autoWait value, to prevent issues in existing tests.
+		 * @param {string|number} [vSourceOrOptions.width=Opa.config.frameWidth] Since 1.57, sets a fixed width for the iframe.
+		 * @param {string|number} [vSourceOrOptions.height=Opa.config.frameHeight] Since 1.57, sets a fixed height for the iframe.
+		 * Setting width and/or height is useful when testing responsive applications on screens of varying sizes.
+		 * By default, the iframe dimensions are 60% of the outer window dimensions.
 		 * @returns {jQuery.promise} A promise that gets resolved on success
 		 * @public
 		 * @function
@@ -339,22 +325,30 @@ sap.ui.define([
 		Opa5.iStartMyAppInAFrame = iStartMyAppInAFrame;
 
 		/**
-		 * Starts an app in an IFrame. Only works reliably if running on the same server.
+		 * Starts an app in an iframe. Only works reliably if running on the same server.
 		 *
 		 * @since 1.48 If appParams are provided in {@link sap.ui.test.Opa.config}, they are
 		 * merged in the query params of app URL
 		 *
-		 * @param {string} sSource The source of the IFrame
-		 * @param {number} [iTimeout=80] The timeout for loading the IFrame in seconds - default is 80
+		 * @param {string|object} vSourceOrOptions The source URL of the iframe or, since 1.53, you can provide a
+		 * startup configuration object as the only parameter.
+		 * @param {number} [iTimeout=80] The timeout for loading the iframe in seconds - default is 80
 		 * @param {boolean} [autoWait=false] Since 1.53, activates autoWait while the application is starting up.
 		 * This allows more time for application startup and stabilizes tests for slow-loading applications.
 		 * This parameter is false by default, regardless of the global autoWait value, to prevent issues in existing tests.
-		 * @param {string|number} width Since 1.57, sets a fixed width for the iFrame.
-		 * @param {string|number} height Since 1.57, sets a fixed height for the iFrame.
+		 * @param {string|number} [width=Opa.config.frameWidth] Since 1.57, sets a fixed width for the iframe.
+		 * @param {string|number} [height=Opa.config.frameHeight] Since 1.57, sets a fixed height for the iframe.
 		 * Setting width and/or height is useful when testing responsive applications on screens of varying sizes.
-		 * By default, the iFrame dimensions are 60% of the outer window dimensions.
-		 * @param {object} [oOptions] Since 1.53, you can provide a startup configuration object as an only parameter.
-		 * oOptions is expected to have keys among: source, timeout, autoWait, width, height.
+		 * By default, the iframe dimensions are 60% of the outer window dimensions.
+		 * @param {string} vSourceOrOptions.source The source of the iframe
+		 * @param {number} [vSourceOrOptions.timeout=80] The timeout for loading the iframe in seconds - default is 80
+		 * @param {boolean} [vSourceOrOptions.autoWait=false] Since 1.53, activates autoWait while the application is starting up.
+		 * This allows more time for application startup and stabilizes tests for slow-loading applications.
+		 * This parameter is false by default, regardless of the global autoWait value, to prevent issues in existing tests.
+		 * @param {string|number} [vSourceOrOptions.width=Opa.config.frameWidth] Since 1.57, sets a fixed width for the iframe.
+		 * @param {string|number} [vSourceOrOptions.height=Opa.config.frameHeight] Since 1.57, sets a fixed height for the iframe.
+		 * Setting width and/or height is useful when testing responsive applications on screens of varying sizes.
+		 * By default, the iframe dimensions are 60% of the outer window dimensions.
 		 * @returns {jQuery.promise} A promise that gets resolved on success
 		 * @public
 		 * @function
@@ -371,10 +365,10 @@ sap.ui.define([
 		}
 
 		/**
-		 * Removes the IFrame from the DOM and removes all the references to its objects.
-		 * Use {@link sap.ui.test.Opa5#hasAppStartedInAFrame} to ensure that an IFrame has been started and teardown can be safely performed.
+		 * Removes the iframe from the DOM and removes all the references to its objects.
+		 * Use {@link sap.ui.test.Opa5#hasAppStartedInAFrame} to ensure that an iframe has been started and teardown can be safely performed.
 		 * @returns {jQuery.promise} A promise that gets resolved on success.
-		 * If no IFrame has been created or an error occurs, the promise is rejected with the options object.
+		 * If no iframe has been created or an error occurs, the promise is rejected with the options object.
 		 * A detailed error message containing the stack trace and Opa logs is available in options.errorMessage.
 		 * @public
 		 * @function
@@ -382,10 +376,10 @@ sap.ui.define([
 		Opa5.iTeardownMyAppFrame = iTeardownMyAppFrame;
 
 		/**
-		 * Removes the IFrame from the DOM and removes all the references to its objects
-		 * Use {@link sap.ui.test.Opa5#hasAppStartedInAFrame} to ensure that an IFrame has been started and teardown can be safely performed.
+		 * Removes the iframe from the DOM and removes all the references to its objects
+		 * Use {@link sap.ui.test.Opa5#hasAppStartedInAFrame} to ensure that an iframe has been started and teardown can be safely performed.
 		 * @returns {jQuery.promise} A promise that gets resolved on success.
-		 * If no IFrame has been created or an error occurs, the promise is rejected with the options object.
+		 * If no iframe has been created or an error occurs, the promise is rejected with the options object.
 		 * A detailed error message containing the stack trace and Opa logs is available in options.errorMessage.
 		 * @public
 		 * @function
@@ -394,7 +388,7 @@ sap.ui.define([
 
 		/**
 		 * Checks if the application has been started using {@link sap.ui.test.Opa5#iStartMyAppInAFrame}
-		 * @returns {boolean} A boolean indicating whether the application has been started in an iFrame
+		 * @returns {boolean} A boolean indicating whether the application has been started in an iframe
 		 * @public
 		 * @function
 		 */
@@ -455,8 +449,11 @@ sap.ui.define([
 		 * Although the IDs of the controls myView--bar and myView--baz contain a my,
 		 * they will not be matched since only the part you really write in your views will be matched.
 		 * @param {string} [options.viewName] The name of a view.
-		 * If this is set the id of the control is searched inside of the view. If an id is not be set, all controls of the view will be found.
-		 * @param {string} [options.viewNamespace] This string gets appended before the viewName - should probably be set to the {@link sap.ui.test.Opa5.extendConfig}.
+		 * If viewName is set, controls will be searched only inside this view. If control ID is given, it will be considered to be relative to the view.
+		 * @param {string} [options.viewNamespace] viewName prefix. Recommended to be set in {@link sap.ui.test.Opa5.extendConfig} instead.
+		 * @param {string} [options.viewId] @since 1.62 The ID of a view. Can be used alone or in combination with viewName and viewNamespace.
+		 * Always set view ID if there are multiple views with the same name
+		 * @param {string} [options.fragmentId] @since 1.63 The ID of a fragment. If set, controls will match only if their IDs contain the fragment ID prefix
 		 * @param {function|array|sap.ui.test.matchers.Matcher} [options.matchers] A single matcher or an array of matchers {@link sap.ui.test.matchers}.
 		 * Matchers will be applied to an every control found by the waitFor function.
 		 * The matchers are a pipeline: the first matcher gets a control as an input parameter, each subsequent matcher gets the same input as the previous one, if the previous output is 'true'.
@@ -599,7 +596,7 @@ sap.ui.define([
 		 *     });
 		 *     </pre>
 		 * </code>
-		 * Why is it recommended:
+		 * Why it is recommended:
 		 * When writing a huge set of tests and executing them frequently you might face tests that are sometimes successful but sometimes they are not.
 		 * Setting the autoWait to true should stabilize most of those tests.
 		 * The default "false" could not be changed since it causes existing tests to fail.
@@ -764,7 +761,7 @@ sap.ui.define([
 		// in addition, principally, OPA5 could be used without a launched application
 
 		/**
-		 * Returns the Opa plugin used for retrieving controls. If an IFrame is launched, it will return the IFrame's plugin.
+		 * Returns the Opa plugin used for retrieving controls. If an iframe is launched, it will return the iframe's plugin.
 		 * @returns {sap.ui.test.OpaPlugin} The plugin instance
 		 * @public
 		 */
@@ -773,7 +770,7 @@ sap.ui.define([
 		};
 
 		/**
-		 * Returns the jQuery object in the current context. If an IFrame is launched, it will return the IFrame's jQuery object.
+		 * Returns the jQuery object in the current context. If an iframe is launched, it will return the iframe's jQuery object.
 		 * @returns {jQuery} The jQuery object
 		 * @public
 		 */
@@ -782,8 +779,8 @@ sap.ui.define([
 		};
 
 		/**
-		 * Returns the window object in the current context. If an IFrame is launched, it will return the IFrame's window.
-		 * @returns {Window} The window of the IFrame
+		 * Returns the window object in the current context. If an iframe is launched, it will return the iframe's window.
+		 * @returns {Window} The window of the iframe
 		 * @public
 		 */
 		Opa5.getWindow = function () {
@@ -791,7 +788,7 @@ sap.ui.define([
 		};
 
 		/**
-		 * Returns the QUnit utils object in the current context. If an IFrame is launched, it will return the IFrame's QUnit utils.
+		 * Returns the QUnit utils object in the current context. If an iframe is launched, it will return the iframe's QUnit utils.
 		 * @public
 		 * @returns {sap.ui.test.qunit} The QUnit utils
 		 */
@@ -800,7 +797,7 @@ sap.ui.define([
 		};
 
 		/**
-		 * Returns the HashChanger object in the current context. If an IFrame is launched, it will return the IFrame's HashChanger.
+		 * Returns the HashChanger object in the current context. If an iframe is launched, it will return the iframe's HashChanger.
 		 * @public
 		 * @returns {sap.ui.core.routing.HashChanger} The HashChanger instance
 		 */
@@ -927,7 +924,7 @@ sap.ui.define([
 			Opa.extendConfig(options);
 			// URL app params overwrite extendConfig app params
 			Opa.extendConfig({
-				appParams: appParamsFromURL
+				appParams: appUriParams
 			});
 			Opa5._getAutoWaiter().extendConfig(options.autoWait);
 		};
@@ -963,7 +960,7 @@ sap.ui.define([
 				_stackDropCount : 1
 			});
 			Opa.extendConfig({
-				appParams: appParamsFromURL
+				appParams: appUriParams
 			});
 		};
 
@@ -1021,11 +1018,32 @@ sap.ui.define([
 		Opa5.matchers.PropertyStrictEquals = PropertyStrictEquals;
 
 		/**
+		 * A map of QUnit-style assertions to be used in an opaTest.
+		 * Contains all methods available on QUnit.assert for the running QUnit version.
+		 * Available assertions are: ok, equal, propEqual, deepEqual, strictEqual and their negative counterparts.
+		 * You can define custom OPA5 assertions in the extensions section of {@link sap.ui.test.Opa5.extendConfig}
+		 *
+		 * Example usage:
+		 * oOpa5.waitFor({
+		 *   success: function () {
+		 *     Opa5.assert.ok(true, "Should be true");
+		 *   }
+		 * });
+		 *
+		 * For more information, see  {@link sap.ui.test.opaQunit}.
+		 *
+		 * @name sap.ui.test.Opa5.assert
+		 * @public
+		 * @static
+		 * @type map
+		*/
+
+		/**
 		 * Create a page object configured as arrangement, action and assertion to the Opa.config.
 		 * Use it to structure your arrangement, action and assertion based on parts of the screen to avoid name clashes and help to structure your tests.
 		 * @param {map} mPageObjects
-		 * @param {map} mPageObjects.&lt;your-page-object-name&gt; Multiple page objects are possible, provide at least actions or assertions
-		 * @param {function} [mPageObjects.&lt;your-page-object-name&gt;.viewName] When a viewName is given, all waitFors inside of the page object will get a viewName parameter.
+		 * @param {map} mPageObjects.<your-page-object-name> Multiple page objects are possible, provide at least actions or assertions
+		 * @param {function} [mPageObjects.<your-page-object-name>.viewName] When a viewName is given, all waitFors inside of the page object will get a viewName parameter.
 		 * Here is an example:
 		 * <pre>
 		 * 		<code>
@@ -1061,14 +1079,16 @@ sap.ui.define([
 		 * 			});
 		 * 		</code>
 		 * </pre>
-		 * @param {function} [mPageObjects.&lt;your-page-object-name&gt;.baseClass] Base class for the page object's actions and assertions, default: Opa5
-		 * @param {function} [mPageObjects.&lt;your-page-object-name&gt;.namespace] Namespace prefix for the page object's actions and assertions, default: sap.ui.test.opa.pageObject. Use it if you use page objects from multiple projects in the same test build.
-		 * @param {map} [mPageObjects.&lt;your-page-object-name&gt;.actions] Can be used as an arrangement and action in Opa tests. Only the test knows if an action is used as arrangement or action
-		 * @param {function} mPageObjects.&lt;your-page-object-name&gt;.actions.&lt;your-action-1&gt; This is your custom implementation containing one or multiple waitFor statements
-		 * @param {function} mPageObjects.&lt;your-page-object-name&gt;.actions.&lt;your-action-2&gt; This is your custom implementation containing one or multiple waitFor statements
-		 * @param {map} [mPageObjects.&lt;your-page-object-name&gt;.assertions] Can be used as an assertions in Opa tests.
-		 * @param {function} mPageObjects.&lt;your-page-object-name&gt;.assertions.&lt;your-assertions-1&gt; This is your custom implementation containing one or multiple waitFor statements
-		 * @param {function} mPageObjects.&lt;your-page-object-name&gt;.assertions.&lt;your-assertions-2&gt; This is your custom implementation containing one or multiple waitFor statements
+		 * @param {function} [mPageObjects.<your-page-object-name>.viewId] When a viewId is given, all waitFors inside of the page object will get a viewId parameter.
+		 * Use when there are multiple views with the same viewName.
+		 * @param {function} [mPageObjects.<your-page-object-name>.baseClass] Base class for the page object's actions and assertions, default: Opa5
+		 * @param {function} [mPageObjects.<your-page-object-name>.namespace] Namespace prefix for the page object's actions and assertions, default: sap.ui.test.opa.pageObject. Use it if you use page objects from multiple projects in the same test build.
+		 * @param {map} [mPageObjects.<your-page-object-name>.actions] Can be used as an arrangement and action in Opa tests. Only the test knows if an action is used as arrangement or action
+		 * @param {function} mPageObjects.<your-page-object-name>.actions.<your-action-1> This is your custom implementation containing one or multiple waitFor statements
+		 * @param {function} mPageObjects.<your-page-object-name>.actions.<your-action-2> This is your custom implementation containing one or multiple waitFor statements
+		 * @param {map} [mPageObjects.<your-page-object-name>.assertions] Can be used as assertions in Opa tests
+		 * @param {function} mPageObjects.<your-page-object-name>.assertions.<your-assertions-1> This is your custom implementation containing one or multiple waitFor statements
+		 * @param {function} mPageObjects.<your-page-object-name>.assertions.<your-assertions-2> This is your custom implementation containing one or multiple waitFor statements
 		 * @returns {map} mPageObject The created page object. It will look like this:
 		 * <pre><code>
 		 *  {
@@ -1082,8 +1102,8 @@ sap.ui.define([
 		 * @since 1.25
 		 */
 		Opa5.createPageObjects = function(mPageObjects) {
-			//prevent circular dependency
-			return PageObjectFactory.create(mPageObjects,Opa5);
+			// prevent circular dependency by passing Opa5 as parameter
+			return PageObjectFactory.create(mPageObjects, Opa5);
 		};
 
 		/*
@@ -1167,6 +1187,8 @@ sap.ui.define([
 			_stack: "string",
 			viewName: "string",
 			viewNamespace: "string",
+			viewId: "string",
+			fragmentId: "string",
 			visible: "bool",
 			matchers: "any",
 			actions: "any",

@@ -1,17 +1,19 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	'sap/ui/core/Control',
+	'sap/ui/Device',
 	'./library',
 	"./BlockLayoutCellRenderer",
 	"sap/base/Log",
+	"./BlockLayoutCellData",
 	"sap/ui/thirdparty/jquery"
 ],
-	function(Control, library, BlockLayoutCellRenderer, Log, jQuery) {
+	function(Control, Device, library, BlockLayoutCellRenderer, Log, BlockLayoutCellData, jQuery) {
 		"use strict";
 
 		/**
@@ -26,7 +28,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -119,6 +121,23 @@ sap.ui.define([
 			return this;
 		};
 
+		/**
+		 * Sets the Width.
+		 *
+		 * @public
+		 * @param {number} iWidth value.
+		 * @returns {sap.ui.layout.BlockLayoutCell} this BlockLayoutCell reference for chaining.
+		 */
+		BlockLayoutCell.prototype.setWidth = function (iWidth) {
+			this.setProperty("width", iWidth);
+
+			if (this.getLayoutData() && (this.getLayoutData().isA("sap.ui.layout.BlockLayoutCellData"))) {
+				this.getLayoutData().setSize(iWidth);
+			}
+
+			return this;
+		};
+
 		BlockLayoutCell.prototype.setTitleLink = function(oObject) {
 				if (oObject && oObject.getMetadata().getName() !== "sap.m.Link") {
 					Log.warning("sap.ui.layout.BlockLayoutCell " + this.getId() + ": Can't add value for titleLink aggregation different than sap.m.Link.");
@@ -132,6 +151,24 @@ sap.ui.define([
 
 		BlockLayoutCell.prototype._setParentRowScrollable = function (scrollable) {
 			this._parentRowScrollable = scrollable;
+		};
+
+		BlockLayoutCell.prototype.onAfterRendering = function (oEvent) {
+
+			// fixes the issue in IE when the block layout size is auto
+			// like BlockLayout in a Dialog
+			if (Device.browser.internet_explorer) {
+				var bHasParentsThatHaveAutoHeight = false;
+				this.$().parents().toArray().forEach(function (element) {
+					if (element.style.height === "auto" || (element.className.indexOf("sapMDialogScroll") != -1)) {
+						bHasParentsThatHaveAutoHeight = true;
+					}
+				});
+
+				if (bHasParentsThatHaveAutoHeight){
+					this.$()[0].style.flex = this._flexWidth + ' 1 auto';
+				}
+			}
 		};
 
 		BlockLayoutCell.prototype._getParentRowScrollable = function () {

@@ -1,5 +1,5 @@
 @_sap_m_SinglePlanningCalendarGrid_RowHeadersWidth: 4rem;
-@_sap_m_SinglePlanningCalendarGrid_RowHeight: 4rem;
+@_sap_m_SinglePlanningCalendarGrid_RowHeight: 4.3125rem;
 @_sap_m_SinglePlanningCalendarGrid_CompactRowHeight: 3rem;
 
 /*****************
@@ -189,6 +189,10 @@
 		min-width: auto;
 		width: 100%;
 		height: calc(~"100% - 0.0625rem");
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
 
 		& > .sapUiCalendarAppCont,
 		&:active > .sapUiCalendarAppCont,
@@ -203,8 +207,14 @@
 	}
 }
 
+.sapUiSizeCompact {
+	.sapMSinglePCBlockersColumns .sapMSinglePCAppointmentWrap.sapUiCalendarRowApps .sapUiCalendarApp {
+		height: 1.438rem;
+	}
+}
+
 .sapMSinglePCBlockersColumns .sapMSinglePCAppointmentWrap.sapUiCalendarRowApps .sapUiCalendarApp {
-	height: 1.438rem;
+	height: 2rem;
 
 	.sapUiCalendarAppTitle {
 		padding-top: 0;
@@ -284,4 +294,33 @@
 .sapMSinglePCGrid .sapUiCalendarAppIcon {
 	position: absolute;
 	top: 0.2rem;
+}
+
+.sapMSinglePCOverlay {
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	visibility: hidden;
+}
+
+.sapMSinglePCOverlayDragging {
+	z-index: 3;
+	visibility: visible;
+}
+
+.sapMSinglePCPlaceholder {
+	height: 2.15625rem;
+}
+
+.sapUiSizeCompact .sapMSinglePCPlaceholder {
+	height: 1.5rem;
+}
+
+.sapMSinglePCBlockersColumns .sapMSinglePCOverlay {
+	display: flex;
+}
+
+.sapMSinglePCBlockersColumns .sapMSinglePCPlaceholder {
+	flex: 1;
+	height: auto;
 }

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -83,7 +83,7 @@ function(
 		 * @implements sap.ui.core.IFormContent
 		 *
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -322,6 +322,14 @@ function(
 					 * @since 1.52
 					 */
 					_pickerHeader: {
+						type: "sap.m.Bar",
+						multiple: false,
+						visibility: "hidden"
+					},
+					/**
+					 * Internal aggregation to hold the picker's subheader.
+					 */
+					_pickerSubHeader: {
 						type: "sap.m.Bar",
 						multiple: false,
 						visibility: "hidden"
@@ -836,6 +844,126 @@ function(
 			return this._sPickerType;
 		};
 
+		/**
+		 * Get's the picker's subheader.
+		 *
+		 * @returns {sap.m.Bar} Picker's header
+		 * @private
+		 */
+		Select.prototype._getPickerSubHeader = function() {
+			var CSS_CLASS = this.getRenderer().CSS_CLASS,
+				sPickerTitleClass = CSS_CLASS + "PickerSubHeaderTitle",
+				sPickerSubHeaderValueStateClass = CSS_CLASS + "PickerValueState";
+
+			if (!this.getAggregation("_pickerSubHeader")) {
+				this.setAggregation("_pickerSubHeader", new Bar({
+					contentLeft: new Title(this._getPickerSubHeaderId(), {
+						text: this._getTextForPickerSubHeader()
+					}).addStyleClass(sPickerTitleClass)
+				}).addStyleClass(sPickerSubHeaderValueStateClass));
+			}
+
+			return this.getAggregation("_pickerSubHeader");
+		};
+
+		/**
+		 * Sets the <code>valueStateText</code> into the picker's subheader title.
+		 * @returns {void}
+		 * @private
+		 */
+		Select.prototype._updatePickerSubHeaderText = function() {
+			var oPicker = this.getPicker(),
+				oPickerSubHeader = oPicker.getSubHeader(),
+				sText;
+
+			if (oPickerSubHeader) {
+				sText = this._getTextForPickerSubHeader();
+				oPickerSubHeader.getContentLeft()[0].setText(sText);
+			}
+		};
+
+		/**
+		 * Gets the text for the picker's subheader title.
+		 * In case <code>valueStateText</code> is not set, a default value is returned.
+		 * @returns {string}
+		 * @private
+		 */
+		Select.prototype._getTextForPickerSubHeader = function() {
+			var sValueStateText = this.getValueStateText(),
+				sText;
+
+			if (sValueStateText) {
+				sText = sValueStateText;
+			} else {
+				sText = this._getDefaultTextForPickerSubHeader();
+			}
+			return sText;
+		};
+
+		/**
+		 *  Gets the default text for the picker's subheader title.
+		 * @returns {string}
+		 * @private
+		 */
+		Select.prototype._getDefaultTextForPickerSubHeader = function() {
+			var sValueState = this.getValueState(),
+				oResourceBundle,
+				sText;
+
+			if (sValueState === ValueState.None) {
+				sText = "";
+			} else {
+				oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.core");
+				sText = oResourceBundle.getText("VALUE_STATE_" + sValueState.toUpperCase());
+			}
+
+			return sText;
+		};
+
+		/**
+		 * Updates CSS classes for the <code>valueStateText</code> in the picker's subheader.
+		 * @private
+		 */
+		Select.prototype._updatePickerSubHeaderStyles = function() {
+			var sValueState = this.getValueState(),
+				mValueState = ValueState,
+				CSS_CLASS =  this.getRenderer().CSS_CLASS,
+				PICKER_CSS_CLASS = CSS_CLASS + "Picker",
+				sCssClass = PICKER_CSS_CLASS + sValueState + "State",
+				sPickerWithSubHeader = PICKER_CSS_CLASS + "WithSubHeader",
+				oPicker = this.getPicker(),
+				oCustomHeader = oPicker.getSubHeader();
+
+			if (oCustomHeader) {
+				this._removePickerSubHeaderValueStateClasses(oPicker);
+				oCustomHeader.addStyleClass(sCssClass);
+
+				if (sValueState !== mValueState.None) {
+					oPicker.addStyleClass(sPickerWithSubHeader);
+				} else {
+					oPicker.removeStyleClass(sPickerWithSubHeader);
+				}
+			}
+		};
+
+		/**
+		 * Removes the picker's subheader value state classes for all available value states.
+		 * @param  {sap.m.Popover | sap.m.Dialog} oPicker
+		 * @returns {void}
+		 * @private
+		 */
+		Select.prototype._removePickerSubHeaderValueStateClasses = function(oPicker) {
+			var mValueState = ValueState,
+				CSS_CLASS =  this.getRenderer().CSS_CLASS,
+				PICKER_CSS_CLASS = CSS_CLASS + "Picker",
+				subHeader = oPicker.getSubHeader();
+
+			Object.keys(mValueState).forEach(function (key) {
+				var sOldCssClass = PICKER_CSS_CLASS + key + "State";
+				subHeader.removeStyleClass(sOldCssClass);
+			});
+		};
+
 		/* ----------------------------------------------------------- */
 		/* Popover                                                     */
 		/* ----------------------------------------------------------- */
@@ -852,12 +980,13 @@ function(
 			var oPicker = new Popover({
 				showArrow: false,
 				showHeader: false,
+				subHeader: this._getPickerSubHeader(),
 				placement: PlacementType.VerticalPreferredBottom,
 				offsetX: 0,
 				offsetY: 0,
 				initialFocus: this,
 				bounce: false,
-				ariaLabelledBy: this._getPickerHiddenLabelId()
+				ariaLabelledBy: [this._getPickerSubHeaderId(), this._getPickerHiddenLabelId()]
 			});
 
 			// detect when the scrollbar or an item is pressed
@@ -917,8 +1046,9 @@ function(
 			var that = this;
 			return new Dialog({
 				stretch: true,
-				ariaLabelledBy: this._getPickerHiddenLabelId(),
+				ariaLabelledBy: [this._getPickerSubHeaderId(), this._getPickerHiddenLabelId()],
 				customHeader: this._getPickerHeader(),
+				subHeader: this._getPickerSubHeader(),
 				beforeOpen: function() {
 					that.updatePickerHeaderTitle();
 				}
@@ -972,6 +1102,10 @@ function(
 
 		Select.prototype._getPickerHiddenLabelId = function() {
 			return InvisibleText.getStaticId("sap.m", "INPUT_AVALIABLE_VALUES");
+		};
+
+		Select.prototype._getPickerSubHeaderId = function() {
+			return this.getId() + "-valueStateText";
 		};
 
 		Select.prototype.updatePickerHeaderTitle = function() {
@@ -1042,7 +1176,12 @@ function(
 				this._handleFocusout();
 			}
 
-			this.synchronizeSelection();
+			this.synchronizeSelection({
+				forceSelection: this.getForceSelection()
+			});
+
+			this._updatePickerSubHeaderText();
+			this._updatePickerSubHeaderStyles();
 		};
 
 		Select.prototype.onAfterRendering = function() {
@@ -1289,12 +1428,22 @@ function(
 		};
 
 		/**
-		 * Handle when the spacebar key is pressed.
+		 * Handles the keydown event for SPACE on which we have to prevent the browser scrolling.
 		 *
 		 * @param {jQuery.Event} oEvent The event object.
 		 * @private
 		 */
 		Select.prototype.onsapspace = function(oEvent) {
+			oEvent.preventDefault();
+		};
+
+		/**
+		 * Handles the keyup event for SPACE.
+		 *
+		 * @param {jQuery.Event} oEvent The event object.
+		 * @private
+		 */
+		Select.prototype.onkeyup = function(oEvent) {
 
 			// prevents actions from occurring when the control is disabled,
 			// IE11 browser focus non-focusable elements
@@ -1302,17 +1451,19 @@ function(
 				return;
 			}
 
-			// mark the event for components that needs to know if the event was handled
-			oEvent.setMarked();
+			if (oEvent.which === KeyCodes.SPACE && !oEvent.shiftKey) {
+				// mark the event for components that needs to know if the event was handled
+				oEvent.setMarked();
 
-			// note: prevent document scrolling when the spacebar key is pressed
-			oEvent.preventDefault();
+				// note: prevent document scrolling when the spacebar key is pressed
+				oEvent.preventDefault();
 
-			if (this.isOpen()) {
-				this._checkSelectionChange();
+				if (this.isOpen()) {
+					this._checkSelectionChange();
+				}
+
+				this.toggleOpenState();
 			}
-
-			this.toggleOpenState();
 		};
 
 		/**
@@ -1620,8 +1771,7 @@ function(
 		 * @returns {boolean}
 		 */
 		Select.prototype.isSelectionSynchronized = function() {
-			var vItem = this.getSelectedItem();
-			return this.getSelectedKey() === (vItem && vItem.getKey());
+			return SelectList.prototype.isSelectionSynchronized.apply(this, arguments);
 		};
 
 		/**
@@ -1898,30 +2048,68 @@ function(
 		 */
 		Select.prototype.onItemChange = function(oControlEvent) {
 			var sSelectedItemId = this.getAssociation("selectedItem"),
+				sEventItemId = oControlEvent.getParameter("id"),
+				sProperty = oControlEvent.getParameter("name"),
 				sNewValue = oControlEvent.getParameter("newValue"),
-				sProperty = oControlEvent.getParameter("name");
+				sOldValue,
+				sCurrentSelectedKey,
+				oFirstListItemWithNewKey,
+				oFirstListItemWithCurrentKey;
 
-			// if the selected item has changed, synchronization is needed
-			if (sSelectedItemId === oControlEvent.getParameter("id")) {
+			// Handle "key" changes BCP: 1870551736
+			if (sProperty === "key" && !this.isBound("selectedKey")) {
 
-				switch (sProperty) {
-					case "text":
-						// Notify interested controls that an item's text was changed
-						this.fireEvent("_itemTextChange");
-						this.setValue(sNewValue);
-						break;
+				sCurrentSelectedKey = this.getSelectedKey();
+				oFirstListItemWithNewKey = this.getItemByKey(sNewValue);
 
-					case "key":
-
-						if (!this.isBound("selectedKey")) {
-							this.setSelectedKey(sNewValue);
-						}
-
-						break;
-
-					// no default
+				// First scenario: is when the new "key" value is the same as the current "selectedKey" and the item
+				// from the event is preceding the currently selected one in the list. In this case we should update the
+				// current selected item to the one from the event.
+				if (
+					sNewValue === sCurrentSelectedKey && // New item "key" is equal to the current "selectedKey"
+					sSelectedItemId !== sEventItemId && // The event is not fired for the current selected item
+					oFirstListItemWithNewKey && // There is at least one item with the new "key" in the list
+					// The item from the event is the first item from the list having "key" equal to the current "selectedKey"
+					sEventItemId === oFirstListItemWithNewKey.getId()
+				) {
+					this.setSelection(oFirstListItemWithNewKey); // The item from the event should be the new selectedItem
+					return;
 				}
+
+				// Second scenario: is when the "key" update is on the current selected item.
+				// Note: Keep in mind that if in the list there is another entry with the same "key" we should not update
+				// the "selectedKey" (this is handled in third scenario bellow).
+				sOldValue = oControlEvent.getParameter("oldValue");
+				if (
+					sSelectedItemId === sEventItemId && // Currently selected item is the item for which the event is fired
+					sCurrentSelectedKey === sOldValue && // Current "selectedKey" is equal to the old value
+					!this.getItemByKey(sOldValue) // There is no other item in the list with the old "key"
+				) {
+					this.setSelectedKey(sNewValue);
+					return;
+				}
+
+				// Third scenario: "key" of the currently selected item changes but we have another item in the list
+				// having the same "key" as the current "selectedKey". In this case we should update the selected item.
+				oFirstListItemWithCurrentKey = this.getItemByKey(sCurrentSelectedKey);
+				if (
+					sSelectedItemId === sEventItemId && // We change the key of the current selected item
+					sNewValue !== sCurrentSelectedKey && // New "key" of the current item is different
+					oFirstListItemWithCurrentKey // We have another item in the list with the current "selectedKey"
+				) {
+					this.setSelection(oFirstListItemWithCurrentKey);
+					return;
+				}
+
 			}
+
+			// Handle current item "text" change
+			if (sProperty === "text" && sSelectedItemId === sEventItemId) {
+				// Notify interested controls that an item's text was changed
+				this.fireEvent("_itemTextChange");
+				this.setValue(sNewValue);
+			}
+
 		};
 
 		Select.prototype.fireChange = function(mParameters) {
@@ -2024,15 +2212,15 @@ function(
 
 		Select.prototype.updateAriaLabelledBy = function(sValueState, sOldValueState) {
 			var $this = this.$(),
-                            sAttr = $this.attr("aria-labelledby"),
+				sAttr = $this.attr("aria-labelledby"),
 				aIDs = sAttr ? sAttr.split(" ") : [],
 				sNewIDs;
 
-			if (sOldValueState !== ValueState.None) {
+			if (sOldValueState !== ValueState.None && sOldValueState !== ValueState.Error) {
 				aIDs.pop();
 			}
 
-			if (sValueState !== ValueState.None) {
+			if (sValueState !== ValueState.None && sValueState !== ValueState.Error) {
 				aIDs.push(InvisibleText.getStaticId("sap.ui.core", "VALUE_STATE_" + sValueState.toUpperCase()));
 			}
 
@@ -2339,7 +2527,7 @@ function(
 				oDomRef.removeAttribute("aria-invalid");
 			}
 
-			if (this.shouldValueStateMessageBeOpened() && document.activeElement === oDomRef) {
+			if (!this.isOpen() && this.shouldValueStateMessageBeOpened() && document.activeElement === oDomRef) {
 				this.openValueStateMessage();
 			} else {
 				this.closeValueStateMessage();
@@ -2347,7 +2535,22 @@ function(
 
 			this.updateValueStateClasses(sValueState, sOldValueState);
 			this.updateAriaLabelledBy(sValueState, sOldValueState);
+			this._updatePickerSubHeaderText();
+			this._updatePickerSubHeaderStyles();
 			return this;
+		};
+
+		Select.prototype.setValueStateText = function(sValueStateText) {
+			var oDomRef = this.getDomRefForValueState();
+
+			this.setProperty("valueStateText", sValueStateText, true);
+
+			if (!oDomRef) {
+				return this;
+			}
+
+			this._updatePickerSubHeaderText();
+			this._updatePickerSubHeaderStyles();
 		};
 
 		/**

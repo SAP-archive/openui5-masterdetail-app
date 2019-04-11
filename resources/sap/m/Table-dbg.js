@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -56,7 +56,7 @@ sap.ui.define([
 	 * @extends sap.m.ListBase
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -146,15 +146,15 @@ sap.ui.define([
 				}
 			},
 			/**
-			 * This event gets fired when the user performs paste from clipboard on the table.
-			 * Paste action can be performed from the context menu or with CTRL-V keyboard key combination.
+			 * This event gets fired when the user pastes content from the clipboard to the table.
+			 * Pasting can be done via the context menu or the standard paste keyboard shortcut, if the focus is inside the table.
 			 * @since 1.60
 			 */
 			paste : {
 				allowPreventDefault: true,
 				parameters : {
 					/**
-					 * 2D-Array of strings with data from the clipboard. The first dimension represents the rows and the
+					 * 2D array of strings with data from the clipboard. The first dimension represents the rows, and the
 					 * second dimension represents the cells of the tabular data.
 					 */
 					data : {type : "string[][]"}
@@ -829,27 +829,38 @@ sap.ui.define([
 		return "sapMListTblAlternateRowColors";
 	};
 
-		/**
-		 * Handles paste event and fires Paste event of the Table , so that it can be used in the application
-		 * @private
-		 * @param oEvent -browser paste event that occurs when a user pastes the data from the clipboard into the table
-		 */
-		Table.prototype.onpaste = function(oEvent) {
+	/**
+	 * Handles paste event and fires Paste event of the Table, so that it can be used in the application
+	 * @private
+	 * @param oEvent -browser paste event that occurs when a user pastes the data from the clipboard into the table
+	 */
+	Table.prototype.onpaste = function(oEvent) {
 
-			// Check whether the paste event is already handled by input enabled control and avoid pasting into this input-enabled control when focus is in there.
-			if (oEvent.isMarked() || (/^(input|textarea)$/i.test(oEvent.target.tagName))) {
-				return;
-			}
+		// Check whether the paste event is already handled by input enabled control and avoid pasting into this input-enabled control when focus is in there.
+		if (oEvent.isMarked() || (/^(input|textarea)$/i.test(oEvent.target.tagName))) {
+			return;
+		}
 
-			// Get the data from the PasteHelper utility in format of 2D Array
-			var aData = PasteHelper.getPastedDataAs2DArray(oEvent.originalEvent);
-			if (!aData || aData.length === 0 /* no rows pasted */ || aData[0].length === 0 /* no columns pasted */) {
-				return; // no pasted data
-			}
+		// Get the data from the PasteHelper utility in format of 2D Array
+		var aData = PasteHelper.getPastedDataAs2DArray(oEvent.originalEvent);
+		if (!aData || aData.length === 0 /* no rows pasted */ || aData[0].length === 0 /* no columns pasted */) {
+			return; // no pasted data
+		}
 
-			//var oRow = sap.ui.getCore().byId(jQuery(oEvent.target).closest(".sapMLIB").attr("id"));
-			this.firePaste({data: aData});
-		};
+		//var oRow = sap.ui.getCore().byId(jQuery(oEvent.target).closest(".sapMLIB").attr("id"));
+		this.firePaste({data: aData});
+	};
+
+	Table.prototype.ondragenter = function(oEvent) {
+		var oDragSession = oEvent.dragSession;
+		if (!oDragSession || !oDragSession.getDropControl() || !oDragSession.getDropControl().isA("sap.m.Column")) {
+			return;
+		}
+
+		oDragSession.setIndicatorConfig({
+			height: this.getTableDomRef().clientHeight
+		});
+	};
 
 	return Table;
 

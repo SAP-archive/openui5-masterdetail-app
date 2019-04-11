@@ -1,20 +1,17 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
-	"sap/ui/test/_OpaLogger",
 	"sap/ui/test/actions/Action",
-	"sap/ui/events/KeyCodes",
-	"sap/base/Log"
-], function(_OpaLogger, Action, KeyCodes, Log) {
+	"sap/ui/events/KeyCodes"
+], function(Action, KeyCodes) {
 	"use strict";
 
-	var oLogger = _OpaLogger.getLogger("sap.ui.test.actions.EnterText");
-
 	/**
+	 * @class
 	 * The EnterText action is used to simulate a user entering texts to inputs.
 	 * EnterText will be executed on a control's focus dom ref.
 	 * Supported controls are (for other controls this action still might work):
@@ -23,7 +20,7 @@ sap.ui.define([
 	 *     <li>sap.m.SearchField</li>
 	 *     <li>sap.m.TextArea</li>
 	 * </ul>
-	 * @class
+	 *
 	 * @extends sap.ui.test.actions.Action
 	 * @public
 	 * @name sap.ui.test.actions.EnterText
@@ -69,14 +66,14 @@ sap.ui.define([
 				return;
 			}
 			if (this.getText() === undefined || (!this.getClearTextFirst() && !this.getText())) {
-				Log.error("Please provide a text for this EnterText action", this._sLogPrefix);
+				this.oLogger.error("Please provide a text for this EnterText action");
 				return;
 			}
 
 			var oUtils = this.getUtils();
 
-			oLogger.timestamp("opa.actions.enterText");
-			oLogger.debug("Enter text in control " + oControl);
+			this.oLogger.timestamp("opa.actions.enterText");
+			this.oLogger.debug("Enter text in control " + oControl);
 
 			this._tryOrSimulateFocusin($ActionDomRef, oControl);
 

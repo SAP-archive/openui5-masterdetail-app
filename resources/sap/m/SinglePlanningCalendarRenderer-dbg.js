@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -34,8 +34,7 @@ function() {
 			}
 		});
 		oRm.addClass("sapMSinglePC");
-		oRm.addClass("sapUiSizeCompact"); // TODO: for now force Compact mode
-		oRm.writeClasses();
+		oRm.writeClasses(oCalendar);
 		oRm.write(">");
 
 		oRm.renderControl(oHeader);

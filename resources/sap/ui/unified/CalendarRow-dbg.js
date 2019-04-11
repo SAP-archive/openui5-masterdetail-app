@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -66,7 +66,7 @@ sap.ui.define([
 	 * @class
 	 * A calendar row with a header and appointments. The Appointments will be placed in the defined interval.
 	 * @extends sap.ui.core.Control
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -579,7 +579,7 @@ sap.ui.define([
 		for (var i = 0; i < aVisibleAppointments.length; i++) {
 			var oAppointment = aVisibleAppointments[i].appointment;
 			if (containsOrEquals(oAppointment.getDomRef(), oEvent.target)) {
-				_selectAppointment.call(this, oAppointment, !oEvent.ctrlKey);
+				_selectAppointment.call(this, oAppointment, !(oEvent.ctrlKey || oEvent.metaKey));
 				break;
 			}
 		}
@@ -1691,7 +1691,7 @@ sap.ui.define([
 	* @private
 	*/
 	function _informPlanningCalendar(sFuncName){
-		var oPC = _getPlannigCalendar.call(this);
+		var oPC = this._getPlanningCalendar();
 
 		if (oPC) { //it may be a PC object or undefined
 			oPC["_onRow" + sFuncName]();
@@ -1703,7 +1703,7 @@ sap.ui.define([
 	* returns {sap.m.PlanningCalendar}
 	* @private
 	*/
-	function _getPlannigCalendar() {
+	CalendarRow.prototype._getPlanningCalendar = function () {
 		var oParent = this;
 
 		while (oParent.getParent() !== null) {
@@ -1712,7 +1712,7 @@ sap.ui.define([
 			}
 			oParent = oParent.getParent();
 		}
-	}
+	};
 
 	/**
 	* Handles the situation when more than one appointment are selected and they must be deselected

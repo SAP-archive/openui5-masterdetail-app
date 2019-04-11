@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -61,18 +61,18 @@ sap.ui.define([
 	 *
 	 * <h3>Current Limitations</h3>
 	 * <ul>
-	 * <li>No support for IE11.</li>
-	 * <li>No support for Edge version 15.</li>
+	 * <li>For Microsoft Internet Explorer some layouts are not supported, due to browser specifics.</li>
+	 * <li>For Microsoft Edge 15 and older versions some layouts are not supported, due to browser specifics.</li>
 	 * </ul>
 	 *
 	 * @see {@link topic:32d4b9c2b981425dbc374d3e9d5d0c2e Grid Controls}
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @extends sap.m.ListBase
-	 * @implements {sap.ui.layout.cssgrid.IGridConfigurable}
+	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
 	 *
 	 * @since 1.60
 	 * @constructor

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -12,6 +12,8 @@ sap.ui.define([
 	'./Bar',
 	'./Text',
 	'./Title',
+	'./GroupHeaderListItem',
+	'sap/ui/core/SeparatorItem',
 	'sap/ui/core/InvisibleText',
 	'sap/ui/core/IconPool',
 	'sap/ui/core/ValueStateSupport',
@@ -34,6 +36,8 @@ sap.ui.define([
 		Bar,
 		Text,
 		Title,
+		GroupHeaderListItem,
+		SeparatorItem,
 		InvisibleText,
 		IconPool,
 		ValueStateSupport,
@@ -68,7 +72,7 @@ sap.ui.define([
 		 * @abstract
 		 *
 		 * @author SAP SE
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -155,10 +159,47 @@ sap.ui.define([
 
 			sLowerCaseText = oItem[sPropertyGetter]().toLowerCase();
 			sInputLowerCaseValue = sInputValue.toLowerCase();
-			oMatchingTextRegex = new RegExp("(\\b" + escapeRegExp(sInputLowerCaseValue) + ").*", "gi");
+			oMatchingTextRegex = new RegExp('(^|\\s)' + escapeRegExp(sInputLowerCaseValue) + ".*", 'g');
 
 			return oMatchingTextRegex.test(sLowerCaseText);
+		};
 
+		/**
+		 * Called when the composition of a passage of text is started.
+		 *
+		 * @protected
+		 */
+		ComboBoxBase.prototype.oncompositionstart = function () {
+			this._bIsComposingCharacter = true;
+		};
+
+		/**
+		 * Called when the composition of a passage of text has been completed or cancelled.
+		 *
+		 * @param {jQuery.Event} oEvent The event object.
+		 * @protected
+		 */
+		ComboBoxBase.prototype.oncompositionend = function (oEvent) {
+			this._bIsComposingCharacter = false;
+			this._sComposition = oEvent.target.value;
+
+			// In Firefox and Edge the events are fired correctly
+			// http://blog.evanyou.me/2014/01/03/composition-event/
+			if (!Device.browser.edge && !Device.browser.firefox) {
+				ComboBoxTextField.prototype.handleInput.apply(this, arguments);
+				this.handleInputValidation(oEvent, this.isComposingCharacter());
+			}
+		};
+
+		/**
+		 * indicating if a character is currently composing.
+		 *
+		 * @returns {boolean} Whether or not a character is composing.
+		 * True if after "compositionstart" event and before "compositionend" event.
+		 * @protected
+		 */
+		ComboBoxBase.prototype.isComposingCharacter = function() {
+			return this._bIsComposingCharacter;
 		};
 
 		/* =========================================================== */
@@ -414,6 +455,71 @@ sap.ui.define([
 			return InvisibleText.getStaticId("sap.m", "COMBOBOX_AVAILABLE_OPTIONS");
 		};
 
+		/**
+		 * Gets the item corresponding to given list item.
+		 *
+		 * @param {sap.m.StandardListItem | null} oListItem The given list item
+		 * @return {sap.ui.core.Item} The corresponding item
+		 * @private
+		 */
+		ComboBoxBase.prototype._getItemByListItem = function(oListItem) {
+			return this._getItemBy(oListItem, "ListItem");
+		};
+
+		/**
+		 * Gets the item corresponding to given data object.
+		 *
+		 * @param {Object | null} oDataObject The given object
+		 * @param {string} sDataName The data name
+		 * @return {sap.ui.core.Item} The corresponding item
+		 * @private
+		 */
+		ComboBoxBase.prototype._getItemBy = function(oDataObject, sDataName) {
+			sDataName = this.getRenderer().CSS_CLASS_COMBOBOXBASE + sDataName;
+
+			for ( var i = 0, aItems = this.getItems(), iItemsLength = aItems.length; i < iItemsLength; i++) {
+				if (aItems[i].data(sDataName) === oDataObject) {
+					return aItems[i];
+				}
+			}
+
+			return null;
+		};
+
+		/**
+		 * Checks if the list is in suggestions mode.
+		 *
+		 * @returns {boolean} true if the list has at least one not visible item, false if all items in the list are visible.
+		 * @private
+		 */
+		ComboBoxBase.prototype._isListInSuggestMode = function() {
+			return this._getList().getItems().some(function(oListItem) {
+				return !oListItem.getVisible() && this._getItemByListItem(oListItem).getEnabled();
+			}, this);
+		};
+
+		/**
+		 * Gets the control's ListItem.
+		 *
+		 * @param {sap.ui.core.Item} oItem The item
+		 * @returns {sap.m.StandardListItem | null} The ListItem
+		 * @private
+		 */
+		ComboBoxBase.prototype.getListItem = function(oItem) {
+			return oItem ? oItem.data(this.getRenderer().CSS_CLASS_COMBOBOXBASE + "ListItem") : null;
+		};
+
+		/**
+		 * Gets the selectable property of sap.ui.core.Item
+		 *
+		 * @param {sap.ui.core.Item} oItem The item in question
+		 * @returns {boolean} The selectable value
+		 * @private
+		 */
+		ComboBoxBase.prototype.getSelectable = function(oItem) {
+			return oItem._bSelectable;
+		};
+
 		/* =========================================================== */
 		/* Lifecycle methods                                           */
 		/* =========================================================== */
@@ -451,33 +557,38 @@ sap.ui.define([
 				}
 			}, this);
 
-			this.getIcon().attachPress(function (oEvent) {
-				var oPicker;
+			this.getIcon().attachPress(this._handlePopupOpenAndItemsLoad.bind(this, true));
 
-				// in case of a non-editable or disabled combo box, the picker popup cannot be opened
-				if (!this.getEnabled() || !this.getEditable()) {
-					return;
-				}
-
-				if (this._bShouldClosePicker) {
-					this._bShouldClosePicker = false;
-					this.close();
-					return;
-				}
-
-				this.loadItems();
-				this.bOpenedByKeyboardOrButton = true;
-
-				if (this.isPlatformTablet()) {
-					oPicker = this.getPicker();
-					oPicker.setInitialFocus(oPicker);
-				}
-
-				this.open();
-			}, this);
+			// handle composition events & validation of composition symbols
+			this._sComposition = "";
 
 			// a method to define whether an item should be filtered in the picker
 			this.fnFilter = null;
+		};
+
+		ComboBoxBase.prototype._handlePopupOpenAndItemsLoad = function (bOpenOnInteraction) {
+			var oPicker;
+
+			// in case of a non-editable or disabled combo box, the picker popup cannot be opened
+			if (!this.getEnabled() || !this.getEditable()) {
+				return;
+			}
+
+			if (this._bShouldClosePicker) {
+				this._bShouldClosePicker = false;
+				this.close();
+				return;
+			}
+
+			this.loadItems();
+			this.bOpenedByKeyboardOrButton = bOpenOnInteraction;
+
+			if (this.isPlatformTablet()) {
+				oPicker = this.getPicker();
+				oPicker.setInitialFocus(oPicker);
+			}
+
+			this.open();
 		};
 
 		ComboBoxBase.prototype.onBeforeRendering = function() {
@@ -492,8 +603,8 @@ sap.ui.define([
 		ComboBoxBase.prototype.exit = function() {
 			ComboBoxTextField.prototype.exit.apply(this, arguments);
 
-			if (this.getList()) {
-				this.getList().destroy();
+			if (this._getList()) {
+				this._getList().destroy();
 				this._oList = null;
 			}
 
@@ -639,10 +750,27 @@ sap.ui.define([
 		/**
 		 * Gets the <code>list</code>.
 		 *
-		 * @returns {sap.m.SelectList} The list instance object or <code>null</code>.
+		 * @returns {sap.m.List} The list instance object or <code>null</code>.
 		 * @protected
+		 * @deprecated Deprecated as of version 1.62. The list structure should not be used as per SAP note: 2746748.
 		 */
 		ComboBoxBase.prototype.getList = function() {
+			Log.warning(
+				"[Warning]:",
+				"You are attempting to use deprecated method 'getList()', please refer to SAP note 2746748.",
+				this);
+
+			// This is needed for backward compatibility
+			return this._getList();
+		};
+
+		/**
+		 * Gets the <code>list</code>.
+		 *
+		 * @returns {sap.m.List} The list instance object or <code>null</code>.
+		 * @private
+		 */
+		ComboBoxBase.prototype._getList = function() {
 			if (this.bIsDestroyed) {
 				return null;
 			}
@@ -924,6 +1052,22 @@ sap.ui.define([
 		};
 
 		/**
+		 * Gets the dom reference of the html node,
+		 * needed for attaching aria attributes
+		 *
+		 * @protected
+		 */
+		ComboBoxBase.prototype.getRoleComboNodeDomRef = function() {
+			var oFocusDomRef = this.getFocusDomRef();
+
+			if (!oFocusDomRef) {
+				return null;
+			}
+
+			return oFocusDomRef.parentNode;
+		};
+
+		/**
 		 * Creates an instance of <code>sap.m.Dialog</code>.
 		 *
 		 * @returns {sap.m.Dialog} The created Dialog
@@ -1058,8 +1202,15 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Item | null} The first enabled item
 		 */
 		ComboBoxBase.prototype.findFirstEnabledItem = function(aItems) {
-			var oList = this.getList();
-			return oList ? oList.findFirstEnabledItem(aItems) : null;
+			aItems = aItems || this.getItems();
+
+			for (var i = 0; i < aItems.length; i++) {
+				if (aItems[i].getEnabled()) {
+					return aItems[i];
+				}
+			}
+
+			return null;
 		};
 
 		/**
@@ -1069,8 +1220,8 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Item | null} The last enabled item
 		 */
 		ComboBoxBase.prototype.findLastEnabledItem = function(aItems) {
-			var oList = this.getList();
-			return oList ? oList.findLastEnabledItem(aItems) : null;
+			aItems = aItems || this.getItems();
+			return this.findFirstEnabledItem(aItems.reverse());
 		};
 
 		/**
@@ -1096,8 +1247,15 @@ sap.ui.define([
 		 * @protected
 		 */
 		ComboBoxBase.prototype.getVisibleItems = function() {
-			var oList = this.getList();
-			return oList ? oList.getVisibleItems() : [];
+			for (var i = 0, oListItem, aItems = this.getItems(), aVisibleItems = []; i < aItems.length; i++) {
+				oListItem = this.getListItem(aItems[i]);
+
+				if (oListItem && oListItem.getVisible()) {
+					aVisibleItems.push(aItems[i]);
+				}
+			}
+
+			return aVisibleItems;
 		};
 
 		/*
@@ -1135,8 +1293,7 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Item[]} An array containing the selectables items.
 		 */
 		ComboBoxBase.prototype.getSelectableItems = function() {
-			var oList = this.getList();
-			return oList ? oList.getSelectableItems() : [];
+			return this.getEnabledItems(this.getVisibleItems());
 		};
 
 		/**
@@ -1149,8 +1306,15 @@ sap.ui.define([
 		 * @returns {sap.ui.core.Item | null} The matched item or <code>null</code>.
 		 */
 		ComboBoxBase.prototype.findItem = function(sProperty, sValue) {
-			var oList = this.getList();
-			return oList ? oList.findItem(sProperty, sValue) : null;
+			var sMethod = "get" + sProperty.charAt(0).toUpperCase() + sProperty.slice(1);
+
+			for (var i = 0, aItems = this.getItems(); i < aItems.length; i++) {
+				if (aItems[i][sMethod]() === sValue) {
+					return aItems[i];
+				}
+			}
+
+			return null;
 		};
 
 		/*
@@ -1203,9 +1367,13 @@ sap.ui.define([
 		 *
 		 */
 		ComboBoxBase.prototype.clearFilter = function() {
-			for (var i = 0, aItems = this.getItems(); i < aItems.length; i++) {
-				aItems[i].bVisible = true;
-			}
+			this.getItems().forEach(function(oItem) {
+				var oListItem = this.getListItem(oItem);
+
+				if (oListItem) {
+					oListItem.setVisible(oItem.getEnabled() && this.getSelectable(oItem));
+				}
+			}, this);
 		};
 
 		/**
@@ -1254,7 +1422,10 @@ sap.ui.define([
 				oItem.attachEvent("_change", this.onItemChange, this);
 			}
 
-			this._scheduleOnItemsLoadedOnce();
+			if (this._getList()) {
+				this._getList().addItem(this._mapItemToListItem(oItem));
+			}
+
 			return this;
 		};
 
@@ -1273,6 +1444,10 @@ sap.ui.define([
 
 			if (oItem) {
 				oItem.attachEvent("_change", this.onItemChange, this);
+			}
+
+			if (this._getList()) {
+				this._getList().insertItem(this._mapItemToListItem(oItem), iIndex);
 			}
 
 			this._scheduleOnItemsLoadedOnce();
@@ -1319,13 +1494,15 @@ sap.ui.define([
 		 * @public
 		 */
 		ComboBoxBase.prototype.getEnabledItems = function(aItems) {
-			var oList = this.getList();
-			return oList ? oList.getEnabledItems(aItems) : [];
+			aItems = aItems || this.getItems();
+
+			return aItems.filter(function(oItem) {
+				return oItem.getEnabled();
+			});
 		};
 
 		/**
-		 * Gets the item with the given key from the aggregation named <code>items</code>.
-		 *
+		 * Gets the item with the given key from the aggregation named <code>items</code>.<br>
 		 * <b>Note:</b> If duplicate keys exist, the first item matching the key is returned.
 		 *
 		 * @param {string} sKey An item key that specifies the item to retrieve.
@@ -1333,8 +1510,46 @@ sap.ui.define([
 		 * @public
 		 */
 		ComboBoxBase.prototype.getItemByKey = function(sKey) {
-			var oList = this.getList();
-			return oList ? oList.getItemByKey(sKey) : null;
+			return this.findItem("key", sKey);
+		};
+
+		/**
+		 * Adds a sap.ui.core.SeparatorItem item to the aggregation named <code>items</code>.
+		 *
+		 * @param {sap.ui.core.Item} oGroup Item of that group
+		 * @param {sap.ui.core.SeparatorItem} oHeader The item to be added
+		 * @param {boolean} bSuppressInvalidate Flag indicating whether invalidation should be suppressed
+		 * @returns {sap.m.GroupHeaderListItem} The group header
+		 * @private
+		 */
+		ComboBoxBase.prototype.addItemGroup = function(oGroup, oHeader, bSuppressInvalidate) {
+			oHeader = oHeader || new SeparatorItem({
+				text: oGroup.text || oGroup.key
+			});
+
+			this.addAggregation("items", oHeader, bSuppressInvalidate);
+			return oHeader;
+		};
+
+		/**
+		 * Maps an item type of sap.ui.core.SeparatorItem to an item type of sap.m.GroupHeaderListItem.
+		 *
+		 * @param {sap.ui.core.SeparatorItem} oSeparatorItem The item to be matched
+		 * @param {sap.ui.core.Renderer} oControlRenderer The controls renderer
+		 * @returns {sap.m.GroupHeaderListItem} The matched GroupHeaderListItem
+		 * @private
+		 */
+		ComboBoxBase.prototype._mapSeparatorItemToGroupHeader = function (oSeparatorItem, oControlRenderer) {
+			var oGroupHeaderListItem = new GroupHeaderListItem({
+				title: oSeparatorItem.getText()
+			});
+
+			oGroupHeaderListItem.addStyleClass(oControlRenderer.CSS_CLASS_COMBOBOXBASE + "NonInteractiveItem");
+			if (oSeparatorItem.getText && !oSeparatorItem.getText()) {
+				oGroupHeaderListItem.addStyleClass(oControlRenderer.CSS_CLASS_COMBOBOXBASE + "SeparatorItemNoText");
+			}
+
+			return oGroupHeaderListItem;
 		};
 
 		/**
@@ -1416,6 +1631,54 @@ sap.ui.define([
 				}).indexOf(oItem.getId()) !== -1;
 			});
 		};
+
+		/**
+		 * Opens the <code>SuggestionsPopover</code> with the available items.
+		 *
+		 * @param {function} fnFilter Function to filter the items shown in the SuggestionsPopover
+		 * @returns {void}
+		 *
+		 * @since 1.64
+		 * @experimental Since 1.64
+		 * @public
+		 */
+		ComboBoxBase.prototype.showItems = function (fnFilter) {
+			var fnFilterStore = this.fnFilter,
+				fnLoadItemsListener = function () {
+					if (!this.getItems().length) {
+						return;
+					}
+
+					this.detachLoadItems(fnLoadItemsListener);
+
+					// Replace the filter with provided one or show all the items
+					this.setFilterFunction(fnFilter || function () {
+						return true;
+					});
+
+					this.applyShowItemsFilters(); // Apply control specific filtering
+					this._handlePopupOpenAndItemsLoad(false);
+					this.setFilterFunction(fnFilterStore); // Restore filtering function
+				}.bind(this);
+
+			// in case of a non-editable or disabled, the popup cannot be opened
+			if (!this.getEnabled() || !this.getEditable()) {
+				return;
+			}
+
+			this.attachLoadItems(fnLoadItemsListener);
+			this.loadItems(fnLoadItemsListener);
+		};
+
+		/**
+		 * Should be overwritten in children classes to apply control specific filtering over the items.
+		 *
+		 * @since 1.64
+		 * @experimental Since 1.64
+		 * @protected
+		 * @sap-restricted
+		 */
+		ComboBoxBase.prototype.applyShowItemsFilters = function () {};
 
 		return ComboBoxBase;
 	});

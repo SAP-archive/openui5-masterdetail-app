@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -29,7 +29,7 @@ function () {
 	return {
 		/**
 		 * Gets all the controls of a certain type that are currently instantiated.
-		 * If the control type is omitted, nothing is returned.
+		 * If the control type is omitted, all controls are returned
 		 *
 		 * @param {Function} [fnConstructorType] the control type, e.g: sap.m.CheckBox
 		 * @returns {Array} an array of the found controls (can be empty)
@@ -73,6 +73,11 @@ function () {
 			}
 
 			return oCore.mElements || oElements;
+		},
+
+		getCoreElement: function (sId, fnControlType) {
+			var oElement = this.getCoreElements()[sId] || null;
+			return this.checkControlType(oElement, fnControlType) ? oElement : null;
 		},
 
 		isUIDirty: function () {

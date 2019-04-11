@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -84,6 +84,7 @@ sap.ui.define([
 	 * <li>{@link sap.m.DatePicker}</li>
 	 * <li>{@link sap.m.DateTimeInput}</li>
 	 * <li>{@link sap.m.DateTimePicker}</li>
+	 * <li>{@link sap.m.GenericTag}</li>
 	 * <li>{@link sap.m.Input}</li>
 	 * <li>{@link sap.m.Label}</li>
 	 * <li>{@link sap.m.MenuButton}</li>
@@ -117,7 +118,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.Toolbar,sap.m.IBar
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -1032,6 +1033,7 @@ sap.ui.define([
 		this._aMovableControls = [];
 		this._aToolbarOnlyControls = [];
 		this._aPopoverOnlyControls = [];
+		this._aAllCollections = [this._aMovableControls, this._aToolbarOnlyControls, this._aPopoverOnlyControls];
 	};
 
 	OverflowToolbar.prototype.onLayoutDataChange = function (oEvent) {
@@ -1091,8 +1093,9 @@ sap.ui.define([
 
 		setTimeout(function () {
 			this._resetAndInvalidateToolbar(false);
-			this._clearAllControlsCollections();
 		}.bind(this), 0);
+
+		this._clearAllControlsCollections();
 
 		return this._callToolbarMethod("destroyContent", arguments);
 	};

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -21,7 +21,7 @@ sap.ui.define(["./DragDropBase"],
 	 * @extends sap.ui.core.dnd.DragDropBase
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @public
 	 * @since 1.56
@@ -90,7 +90,7 @@ sap.ui.define(["./DragDropBase"],
 
 		// metadata restrictions
 		var sSourceAggregation = this.getSourceAggregation();
-		if (!DragDropBase.checkMetadata(oDragSource, sSourceAggregation, "draggable")) {
+		if (!this.checkMetadata(oDragSource, sSourceAggregation, "draggable")) {
 			return false;
 		}
 

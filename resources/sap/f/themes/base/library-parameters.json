@@ -1,4 +1,12 @@
 {
-	"sapUiContentPadding": "1rem",
-	"sapUiCardHeaderIconColor": "#6a6d70"
+	"_sap_f_Card_Content_Padding": "1rem",
+	"_sap_f_Card_Header_Icon_Color": "#6a6d70",
+	"_sap_f_Card_Header_Border_Bottom": "1px solid #cccccc",
+	"_sap_f_Card_Header_Hover_Color": "#fafafa",
+	"_sap_f_Card_Header_Active_Color": "#f7f7f7",
+	"_sap_f_ShellBar_PaddingDesktop": "3",
+	"_sap_f_ShellBar_PaddingTablet": "2",
+	"_sap_f_ShellBar_PaddingPhone": "1",
+	"_sap_f_ShellBar_ChildMargin": "4",
+	"_sap_f_ShellBar_CoPilotWidth": "48"
 }

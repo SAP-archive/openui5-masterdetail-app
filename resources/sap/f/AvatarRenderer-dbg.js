@@ -1,12 +1,12 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides default renderer for control sap.f.Avatar
-sap.ui.define(["sap/f/library", "sap/base/security/encodeXML"],
-	function (library, encodeXML) {
+sap.ui.define(["sap/f/library", "sap/base/security/encodeCSS"],
+	function (library, encodeCSS) {
 		"use strict";
 
 		// shortcut for sap.f.AvatarSize
@@ -31,6 +31,7 @@ sap.ui.define(["sap/f/library", "sap/base/security/encodeXML"],
 		AvatarRenderer.render = function (oRm, oAvatar) {
 			var sInitials = oAvatar.getInitials(),
 				sActualDisplayType = oAvatar._getActualDisplayType(),
+				sImageFallbackType = oAvatar._getImageFallbackType(),
 				sDisplaySize = oAvatar.getDisplaySize(),
 				sDisplayShape = oAvatar.getDisplayShape(),
 				sImageFitType = oAvatar.getImageFitType(),
@@ -59,10 +60,6 @@ sap.ui.define(["sap/f/library", "sap/base/security/encodeXML"],
 			} else {
 				oRm.writeAttribute("role", "img");
 			}
-			if (sActualDisplayType === AvatarType.Image) {
-				oRm.addClass(sAvatarClass + sActualDisplayType + sImageFitType);
-				oRm.addStyle("background-image", "url('" + encodeXML(sSrc) + "')");
-			}
 			if (sDisplaySize === AvatarSize.Custom) {
 				oRm.addStyle("width", sCustomDisplaySize);
 				oRm.addStyle("height", sCustomDisplaySize);
@@ -85,14 +82,24 @@ sap.ui.define(["sap/f/library", "sap/base/security/encodeXML"],
 			oRm.writeClasses();
 			oRm.writeStyles();
 			oRm.write(">");
-			if (sActualDisplayType === AvatarType.Icon) {
+			if (sActualDisplayType === AvatarType.Icon || sImageFallbackType === AvatarType.Icon) {
 				oRm.renderControl(oAvatar._getIcon());
-			} else if (sActualDisplayType === AvatarType.Initials){
+			} else if (sActualDisplayType === AvatarType.Initials || sImageFallbackType === AvatarType.Initials){
 				oRm.write("<span");
 				oRm.addClass(sAvatarClass + "InitialsHolder");
 				oRm.writeClasses();
 				oRm.write(">");
 				oRm.writeEscaped(sInitials);
+				oRm.write("</span>");
+			}
+			if (sActualDisplayType === AvatarType.Image) {
+				oRm.write("<span");
+				oRm.addClass("sapFAvatarImageHolder");
+				oRm.addClass(sAvatarClass + sActualDisplayType + sImageFitType);
+				oRm.addStyle("background-image", "url('" + encodeCSS(sSrc) + "')");
+				oRm.writeClasses();
+				oRm.writeStyles();
+				oRm.write(">");
 				oRm.write("</span>");
 			}
 			// HTML element for the LightBox magnifying glass icon

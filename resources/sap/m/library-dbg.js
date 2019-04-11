@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -21,6 +21,7 @@ sap.ui.define([
 	"sap/base/Log",
 	"sap/base/util/defineLazyProperty",
 	"sap/base/security/encodeXML",
+	"sap/base/security/encodeCSS",
 	// referenced here to enable the Support feature
 	'./Support'
 ],
@@ -36,7 +37,8 @@ sap.ui.define([
 	assert,
 	Log,
 	defineLazyProperty,
-	encodeXML
+	encodeXML,
+	encodeCSS
 ) {
 
 	"use strict";
@@ -45,7 +47,7 @@ sap.ui.define([
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.m",
-		version: "1.61.2",
+		version: "1.64.0",
 		dependencies : ["sap.ui.core"],
 		designtime: "sap/m/designtime/library.designtime",
 		types: [
@@ -66,6 +68,8 @@ sap.ui.define([
 			"sap.m.FlexJustifyContent",
 			"sap.m.FlexRendertype",
 			"sap.m.FrameType",
+			"sap.m.GenericTagDesign",
+			"sap.m.GenericTagValueState",
 			"sap.m.GenericTileMode",
 			"sap.m.GenericTileScope",
 			"sap.m.HeaderLevel",
@@ -109,6 +113,7 @@ sap.ui.define([
 			"sap.m.TimePickerMaskMode",
 			"sap.m.TileSizeBehavior",
 			"sap.m.ToolbarDesign",
+			"sap.m.UploadState",
 			"sap.m.VerticalPlacementType",
 			"sap.m.semantic.SemanticRuleSetType"
 		],
@@ -136,6 +141,7 @@ sap.ui.define([
 			"sap.m.Breadcrumbs",
 			"sap.m.Carousel",
 			"sap.m.CheckBox",
+			"sap.m.ColumnHeaderPopover",
 			"sap.m.ColumnListItem",
 			"sap.m.ColorPalette",
 			"sap.m.ColorPalettePopover",
@@ -162,6 +168,7 @@ sap.ui.define([
 			"sap.m.FeedListItem",
 			"sap.m.FlexBox",
 			"sap.m.FormattedText",
+			"sap.m.GenericTag",
 			"sap.m.GenericTile",
 			"sap.m.GroupHeaderListItem",
 			"sap.m.GrowingList",
@@ -276,6 +283,7 @@ sap.ui.define([
 			"sap.m.TreeItemBase",
 			"sap.m.UploadCollection",
 			"sap.m.UploadCollectionToolbarPlaceholder",
+			"sap.m.upload.UploadSet",
 			"sap.m.VBox",
 			"sap.m.ViewSettingsDialog",
 			"sap.m.ViewSettingsPopover",
@@ -288,8 +296,11 @@ sap.ui.define([
 			"sap.m.WizardStep"
 		],
 		elements: [
-			"sap.m.CalendarAppointment",
+			"sap.m.CarouselLayout",
 			"sap.m.Column",
+			"sap.m.ColumnPopoverActionItem",
+			"sap.m.ColumnPopoverCustomItem",
+			"sap.m.ColumnPopoverItem",
 			"sap.m.FlexItemData",
 			"sap.m.FeedListItemAction",
 			"sap.m.IconTabFilter",
@@ -324,6 +335,8 @@ sap.ui.define([
 			"sap.m.ToolbarLayoutData",
 			"sap.m.UploadCollectionItem",
 			"sap.m.UploadCollectionParameter",
+			"sap.m.upload.Uploader",
+			"sap.m.upload.UploadSetItem",
 			"sap.m.ViewSettingsCustomItem",
 			"sap.m.ViewSettingsCustomTab",
 			"sap.m.ViewSettingsFilterItem",
@@ -485,7 +498,7 @@ sap.ui.define([
 	 * @namespace
 	 * @alias sap.m
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 * @public
 	 */
 	var thisLib = sap.m;
@@ -1311,6 +1324,49 @@ sap.ui.define([
 	};
 
 	/**
+	 * Design modes for the <code>GenericTag</code> control.
+	 *
+	 * @enum {string}
+	 * @public
+	 * @since 1.62.0
+	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.GenericTagDesign = {
+		/**
+		 * Everything from the control is rendered.
+		 * @public
+		 */
+		Full : "Full",
+		/**
+		 * Everything from the control is rendered except the status icon.
+		 * @public
+		 */
+		StatusIconHidden : "StatusIconHidden"
+	};
+
+	/**
+	 * Value states for the <code>GenericTag</code> control.
+	 *
+	 * @enum {string}
+	 * @public
+	 * @since 1.62.0
+	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.GenericTagValueState = {
+		/**
+		 * The value is rendered in its normal state.
+		 * @public
+		 */
+		None : "None",
+		/**
+		 * Warning icon is rendered that overrides the control set in the <code>value</code>
+		 * aggregation of the <code>GenericTag</code> control.
+		 * @public
+		 */
+		Error : "Error"
+	};
+
+	/**
 	 * Defines the mode of GenericTile.
 	 *
 	 * @enum {string}
@@ -1484,7 +1540,7 @@ sap.ui.define([
 	 * regardless of the value that this method returns.
 	 *
 	 * @param {object} mOptions The option array
-	 * @returns {integer} The number of tickmarks
+	 * @returns {int} The number of tickmarks
 	 *
 	 * @function
 	 * @name sap.m.IScale.getTickmarksBetweenLabels
@@ -1499,7 +1555,7 @@ sap.ui.define([
 	 * for the later calculations.
 	 *
 	 * @param {object} mOptions The option array
-	 * @returns {integer} The number of tickmarks
+	 * @returns {int} The number of tickmarks
 	 *
 	 * @function
 	 * @name sap.m.IScale.calcNumberOfTickmarks
@@ -1740,16 +1796,19 @@ sap.ui.define([
 
 		/**
 		 * Inherit. In this mode the global configuration of the density mode will be applied.
+		 * @public
 		 */
 		Inherit : "Inherit",
 
 		/**
 		 * Compact. In this mode the tabs will be set explicitly to compact mode independent of what mode is applied globally.
+		 * @public
 		 */
 		Compact : "Compact",
 
 		/**
 		 * Cozy. In this mode the tabs will be set explicitly to compact mode independent of what mode is applied globally.
+		 * @public
 		 */
 		Cozy : "Cozy"
 	};
@@ -2997,19 +3056,19 @@ sap.ui.define([
 
 		/**
 		 * Action on SelectionDetailsItem level.
-		 * @private
+		 * @protected
 		 */
 		Item : "Item",
 
 		/**
 		 * Action on SelectionDetails list level.
-		 * @private
+		 * @protected
 		 */
 		List : "List",
 
 		/**
 		 * ActionGroup on SelectionDetails list level.
-		 * @private
+		 * @protected
 		 */
 		Group : "Group"
 	};
@@ -3513,6 +3572,36 @@ sap.ui.define([
 	};
 
 	/**
+	 * States of the upload process for {@link sap.m.UploadCollectionItem}.
+	 *
+	 * @enum {string}
+	 * @public
+	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.UploadState = {
+		/**
+		 * The file has been uploaded successfuly.
+		 * @public
+		 */
+		Complete: "Complete",
+		/**
+		 * The file cannot be uploaded due to an error.
+		 * @public
+		 */
+		Error: "Error",
+		/**
+		 * The file is awaiting an explicit command to start being uploaded.
+		 * @public
+		 */
+		Ready: "Ready",
+		/**
+		 * The file is currently being uploaded.
+		 * @public
+		 */
+		Uploading: "Uploading"
+	};
+
+	/**
 	 * Available wrapping types for text controls that can be wrapped that enable you
 	 * to display the text as hyphenated.
 	 *
@@ -3537,6 +3626,34 @@ sap.ui.define([
 		 * @public
 		 */
 		Hyphenated : "Hyphenated"
+	};
+
+	/**
+	 * Available sticky modes for the {@link sap.m.SinglePlanningCalendar}
+	 *
+	 * @enum {string}
+	 * @public
+	 * @since 1.62
+	 * @ui5-metamodel This enumeration also will be described in tge UI5 (legacy) designtime metamodel
+	 */
+	thisLib.PlanningCalendarStickyMode = {
+		/**
+		 * Nothing will stick at the top.
+		 * @public
+		 */
+		None: "None",
+
+		/**
+		 * Actions toolbar, navigation toolbar and the column headers will be sticky.
+		 * @public
+		 */
+		All: "All",
+
+		/**
+		 * Only the navigation toolbar and column headers will be sticky.
+		 * @public
+		 */
+		NavBarAndColHeaders: "NavBarAndColHeaders"
 	};
 
 	//lazy imports for MessageToast
@@ -4101,7 +4218,7 @@ sap.ui.define([
 
 			if (sBgImgUrl) { // use the settings only if a background image is configured
 				rm.addStyle("display", "block"); // enforce visibility even if a parent has also a background image
-				rm.addStyle("background-image", "url(" + encodeXML(sBgImgUrl) + ")");
+				rm.addStyle("background-image", "url(" + encodeCSS(sBgImgUrl) + ")");
 
 				rm.addStyle("background-repeat", bRepeat ? "repeat" : "no-repeat");
 				if (!bRepeat) {

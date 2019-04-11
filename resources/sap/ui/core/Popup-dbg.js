@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -917,7 +917,10 @@ sap.ui.define([
 			// If the focus needs to be set into the popup and it's different than the current
 			// document active element, the current active element is blurred here to prevent
 			// it from getting further events during the opening animation of the popup
-			if (oDomRefToFocus !== document.activeElement) {
+
+			// The existence of the blur method should be checked because svg elements don't
+			// have blur method in IE 11
+			if (document.activeElement.blur && oDomRefToFocus !== document.activeElement) {
 				document.activeElement.blur();
 			}
 		}
@@ -2535,7 +2538,7 @@ sap.ui.define([
 	//****************************************************
 	//Handling of movement of the dock references
 	//****************************************************
-	Popup.DockTrigger = new IntervalTrigger(200);
+	Popup.DockTrigger = IntervalTrigger;
 
 	Popup.checkDocking = function(){
 		if (this.getOpenState() === OpenState.OPEN) {

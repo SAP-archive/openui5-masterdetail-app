@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -151,9 +151,6 @@ sap.ui.define(["sap/m/library", "sap/ui/Device", "./ListItemBaseRenderer"],
 		// modes
 		rm.addClass("sapMListMode" + oControl.getMode());
 
-		// inset
-		oControl.getInset() && rm.addClass("sapMListInset");
-
 		// write inserted styles and classes
 		rm.writeClasses();
 		rm.writeStyles();
@@ -277,9 +274,10 @@ sap.ui.define(["sap/m/library", "sap/ui/Device", "./ListItemBaseRenderer"],
 	 * @param {sap.ui.core.Control} oControl an object representation of the control
 	 */
 	ListBaseRenderer.getAccessibilityState = function(oControl) {
+		var sRole = this.getAriaRole(oControl);
 		return {
-			role : this.getAriaRole(oControl),
-			multiselectable : oControl._bSelectionMode ? oControl.getMode() == "MultiSelect" : undefined,
+			role : sRole,
+			multiselectable : (sRole && oControl._bSelectionMode) ? oControl.getMode() == "MultiSelect" : undefined,
 			labelledby : {
 				value : this.getAriaLabelledBy(oControl),
 				append : true
@@ -347,6 +345,20 @@ sap.ui.define(["sap/m/library", "sap/ui/Device", "./ListItemBaseRenderer"],
 		}
 
 		oGrowingDelegate.render(rm);
+	};
+
+	/**
+	 * Creates an invisible ARIA node for the given message bundle text
+	 * in the static UIArea and returns its id for ARIA announcements.
+	 *
+	 * This method should be used when text is used frequently.
+	 *
+	 * @param {String} sBundleText bundle key of the announcement
+	 * @returns {String} id of the generated invisible ARIA node
+	 * @protected
+	 */
+	ListBaseRenderer.getAriaAnnouncement = function(sBundleText) {
+		return ListItemBaseRenderer.getAriaAnnouncement(null, sBundleText);
 	};
 
 	return ListBaseRenderer;

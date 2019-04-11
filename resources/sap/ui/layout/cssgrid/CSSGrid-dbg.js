@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -97,10 +97,10 @@ sap.ui.define([
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @extends sap.ui.core.Control
-	 * @implements {sap.ui.layout.cssgrid.IGridConfigurable}
+	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
 	 *
 	 * @since 1.60
 	 * @constructor
@@ -186,8 +186,9 @@ sap.ui.define([
 			/**
 			 * The items contained by the control.
 			 */
-			items: { type: "sap.ui.core.Control", multiple: true, singularName: "item" }
-		}
+			items: { type: "sap.ui.core.Control", multiple: true, singularName: "item", dnd: true }
+		},
+		dnd: { draggable: false, droppable: true }
 	}});
 
 	/**
@@ -305,7 +306,7 @@ sap.ui.define([
 	/**
 	 * Updates the <code>CSSGrid</code> depending on change mutations.
 	 *
-	 * @param {object} [oChange] Change that must be applied to CSSGrid
+	 * @param {object} [oChanges] Changes that must be applied to CSSGrid
 	 * @private
 	 */
 	CSSGrid.prototype._onGridChange = function (oChanges) {

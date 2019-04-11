@@ -156,12 +156,9 @@ html.sap-phone .sapMDialog {
 		}
 	}
 }
+html.sap-tablet .sapMDialog,
 html.sap-desktop .sapMDialog {
 	min-width: 20rem;
-}
-
-html.sap-tablet:not(.sap-combi) .sapMDialog {
-    min-width: 10rem;
 }
 
 .sapMDialog .sapMIBar {
@@ -181,8 +178,15 @@ html.sap-tablet:not(.sap-combi) .sapMDialog {
 	vertical-align: middle;
 }
 
-.sapMDialog.sapMDialogVerticalScrollIncluded .sapMDialogScroll {
-	width: auto;
+.sapMDialog.sapMDialogVerticalScrollIncluded {
+	.sapMDialogScroll {
+		width: auto;
+	}
+
+	html[data-sap-ui-browser^="sf"] & .sapMDialogSection {
+		/* For Safari - allow the vertical scroll bar to overlap the right padding which we use to compensate for its width. This happens by default for other browsers. */
+		overflow-y: overlay !important;
+	}
 }
 
 /* disable scrolling automatically for sap.m.Page sap.m.NavContainer sap.m.ScrollingContainer inside Dialog */
@@ -571,4 +575,9 @@ html[data-sap-ui-animation='off'] {
 	&:last-of-type .sapMIBar.sapMIBar { // .sapMIBar.sapMIBar - doubles the specificity in order to override other styles
 		box-shadow: inset 0 -0.125rem @sapHighlightColor;
 	}
+}
+
+.sapMDialog .sapMDialogFirstFE,
+.sapMDialog .sapMDialogLastFE {
+	font-size: 0;
 }

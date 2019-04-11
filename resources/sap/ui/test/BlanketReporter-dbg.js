@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -133,7 +133,7 @@ sap.ui.define([
 					+ "</div>");
 				oHtml.setVisible(true);
 			} else {
-				oHtml.setContent("<div/>");
+				oHtml.setContent("<div></div>");
 			}
 		}
 	});
@@ -219,12 +219,9 @@ sap.ui.define([
 			iLinesOfContext = Infinity;
 		}
 		return aSourceLines.reduce(function (sHtml, sSourceLine, iLine) {
-			var iNextHighlightedLine = aPositions.length && aPositions[0].line || Infinity,
-				iNextHitsLine = bShowHits
-					? aHits.findIndex(function (iHits, i) {
-						return iHits !== undefined && i >= iLine;
-					})
-					: aHits.indexOf(0, iLine);
+			var i,
+				iNextHighlightedLine = aPositions.length && aPositions[0].line || Infinity,
+				iNextHitsLine;
 
 			function show() {
 				sHtml += "<div";
@@ -242,6 +239,17 @@ sap.ui.define([
 				}
 				sHtml += highlightLine(iLine, sSourceLine)
 					+ "</div>";
+			}
+
+			if (bShowHits) {
+				for (i = iLine; i < aHits.length; i += 1) {
+					if (aHits[i] !== undefined) {
+						iNextHitsLine = i;
+						break;
+					}
+				}
+			} else {
+				iNextHitsLine = aHits.indexOf(0, iLine);
 			}
 
 			if (iNextHitsLine >= 0 && iNextHitsLine < iNextHighlightedLine) {
@@ -495,8 +503,9 @@ sap.ui.define([
 			}
 
 			oDiv.setAttribute("class", "coverageSummary");
-			oDiv.innerHTML = '<a href="#coverage" id="coverage">Blanket Code Coverage: OK</a>';
-			jQuery(oDiv).one("click", function (oMouseEvent) {
+			oDiv.innerHTML = '<a href="" id="coverage">Blanket Code Coverage: OK</a>';
+			jQuery("#coverage").one("click", function (oMouseEvent) {
+				oMouseEvent.preventDefault();
 				jQuery(oDiv).fadeOut(function () {
 					createViewAndPlaceAt(oModel, getDiv());
 				});

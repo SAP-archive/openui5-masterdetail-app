@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -112,7 +112,7 @@ sap.ui.define(["sap/ui/support/library", "./CoreHelper.support"],
 
 			if (foundIssues > 0) {
 				issueManager.addIssue({
-					severity: sap.ui.support.Severity.Medium,
+					severity: Severity.Medium,
 					details: cssFilesMessage,
 					context: {
 						id: "WEBPAGE"
@@ -169,7 +169,7 @@ sap.ui.define(["sap/ui/support/library", "./CoreHelper.support"],
 
 			Object.keys(controlCustomCssHashMap).forEach(function(id) {
 				issueManager.addIssue({
-					severity: sap.ui.support.Severity.Low,
+					severity: Severity.Low,
 					details: "The following selector(s) " + controlCustomCssHashMap[id] + " affects standard style setting for control",
 					context: {
 						id: id

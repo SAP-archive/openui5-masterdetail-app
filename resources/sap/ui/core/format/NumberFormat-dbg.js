@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -9,11 +9,11 @@ sap.ui.define([
 	'sap/ui/base/Object',
 	'sap/ui/core/Locale',
 	'sap/ui/core/LocaleData',
-	"sap/base/strings/escapeRegExp",
-	"sap/base/assert",
-	"sap/ui/thirdparty/jquery"
+	'sap/base/Log',
+	'sap/base/assert',
+	'sap/ui/thirdparty/jquery'
 ],
-	function(BaseObject, Locale, LocaleData, escapeRegExp, assert, jQuery) {
+	function(BaseObject, Locale, LocaleData, Log, assert, jQuery) {
 	"use strict";
 
 
@@ -225,6 +225,7 @@ sap.ui.define([
 		currencyCode: true,
 		currencyContext: 'standard',
 		style: "standard",
+		customCurrencies: undefined,
 		parseAsString: false,
 		roundingMode: NumberFormat.RoundingMode.HALF_AWAY_FROM_ZERO,
 		emptyString: NaN,
@@ -312,8 +313,8 @@ sap.ui.define([
 	 * @param {sap.ui.core.format.NumberFormat.RoundingMode} [oFormatOptions.roundingMode=HALF_AWAY_FROM_ZERO] specifies a rounding behavior for discarding the digits after the maximum fraction digits
 	 *  defined by maxFractionDigits. Rounding will only be applied, if the passed value if of type number. This can be assigned by value in {@link sap.ui.core.format.NumberFormat.RoundingMode RoundingMode}
 	 *  or a function which will be used for rounding the number. The function is called with two parameters: the number and how many decimal digits should be reserved.
-	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are only NaN, null or 0.
-	 *  The 'format' and 'parse' are done in a symmetric way which means when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are "" (empty string), NaN, null or 0.
+	 *  The 'format' and 'parse' are done in a symmetric way. For example when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
 	 * @param {sap.ui.core.Locale} [oLocale] Locale to get the formatter for
 	 * @return {sap.ui.core.format.NumberFormat} float instance of the NumberFormat
 	 * @static
@@ -368,7 +369,7 @@ sap.ui.define([
 	 *  defined by maxFractionDigits. Rounding will only be applied, if the passed value if of type number. This can be assigned by value in {@link sap.ui.core.format.NumberFormat.RoundingMode RoundingMode}
 	 *  or a function which will be used for rounding the number. The function is called with two parameters: the number and how many decimal digits should be reserved.
 	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are only NaN, null or 0.
-	 *  The 'format' and 'parse' are done in a symmetric way which means when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 *  The 'format' and 'parse' are done in a symmetric way. For example when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
 	 * @param {sap.ui.core.Locale} [oLocale] Locale to get the formatter for
 	 * @return {sap.ui.core.format.NumberFormat} integer instance of the NumberFormat
 	 * @static
@@ -393,6 +394,49 @@ sap.ui.define([
 	 * Please set the roundingMode property in oFormatOptions to change the
 	 * default value.
 	 * </p>
+	 *
+	 * The currency instance supports locally defined custom currency exclusive to the created instance.
+	 * The following example shows how to use custom currencies (e.g. for Bitcoins):
+	 * <pre>
+	 * var oFormat = NumberFormat.getCurrencyInstance({
+	 *     "currencyCode": false,
+	 *     "customCurrencies": {
+	 *         "BTC": {
+	 *             "symbol": "Ƀ",
+	 *             "decimals": 3
+	 *         }
+	 *     }
+	 * });
+	 *
+	 * oFormat.format(123.4567, "BTC"); // "Ƀ 123.457"
+	 * </pre>
+	 *
+	 * As an alternative to using a fixed <code>symbol</code> for your custom currencies, you can also provide an ISO-Code.
+	 * The provided ISO-Code will be used to look up the currency symbol in the global configuration,
+	 * either defined in the CLDR or custom defined on the Format Settings (see {@link sap.ui.core.Configuration.FormatSettings#setCustomCurrencies}, {@link sap.ui.core.Configuration.FormatSettings#addCustomCurrencies}).
+	 *
+	 * If no symbol is given at all, the custom currency key is used for formatting.
+	 *
+	 * <pre>
+	 * var oFormat = NumberFormat.getCurrencyInstance({
+	 *     "currencyCode": false,
+	 *     "customCurrencies": {
+	 *         "MyDollar": {
+	 *             "isoCode": "USD",
+	 *             "decimals": 3
+	 *         },
+	 *         "Bitcoin": {
+	 *             "decimals": 2
+	 *         }
+	 *     }
+	 * });
+	 *
+	 * // symbol looked up from global configuration
+	 * oFormat.format(123.4567, "MyDollar"); // "$123.457"
+	 *
+	 * // no symbol available, custom currency key is rendered
+	 * oFormat.format(777.888, "Bitcoin"); // "Bitcoin 777.89"
+	 * </pre>
 	 *
 	 * @param {object} [oFormatOptions] The option object which support the following parameters. If no options is given, default values according to the type and locale settings are used.
 	 * @param {int} [oFormatOptions.minIntegerDigits=1] defines minimal number of non-decimal digits
@@ -422,11 +466,16 @@ sap.ui.define([
 	 *  defined by maxFractionDigits. Rounding will only be applied, if the passed value if of type number. This can be assigned by value in {@link sap.ui.core.format.NumberFormat.RoundingMode RoundingMode}
 	 *  or a function which will be used for rounding the number. The function is called with two parameters: the number and how many decimal digits should be reserved.
 	 * @param {boolean} [oFormatOptions.showMeasure=true] defines whether the measure according to the format is shown in the formatted string
-	 * @param {boolean} [oFormatOptions.currencyCode=true] defines whether the currency is shown as code in currency format. The currency symbol is displayed when this is set to false and there's symbol defined
+	 * @param {boolean} [oFormatOptions.currencyCode=true] defines whether the currency is shown as code in currency format. The currency symbol is displayed when this is set to false and there is a symbol defined
 	 *  for the given currency code.
 	 * @param {string} [oFormatOptions.currencyContext=standard] It can be set either with 'standard' (the default value) or with 'accounting' for an accounting specific currency display
-	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are only NaN, null or 0.
-	 *  The 'format' and 'parse' are done in a symmetric way which means when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are "" (empty string), NaN, null or 0.
+	 *  The 'format' and 'parse' are done in a symmetric way. For example when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 * @param {map} [oFormatOptions.customCurrencies] defines a set of custom currencies exclusive to this NumberFormat instance.
+	 *  If custom currencies are defined on the instance, no other currencies can be formatted and parsed by this instance.
+	 *  Globally available custom currencies can be added via the global configuration.
+	 *  See the above examples.
+	 *  See also {@link sap.ui.core.Configuration.FormatSettings#setCustomCurrencies} and {@link sap.ui.core.Configuration.FormatSettings#addCustomCurrencies}.
 	 * @param {sap.ui.core.Locale} [oLocale] Locale to get the formatter for
 	 * @return {sap.ui.core.format.NumberFormat} unit instance of the NumberFormat
 	 * @static
@@ -438,6 +487,9 @@ sap.ui.define([
 			oLocaleFormatOptions = this.getLocaleFormatOptions(oFormat.oLocaleData, mNumberType.CURRENCY, sContext);
 
 		oFormat.oFormatOptions = jQuery.extend(false, {}, this.oDefaultCurrencyFormat, oLocaleFormatOptions, oFormatOptions);
+
+		oFormat._defineCustomCurrencySymbols();
+
 		return oFormat;
 	};
 
@@ -491,8 +543,8 @@ sap.ui.define([
 	 *  defined by maxFractionDigits. Rounding will only be applied, if the passed value if of type number. This can be assigned by value in {@link sap.ui.core.format.NumberFormat.RoundingMode RoundingMode}
 	 *  or a function which will be used for rounding the number. The function is called with two parameters: the number and how many decimal digits should be reserved.
 	 * @param {boolean} [oFormatOptions.showMeasure=true] defines whether the measure according to the format is shown in the formatted string
-	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are only NaN, null or 0.
-	 *  The 'format' and 'parse' are done in a symmetric way which means when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are "" (empty string), NaN, null or 0.
+	 *  The 'format' and 'parse' are done in a symmetric way. For example when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
 	 * @param {sap.ui.core.Locale} [oLocale] Locale to get the formatter for
 	 * @return {sap.ui.core.format.NumberFormat} unit instance of the NumberFormat
 	 * @static
@@ -547,8 +599,8 @@ sap.ui.define([
 	 * @param {sap.ui.core.format.NumberFormat.RoundingMode} [oFormatOptions.roundingMode=HALF_AWAY_FROM_ZERO] specifies a rounding behavior for discarding the digits after the maximum fraction digits
 	 *  defined by maxFractionDigits. Rounding will only be applied, if the passed value if of type number. This can be assigned by value in {@link sap.ui.core.format.NumberFormat.RoundingMode RoundingMode}
 	 *  or a function which will be used for rounding the number. The function is called with two parameters: the number and how many decimal digits should be reserved.
-	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are only NaN, null or 0.
-	 *  The 'format' and 'parse' are done in a symmetric way which means when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
+	 * @param {number} [oFormatOptions.emptyString=NaN] @since 1.30.0 defines what empty string is parsed as and what is formatted as empty string. The allowed values are "" (empty string), NaN, null or 0.
+	 *  The 'format' and 'parse' are done in a symmetric way. For example when this parameter is set to NaN, empty string is parsed as NaN and NaN is formatted as empty string.
 	 * @param {sap.ui.core.Locale} [oLocale] Locale to get the formatter for
 	 * @return {sap.ui.core.format.NumberFormat} percentage instance of the NumberFormat
 	 * @static
@@ -593,14 +645,38 @@ sap.ui.define([
 				});
 			}
 			if (oFormatOptions.emptyString !== undefined) {
-				assert(typeof oFormatOptions.emptyString !== "string", "The format option 'emptyString' can not be with type 'string'");
-				assert(oFormatOptions.emptyString === 0 || oFormatOptions.emptyString === null || /* check if it's NaN (only NaN doesn't equal to itself) */ oFormatOptions.emptyString !== oFormatOptions.emptyString, "The format option 'emptyString' must be either 0, null or NaN");
+				assert(oFormatOptions.emptyString === "" || oFormatOptions.emptyString === 0 || oFormatOptions.emptyString === null || /* check if it's NaN (only NaN doesn't equal to itself) */ oFormatOptions.emptyString !== oFormatOptions.emptyString, "The format option 'emptyString' must be either 0, null or NaN");
 			}
 		}
 
 		return oFormat;
 	};
 
+	/**
+	 * Returns a default unit format/parse pattern for the given unit short name.
+	 * The returned pattern can then be used for custom units, for example as a <code>unitPattern-count-other</code> pattern.
+	 * The <code>unitPattern-count-other</code> pattern is then used by NumberFormat instances as a fallback in case
+	 * no other patterns are defined, see the below example:
+	 *
+	 * <pre>
+	 * var oFormat = NumberFormat.getUnitInstance({
+	 *     "customUnits": {
+	 *         "myUnit": {
+	 *             "unitPattern-count-other": NumberFormat.getDefaultUnitPattern("Bottles"); // returns "{0} Bottles"
+	 *         }
+	 *     }
+	 * });
+	 * oFormat.format(1234, "myUnit"); // returns "1.234,00 Bottles"
+	 * </pre>
+	 *
+	 * @param {string} sShortName the short name of the unit used in the created pattern
+	 * @returns {string} a pattern, which can be used for formatting and parsing a custom unit of measure
+	 * @sap-restricted sap.ui.model.odata.type
+	 * @private
+	 */
+	NumberFormat.getDefaultUnitPattern = function(sShortName) {
+		return "{0} " + sShortName;
+	};
 
 	/**
 	 * Get locale dependent default format options.
@@ -637,6 +713,7 @@ sap.ui.define([
 		// Some options need to be overridden to stay compatible with the formatting defaults
 		// before pattern parsing was added to the NumberFormat
 		switch (iType) {
+			case mNumberType.UNIT:
 			case mNumberType.FLOAT:
 			case mNumberType.PERCENT:
 				// Unlimited fraction digits for float and percent values
@@ -736,6 +813,76 @@ sap.ui.define([
 	};
 
 	/**
+	 * Compiles a map <code>this.mKnownCurrencySymbols</code>
+	 * of all custom currency symbols. Symbols are either defined in
+	 * the custom currency object itself, or are looked up on the
+	 * LocaleData in case an ISO Code is given.
+	 *
+	 * It also checks if there are duplicated symbols defined,
+	 * which lead to an ambiguous parse result.
+	 *
+	 * In case there are custom currencies defined on instance level,
+	 * it also compiles a map <code>this.mKnownCurrencyCodes</code>
+	 * of custom currency codes.
+	 *
+	 * The function is only used by the Currency formatting.
+	 * @private
+	 */
+	NumberFormat.prototype._defineCustomCurrencySymbols = function() {
+		var oOptions = this.oFormatOptions;
+		var mCurrencySymbols = this.oLocaleData.getCurrencySymbols();
+
+		var fnFindDuplicates = function(mSymbols, mResult) {
+			var aUniqueSymbols = [];
+			var sSymbol;
+			for (var sKey in mSymbols) {
+				sSymbol = mSymbols[sKey];
+				if (aUniqueSymbols.indexOf(sSymbol) === -1) {
+					aUniqueSymbols.push(sSymbol);
+				} else if (sSymbol !== undefined) {
+					// Duplicated symbol found
+					mResult[sSymbol] = true;
+					Log.error("Symbol '" + sSymbol + "' is defined multiple times in custom currencies.", undefined, "NumberFormat");
+				}
+			}
+		};
+
+		// process custom currencies on instance-level
+		if (oOptions.customCurrencies && typeof oOptions.customCurrencies === "object") {
+			this.mKnownCurrencySymbols = {};
+			this.mKnownCurrencyCodes = {};
+
+			// get all relevant symbols for custom currencies
+			Object.keys(oOptions.customCurrencies).forEach(function (sKey) {
+				if (oOptions.customCurrencies[sKey].symbol) {
+					this.mKnownCurrencySymbols[sKey] = oOptions.customCurrencies[sKey].symbol;
+				} else {
+					// if no symbol is defined, we make a look up into the locale data with the given isoCode
+					var sIsoCode = oOptions.customCurrencies[sKey].isoCode;
+					if (sIsoCode) {
+						this.mKnownCurrencySymbols[sKey] = mCurrencySymbols[sIsoCode];
+					}
+				}
+
+				// In case no symbol is found during parsing,
+				// we take the custom currency key itself
+				this.mKnownCurrencyCodes[sKey] = sKey;
+
+			}.bind(this));
+
+		} else {
+			// find duplicated symbols in global config/CLDR
+			// mCurrencySymbols
+			this.mKnownCurrencySymbols = mCurrencySymbols;
+			this.mKnownCurrencyCodes = this.oLocaleData.getCustomCurrencyCodes();
+		}
+
+		// Find duplicated symbols defined in custom currencies
+		this.mDuplicatedSymbols = {};
+		fnFindDuplicates(this.mKnownCurrencySymbols, this.mDuplicatedSymbols);
+	};
+
+	/**
 	 * Format a number according to the given format options.
 	 *
 	 * @param {number|array} vValue the number to format or an array which contains the number to format and the sMeasure parameter
@@ -778,6 +925,13 @@ sap.ui.define([
 			return "";
 		}
 
+		// If custom currencies are defined, we exclusively accept the defined ones,
+		// other currencies are ignored
+		if (sMeasure && oOptions.customCurrencies && !oOptions.customCurrencies[sMeasure]) {
+			Log.error("Currency '" + sMeasure + "' is unknown.");
+			return "";
+		}
+
 		// Recognize the correct unit definition (either custom unit or CLDR unit)
 		if (oOptions.type === mNumberType.UNIT) {
 			if (oOptions.customUnits && typeof oOptions.customUnits === "object") {
@@ -789,10 +943,21 @@ sap.ui.define([
 				mUnitPatterns = this.oLocaleData.getUnitFormat(sLookupMeasure);
 			}
 
+			// either take the decimals/precision on the custom units or fallback to the given format-options
 			oOptions.decimals = (mUnitPatterns && (typeof mUnitPatterns.decimals === "number" && mUnitPatterns.decimals >= 0)) ? mUnitPatterns.decimals : oOptions.decimals;
 			oOptions.precision = (mUnitPatterns && (typeof mUnitPatterns.precision === "number" && mUnitPatterns.precision >= 0)) ? mUnitPatterns.precision : oOptions.precision;
 		}
 
+		if (oOptions.type == mNumberType.CURRENCY) {
+			// if decimals are given on a custom currency, they have precedence over the decimals defined on the format options
+			if (oOptions.customCurrencies && oOptions.customCurrencies[sMeasure]) {
+				// we either take the custom decimals or use decimals defined in the format-options
+				// we check for undefined here, since 0 is an accepted value
+				oOptions.decimals = oOptions.customCurrencies[sMeasure].decimals !== undefined ? oOptions.customCurrencies[sMeasure].decimals : oOptions.decimals;
+			}
+		}
+
+		// set fraction digits based on the given or derived decimals
 		if (oOptions.decimals !== undefined) {
 			oOptions.minFractionDigits = oOptions.decimals;
 			oOptions.maxFractionDigits = oOptions.decimals;
@@ -852,6 +1017,12 @@ sap.ui.define([
 		//handle measure
 		if (oOptions.type == mNumberType.CURRENCY) {
 			var iDigits = this.oLocaleData.getCurrencyDigits(sMeasure);
+
+			// decimals might be undefined, yet 0 is accepted of course
+			if (oOptions.customCurrencies && oOptions.customCurrencies[sMeasure] && oOptions.customCurrencies[sMeasure].decimals !== undefined) {
+				iDigits = oOptions.customCurrencies[sMeasure].decimals;
+			}
+
 			if (oOptions.maxFractionDigits === undefined) {
 				oOptions.maxFractionDigits = iDigits;
 			}
@@ -993,8 +1164,20 @@ sap.ui.define([
 				}
 			}
 
+			// check if we need to render a symbol instead of a currency-code
 			if (!oOptions.currencyCode) {
-				sMeasure = this.oLocaleData.getCurrencySymbol(sMeasure);
+				var sSymbol;
+				// custom currencies provided
+				if (oOptions.customCurrencies && typeof oOptions.customCurrencies === "object") {
+					// the custom currency symbol map was preprocessed on instance creation
+					sSymbol = this.mKnownCurrencySymbols[sMeasure];
+				} else {
+					sSymbol = this.oLocaleData.getCurrencySymbol(sMeasure);
+				}
+
+				if (sSymbol && sSymbol !== sMeasure) {
+					sMeasure = sSymbol;
+				}
 			}
 
 			sResult = this._composeCurrencyResult(sPattern, sResult, sMeasure, {
@@ -1034,7 +1217,7 @@ sap.ui.define([
 					return "";
 				}
 				sResult = sPattern.replace("{0}", sResult);
-			} else {
+			} else if (!oOptions.unitOptional) {
 				assert(mUnitPatterns, "Unit '" + sMeasure + "' is unknown");
 				return "";
 			}
@@ -1060,6 +1243,9 @@ sap.ui.define([
 		if (oOptions.showMeasure && sMeasure) {
 			var sPlaceHolder = "\u00a4",
 				// convert the PCRE regex in CLDR to the regex supported by Javascript
+				// The regex means to exclude all possible currency symbols.
+				// In PCRE regex, there's an expression to match all currency symbols /\p{Sc}/ which has to be converted to this long regex in javascript.
+				// This regex is borrowed from https://stackoverflow.com/questions/25910808/javascript-regex-currency-symbol-in-a-string.
 				mRegex = {
 					"[:digit:]": /\d/,
 					"[:^S:]": /[^\$\xA2-\xA5\u058F\u060B\u09F2\u09F3\u09FB\u0AF1\u0BF9\u0E3F\u17DB\u20A0-\u20BD\uA838\uFDFC\uFE69\uFF04\uFFE0\uFFE1\uFFE5\uFFE6]/
@@ -1139,7 +1325,7 @@ sap.ui.define([
 			if (oOptions.parseAsString && (oOptions.emptyString === 0 || isNaN(oOptions.emptyString))) {
 				vEmptyParseValue = oOptions.emptyString + "";
 			}
-			if (oOptions.type === mNumberType.CURRENCY) {
+			if (oOptions.type === mNumberType.CURRENCY || oOptions.type === mNumberType.UNIT) {
 				return [vEmptyParseValue, undefined];
 			} else {
 				return vEmptyParseValue;
@@ -1181,9 +1367,16 @@ sap.ui.define([
 			if (aUnitCode.length === 1) {
 				sMeasure = aUnitCode[0];
 			} else if (aUnitCode.length === 0) {
-				//unit not found
-				assert(aUnitCode.length === 1, "Cannot find unit for input: '" + (sValue) + "'");
-				return null;
+				// in case showMeasure is set to false or unitOptional is set to true
+				// we only try to parse the numberValue
+				// the currency format behaves the same
+				if ((oOptions.unitOptional || !oOptions.showMeasure) && typeof sValue === "string") {
+					oPatternAndResult.numberValue = sValue;
+				} else {
+					//unit not found
+					assert(aUnitCode.length === 1, "Cannot find unit for input: '" + (sValue) + "'");
+					return null;
+				}
 			} else {
 				//ambiguous unit
 				assert(aUnitCode.length === 1, "Ambiguous unit [" + aUnitCode.join(", ") + "] for input: '" + (sValue) + "'");
@@ -1193,16 +1386,24 @@ sap.ui.define([
 			sValue = oPatternAndResult.numberValue || sValue;
 		}
 
+		var oResult;
 		if (oOptions.type === mNumberType.CURRENCY) {
-			var mCurrencySymbols = this.oLocaleData.getCurrencySymbols(),
-				oResult = parseNumberAndCurrency(mCurrencySymbols, sValue),
-				sMeasure;
+			oResult = parseNumberAndCurrency({
+				value: sValue,
+				currencySymbols: this.mKnownCurrencySymbols,
+				customCurrencyCodes: this.mKnownCurrencyCodes,
+				duplicatedSymbols: this.mDuplicatedSymbols,
+				customCurrenciesAvailable: !!oOptions.customCurrencies
+			});
+
 			if (!oResult) {
 				return null;
 			}
+
 			sValue = oResult.numberValue;
 			sMeasure = oResult.currencyCode;
-			if (!oOptions.showMeasure && sMeasure) {
+
+			if ((oOptions.customCurrencies && sMeasure === null) || (!oOptions.showMeasure && sMeasure)) {
 				return null;
 			}
 		}
@@ -1687,7 +1888,10 @@ sap.ui.define([
 			numberValue: undefined,
 			cldrCode: []
 		};
-		var iBestLength;
+		if (typeof sValue !== "string") {
+			return oBestMatch;
+		}
+		var iBestLength = Number.POSITIVE_INFINITY;
 		var sUnitCode, sKey;
 		for (sUnitCode in mUnitPatterns) {
 			for (sKey in mUnitPatterns[sUnitCode]) {
@@ -1695,29 +1899,35 @@ sap.ui.define([
 				if (sKey.indexOf("unitPattern") === 0) {
 					var sUnitPattern = mUnitPatterns[sUnitCode][sKey];
 
+					// IMPORTANT:
+					// To increase performance we are using native string operations instead of regex,
+					// to match the patterns against the input.
+					//
 					// sample input: e.g. "mi 12 tsd. ms²"
 					// unit pattern: e.g. "mi {0} ms²"
-					// regex from pattern: "^mi (.+) ms²$"
-					// match regex against input to get number.
+
 					// The smallest resulting number (String length) will be the best match
-					var bContainsExpression = sUnitPattern.indexOf("{0}") > -1;
+					var iNumberPatternIndex = sUnitPattern.indexOf("{0}");
+					var bContainsExpression = iNumberPatternIndex > -1;
 					if (bContainsExpression) {
 
 						//escape regex characters to match it properly
-						sUnitPattern = "^" + escapeRegExp(sUnitPattern).replace("\\{0\\}", "(.+)") + "$";
+						var sPrefix = sUnitPattern.substring(0, iNumberPatternIndex);
+						var sPostfix = sUnitPattern.substring(iNumberPatternIndex + "{0}".length);
 
-						var regexp = new RegExp(sUnitPattern);
-						var match = regexp.exec(sValue);
-						if (match && match[1]) {
+						var bMatches = sValue.startsWith(sPrefix) && sValue.endsWith(sPostfix);
+
+						var match = bMatches && sValue.substring(sPrefix.length, sValue.length - sPostfix.length);
+						if (match) {
 							//get the match with the shortest result.
 							// e.g. 1km -> (.+)m -> "1k" -> length 2
 							// e.g. 1km -> (.+)km -> "1" -> length 1
 
-							if (iBestLength === undefined || match[1].length < iBestLength) {
-								iBestLength = match[1].length;
-								oBestMatch.numberValue = match[1];
+							if (match.length < iBestLength) {
+								iBestLength = match.length;
+								oBestMatch.numberValue = match;
 								oBestMatch.cldrCode = [sUnitCode];
-							} else if (match[1].length === iBestLength && oBestMatch.cldrCode.indexOf(sUnitCode) === -1) {
+							} else if (match.length === iBestLength && oBestMatch.cldrCode.indexOf(sUnitCode) === -1) {
 								//ambiguous unit (en locale)
 								// e.g. 100 c -> (.+) c -> duration-century
 								// e.g. 100 c -> (.+) c -> volume-cup
@@ -1747,46 +1957,113 @@ sap.ui.define([
 	}
 
 	/**
-	 * Parses number and currency
+	 * Identify the longest match between a sub string of <code>sValue</code>
+	 * and one of the values of the <code>mCollection</code> map.
 	 *
-	 * Sarch for the currency symbol first, looking for the longest match. In case no currency
-	 * symbol is found, search for a three letter currency code.
+	 * @param {string} sValue the string value which is checked for all currency codes/symbols during a parse call
+	 * @param {object} mCollection a collection of currency codes or symbols
 	 *
-	 * @param {object} mCurrencyCodes
-	 * @param {string} sValue
-	 *
-	 * @return {object} return object containing numberValue and currencyCode or null
+	 * @return {object} returns object containing matched symbol/ code
 	 */
-	function parseNumberAndCurrency(mCurrencyCodes, sValue) {
-		var rMatchExp = /(^[A-Z]{3}|[A-Z]{3}$)/,
-			sSymbol = "", sCode, sCurCode, sCurSymbol, aResult;
+	function findLongestMatch(sValue, mCollection) {
+		var sSymbol = "", sCode, sCurSymbol;
 
-		// Search for known symbols (longest match)
-		for (sCurCode in mCurrencyCodes) {
-			sCurSymbol = mCurrencyCodes[sCurCode];
+		for (var sCurCode in mCollection) {
+			sCurSymbol = mCollection[sCurCode];
 			if (sValue.indexOf(sCurSymbol) >= 0 && sSymbol.length < sCurSymbol.length) {
 				sSymbol = sCurSymbol;
 				sCode = sCurCode;
 			}
 		}
 
-		// Search for three letter currency code
-		if (!sCode) {
-			aResult = sValue.match(rMatchExp);
-			sCode = aResult && aResult[0];
+		return {
+			symbol: sSymbol,
+			code: sCode
+		};
+	}
+
+	/**
+	 * Parses number and currency
+	 *
+	 * Search for the currency symbol first, looking for the longest match. In case no currency
+	 * symbol is found, search for a three letter currency code.
+	 *
+	 * @param {object} oConfig
+	 * @param {string} oConfig.value the string value to be parse
+	 * @param {object} oConfig.currencySymbols the list of currency symbols to respect during parsing
+	 * @param {object} oConfig.customCurrencyCodes the list of currency codes used for parsing in case no symbol was found in the value string
+	 * @param {object} oConfig.duplicatedSymbols a list of all duplicated symbols;
+	 * In case oFormatOptions.currencyCode is set to false and the value string contains a duplicated symbol,
+	 * the value is not parsable. The result will be a parsed number and <code>undefined</code> for the currency.
+	 * @param {boolean} oConfig.customCurrenciesAvailable a flag to mark if custom currencies are available on the instance
+	 *
+	 * @private
+	 * @return {object} returns object containing numberValue and currencyCode or null
+	 */
+	function parseNumberAndCurrency(oConfig) {
+		var sValue = oConfig.value;
+
+		// Search for known symbols (longest match)
+		// no distinction between default and custom currencies
+		var oMatch = findLongestMatch(sValue, oConfig.currencySymbols);
+
+		// Search for currency code
+		if (!oMatch.code) {
+			// before falling back to the default regex for ISO codes we check the
+			// codes for custom currencies (if defined)
+			oMatch = findLongestMatch(sValue, oConfig.customCurrencyCodes);
+
+			if (!oMatch.code && !oConfig.customCurrenciesAvailable) {
+				// Match 3-letter iso code
+				var aIsoMatches = sValue.match(/(^[A-Z]{3}|[A-Z]{3}$)/);
+				oMatch.code = aIsoMatches && aIsoMatches[0];
+			}
 		}
 
 		// Remove symbol/code from value
-		if (sCode) {
-			sValue = sValue.replace(sSymbol || sCode, "");
+		if (oMatch.code) {
+			var iLastCodeIndex = oMatch.code.length - 1;
+			var sLastCodeChar = oMatch.code.charAt(iLastCodeIndex);
+			var iDelimiterPos;
+			var rValidDelimiters = /[\-\s]+/;
+
+			// Check whether last character of matched code is a number
+			if (/\d$/.test(sLastCodeChar)) {
+				// Check whether parse string starts with the matched code
+				if (sValue.startsWith(oMatch.code)) {
+					iDelimiterPos = iLastCodeIndex + 1;
+					// \s matching any whitespace character including
+					// non-breaking ws and invisible non-breaking ws
+					if (!rValidDelimiters.test(sValue.charAt(iDelimiterPos))) {
+						return undefined;
+					}
+				}
+			// Check whether first character of matched code is a number
+			} else if (/^\d/.test(oMatch.code)) {
+				// Check whether parse string ends with the matched code
+				if (sValue.endsWith(oMatch.code)) {
+					iDelimiterPos = sValue.indexOf(oMatch.code) - 1;
+					if (!rValidDelimiters.test(sValue.charAt(iDelimiterPos))) {
+						return undefined;
+					}
+				}
+			}
+			sValue = sValue.replace(oMatch.symbol || oMatch.code, "");
+		}
+
+		// Set currency code to undefined, as the defined custom currencies
+		// contain multiple currencies having the same symbol.
+		if (oConfig.duplicatedSymbols && oConfig.duplicatedSymbols[oMatch.symbol]) {
+			oMatch.code = undefined;
+			Log.error("The parsed currency symbol '" + oMatch.symbol + "' is defined multiple " +
+					"times in custom currencies.Therefore the result is not distinct.");
 		}
 
 		return {
 			numberValue: sValue,
-			currencyCode: sCode || undefined
+			currencyCode: oMatch.code || undefined
 		};
 	}
-
 
 	return NumberFormat;
 

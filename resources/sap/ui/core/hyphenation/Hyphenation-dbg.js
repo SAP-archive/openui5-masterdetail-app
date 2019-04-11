@@ -1,5 +1,5 @@
 /*!
-* UI development toolkit for HTML5 (OpenUI5)
+* OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
 */
@@ -414,7 +414,6 @@ function (jQuery, ManagedObject, Log, Locale, LocaleData) {
 	function fireError(sErrorMessage) {
 		oHyphenationInstance.fireError(sErrorMessage);
 		Log.error("[UI5 Hyphenation] " + sErrorMessage, "sap.ui.core.hyphenation.Hyphenation");
-		oHyphenationInstance.bLoading = false;
 	}
 
 	/**
@@ -428,7 +427,7 @@ function (jQuery, ManagedObject, Log, Locale, LocaleData) {
 	 *
 	 * It is used internally by controls that support the <code>wrappingType:{@link sap.m.WrappingType WrappingType.Hyphenated}</code> property.
 	 *
-	 * As the class is singleton, an instance should be acquired from {@link sap.ui.core.hyphenation.Hyphenation#sap.ui.core.hyphenation.Hyphenation.getInstance Hyphenation#getInstance}.
+	 * As the class is singleton, an instance should be acquired from {@link sap.ui.core.hyphenation.Hyphenation.getInstance Hyphenation.getInstance}.
 	 *
 	 * <h3>Usage</h3>
 	 * <h4>When to use:</h4>
@@ -464,7 +463,7 @@ function (jQuery, ManagedObject, Log, Locale, LocaleData) {
 	 * @see {@link topic:6322164936f047de941ec522b95d7b70 Hyphenation for Text Controls}
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 * @hideconstructor
 	 * @public
 	 * @since 1.60

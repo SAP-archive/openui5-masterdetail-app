@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -32,9 +32,11 @@ sap.ui.define(['../Element', '../library', 'sap/base/Log', './DragAndDrop'],
 	 *   <li>The text of input fields in draggable controls can be selected, but not dragged.</li>
 	 * </ul>
 	 *
+	 * @see {@link topic:3ddb6cde6a8d416598ac8ced3f5d82d5 Drag and Drop}
+	 *
 	 * @extends sap.ui.core.Element
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @public
 	 * @since 1.52
@@ -61,6 +63,13 @@ sap.ui.define(['../Element', '../library', 'sap/base/Log', './DragAndDrop'],
 	});
 
 	/**
+	 * This private flag determines whether or not to check dnd metadata settings.
+	 * @private
+	 * @ui5-restricted sap.ui.mdc
+	 */
+	DragDropBase.prototype.bIgnoreMetadataCheck = false;
+
+	/**
 	 * @abstract
 	 */
 	DragDropBase.prototype.isDraggable = function(oControl) {
@@ -77,7 +86,11 @@ sap.ui.define(['../Element', '../library', 'sap/base/Log', './DragAndDrop'],
 	/**
 	 * Checks control metadata restrictions.
 	 */
-	DragDropBase.checkMetadata = function(oControl, sAggregation, sRestriction) {
+	DragDropBase.prototype.checkMetadata = function(oControl, sAggregation, sRestriction) {
+		if (this.bIgnoreMetadataCheck) {
+			return true;
+		}
+
 		var oMetadata = oControl.getMetadata().getDragDropInfo(sAggregation);
 		if (!oMetadata[sRestriction]) {
 			Log.warning((sAggregation ? sAggregation + " aggregation of " : "") + oControl + " is not configured to be " + sRestriction);

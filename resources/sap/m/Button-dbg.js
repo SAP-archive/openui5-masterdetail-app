@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -66,7 +66,7 @@ sap.ui.define([
 	 * @mixes sap.ui.core.ContextMenuSupport
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -157,7 +157,8 @@ sap.ui.define([
 			 */
 			press : {}
 		},
-		designtime: "sap/m/designtime/Button.designtime"
+		designtime: "sap/m/designtime/Button.designtime",
+		dnd: { draggable: true, droppable: false }
 	}});
 
 
@@ -170,6 +171,10 @@ sap.ui.define([
 
 	EnabledPropagator.call(Button.prototype);
 	ContextMenuSupport.apply(Button.prototype);
+
+	Button.prototype.init = function() {
+		this._onmouseenter = this._onmouseenter.bind(this);
+	};
 
 	/**
 	 * Function is called when exiting the control.
@@ -186,6 +191,8 @@ sap.ui.define([
 		if (this._iconBtn) {
 			this._iconBtn.destroy();
 		}
+
+		this.$().off("mouseenter", this._onmouseenter);
 	};
 
 	/*
@@ -193,6 +200,8 @@ sap.ui.define([
 	 */
 	Button.prototype.onBeforeRendering = function() {
 		this._bRenderActive = this._bActive;
+
+		this.$().on("mouseenter", this._onmouseenter);
 	};
 
 	/*
@@ -205,6 +214,8 @@ sap.ui.define([
 			// now, this._bActive may be false if the button was disabled
 			this._bRenderActive = this._bActive;
 		}
+
+		this.$().on("mouseenter", this._onmouseenter);
 	};
 
 	/**
@@ -332,6 +343,12 @@ sap.ui.define([
 
 		if (oEvent.which === KeyCodes.SPACE) {
 			this.firePress({/* no parameters */});
+		}
+	};
+
+	Button.prototype._onmouseenter = function(oEvent) {
+		if (oEvent.originalEvent && oEvent.originalEvent.buttons & 1) {
+			this._activeButton();
 		}
 	};
 

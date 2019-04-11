@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -1231,7 +1231,13 @@
 		}
 
 		oScript = document.createElement('SCRIPT');
-		oScript.src = oModule.url;
+		// Accessing the 'src' property of the script in this strange way prevents Safari 12 (or WebKit) from
+		// wrongly optimizing access. SF12 seems to check at optimization time whether there's a setter for the
+		// property and optimize accordingly. When a setter is defined or changed at a later point in time (e.g.
+		// by the AppCacheBuster), then the optimization seems not to be updated and the new setter is ignored
+		// BCP 1970035485
+		oScript["s" + "rc"] = oModule.url;
+		//oScript.src = oModule.url;
 		oScript.setAttribute("data-sap-ui-module", oModule.name);
 		if ( sAlternativeURL !== undefined ) {
 			oScript.addEventListener('load', onload);

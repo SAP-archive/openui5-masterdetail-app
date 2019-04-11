@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -42,7 +42,8 @@ sap.ui.define([
 		"he" : "iw",
 		"yi" : "ji",
 		"id" : "in",
-		"sr" : "sh"
+		"sr" : "sh",
+		"nb" : "no"
 	};
 
 	/**
@@ -54,7 +55,8 @@ sap.ui.define([
 		"iw" : "he",
 		"ji" : "yi",
 		"in" : "id",
-		"sh" : "sr"
+		"sh" : "sr",
+		"no" : "nb"
 	};
 
 	/**
@@ -291,8 +293,8 @@ sap.ui.define([
 	 *     (<i>n</i> is the index) in the found locale-specific string value. Note that the replacement is done
 	 *     whenever <code>aArgs</code> is given, no matter whether the text contains placeholders or not
 	 *     and no matter whether <code>aArgs</code> contains a value for <i>n</i> or not.
-	 * @param {boolean} bIgnoreKeyFallback If set, <code>undefined</code> is returned when the key is not found in any bundle or fallback bundle, instead of the key string.
-	 * @returns {string} The value belonging to the key, if found; Otherwise the key itself or <code>undefined</code> depending on bIgnoreKeyFallback.
+	 * @param {boolean} [bIgnoreKeyFallback=false] If set, <code>undefined</code> is returned instead of the key string, when the key is not found in any bundle or fallback bundle.
+	 * @returns {string} The value belonging to the key, if found; otherwise the key itself or <code>undefined</code> depending on <code>bIgnoreKeyFallback</code>.
 	 *
 	 * @function
 	 * @public

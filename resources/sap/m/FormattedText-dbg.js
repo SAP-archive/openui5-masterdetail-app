@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -39,7 +39,7 @@ function(
 		 * @class
 		 * The FormattedText control allows the usage of a limited set of tags for inline display of formatted text in HTML format.
 		 * @extends sap.ui.core.Control
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @public
@@ -83,7 +83,7 @@ function(
 					 * </ul>
 					 * <p><code>class, style,</code> and <code>target</code> attributes are allowed.
 					 * If <code>target</code> is not set, links open in a new window by default.
-					 * <p>Only safe <code>href</code> attributes can be used. See {@link sap.base.security.URLWhiteList}.
+					 * <p>Only safe <code>href</code> attributes can be used. See {@link module:sap/base/security/URLWhitelist URLWhitelist}.
 					 *
 					 * <b>Note:</b> Keep in mind that not supported HTML tags and
 					 * the content nested inside them are both not rendered by the control.

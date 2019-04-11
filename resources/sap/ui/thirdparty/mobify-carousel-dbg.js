@@ -243,12 +243,22 @@ Mobify.UI.Carousel = (function($, Utils) {
     }
 
     Carousel.prototype._update = function() {
-        if (!this._needsUpdate) {
-            return;
-        }
+		var $current,
+			currentOffset,
+			x;
 
-        var x = Math.round(this._offset + this._offsetDrag);
-        if(this.$inner) {
+		if (!this._needsUpdate) {
+            return;
+		}
+
+		$current = this.$items.eq(this._index - 1);
+		currentOffset = $current.prop('offsetLeft') + $current.prop('clientWidth') * this._alignment,
+			 startOffset = this.$start.prop('offsetLeft') + this.$start.prop('clientWidth') * this._alignment
+
+		this._offset = -(currentOffset - startOffset);
+        x = Math.round(this._offset + this._offsetDrag);
+
+		if(this.$inner) {
         	Utils.translateX(this.$inner[0], x);
         }
 
@@ -299,12 +309,6 @@ Mobify.UI.Carousel = (function($, Utils) {
     Carousel.prototype.resize = function() {
     	this.changeAnimation('sapMCrslHideNonActive');
 
-        var $current = this.$items.eq(this._index - 1);
-
-        var currentOffset = $current.prop('offsetLeft') + $current.prop('clientWidth') * this._alignment
-            , startOffset = this.$start.prop('offsetLeft') + this.$start.prop('clientWidth') * this._alignment
-
-        this._offset = -(currentOffset - startOffset);
         this.update();
     }
 
@@ -496,6 +500,8 @@ Mobify.UI.Carousel = (function($, Utils) {
         });
 
         $element.on('afterSlide', function(e, previousSlide, nextSlide) {
+			var iFirstElement = nextSlide - 1,
+				sActiveClass = self._getClass('active');
 
             // The event might bubble up from another carousel inside of this one.
             // In this case we ignore the event.
@@ -507,7 +513,10 @@ Mobify.UI.Carousel = (function($, Utils) {
                 sPageIndicatorId = sId.replace(/(:|\.)/g,'\\$1') + '-pageIndicator';
 
             // self.$items.eq(previousSlide - 1).removeClass(self._getClass('active'));
-            self.$items.eq(nextSlide - 1).addClass(self._getClass('active'));
+			for (var i = iFirstElement; i < iFirstElement + self.options.numberOfItemsToShow; i++) {
+				var element = self.$items.eq(i);
+				element.addClass(sActiveClass);
+			}
 
             self.$element.find('#' + sPageIndicatorId + ' > [data-slide=\'' + previousSlide + '\']').removeClass(self._getClass('active'));
             self.$element.find('#' + sPageIndicatorId + ' > [data-slide=\'' + nextSlide + '\']').addClass(self._getClass('active'));
@@ -558,7 +567,9 @@ Mobify.UI.Carousel = (function($, Utils) {
         this.$element = null;
         this.$inner = null;
         this.$start = null;
-        this.$current = null;
+		this.$current = null;
+
+		this._needsUpdate = false;
     }
 
     Carousel.prototype.move = function(newIndex, opts) {
@@ -597,7 +608,11 @@ Mobify.UI.Carousel = (function($, Utils) {
         	} else {
         		newIndex = length;
         	}
-        }
+		}
+
+		if (newIndex + this.options.numberOfItemsToShow > this._length) {
+			newIndex = this._length - this.options.numberOfItemsToShow + 1;
+		}
 
         // Bail out early if no move is necessary.
         var bTriggerEvents = true;
@@ -612,15 +627,6 @@ Mobify.UI.Carousel = (function($, Utils) {
         	$element.trigger('beforeSlide', [index, newIndex]);
         }
 
-        // Index must be decremented to convert between 1- and 0-based indexing.
-        this.$current = $current = $items.eq(newIndex - 1);
-
-        var currentOffset = $current.prop('offsetLeft') + $current.prop('clientWidth') * this._alignment
-            , startOffset = $start.prop('offsetLeft') + $start.prop('clientWidth') * this._alignment;
-
-        var transitionOffset = -(currentOffset - startOffset);
-
-        this._offset = transitionOffset;
         this._offsetDrag = 0;
         this._prevIndex = this._index;
         this._index = newIndex;
@@ -657,7 +663,7 @@ Mobify.UI.Carousel = (function($, Utils) {
         @param {Object} [options] Options passed to the action.
     */
     $.fn.carousel = function (action, options) {
-        var initOptions = $.extend({}, $.fn.carousel.defaults);
+        var initOptions = $.extend({}, $.fn.carousel.defaults, options);
 
         // Handle different calling conventions
         if (typeof action == 'object') {

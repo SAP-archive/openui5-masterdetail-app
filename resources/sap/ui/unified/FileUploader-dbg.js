@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -59,7 +59,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IFormContent, sap.ui.unified.IProcessableBlobs
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -140,7 +140,8 @@ sap.ui.define([
 			maximumFileSize : {type : "float", group : "Data", defaultValue : null},
 
 			/**
-			 * The chosen files will be checked against an array of mime types. If at least one file does not fit the mime type restriction the upload is prevented. This property is not supported by Internet Explorer 9.
+			 * The chosen files will be checked against an array of mime types. If at least one file does not fit the mime type restriction the upload is prevented.
+			 * <b>Note:</b> This property is not supported by Internet Explorer & Edge.
 			 * Example: mimeType ["image/png", "image/jpeg"].
 			 */
 			mimeType : {type : "string[]", group : "Data", defaultValue : null},
@@ -1536,7 +1537,7 @@ sap.ui.define([
 						bWrongMime = false;
 					}
 				}
-				if (bWrongMime) {
+				if (bWrongMime && !(sType === "unknown" && (Device.browser.edge || Device.browser.msie))) {
 					Log.info("File: " + sName + " is of type " + sType + ". Allowed types are: "  + aMimeTypes + ".");
 					this.fireTypeMissmatch({
 						fileName:sName,
@@ -1683,10 +1684,14 @@ sap.ui.define([
 					aFileUpload.push('multiple ');
 				}
 			}
-			if (this.getMimeType() && window.File) {
-				var aMimeTypes = this.getMimeType();
-				var sMimeTypes = aMimeTypes.join(",");
-				aFileUpload.push('accept="' + sMimeTypes + '" ');
+			if ((this.getMimeType() || this.getFileType()) && window.File) {
+				var aMimeTypes = this.getMimeType() || [];
+				var aFileTypes = this.getFileType() || [];
+				aFileTypes = aFileTypes.map(function(item) {
+					return item.indexOf(".") === 0 ? item : "." + item;
+				});
+				var sAcceptedTypes = aFileTypes.concat(aMimeTypes).join(",");
+				aFileUpload.push('accept="' + sAcceptedTypes + '" ');
 			}
 			aFileUpload.push('>');
 

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -36,9 +36,10 @@ sap.ui.define([
 	 * @public
 	 * @class
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 * @since 1.9.2
 	 * @alias sap.ui.core.ComponentMetadata
+	 * @extends sap.ui.base.ManagedObjectMetadata
 	 */
 	var ComponentMetadata = function(sClassName, oClassInfo) {
 

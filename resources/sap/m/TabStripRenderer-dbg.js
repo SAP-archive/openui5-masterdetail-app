@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -75,6 +75,8 @@ sap.ui.define(['./TabStripItem', 'sap/ui/Device', 'sap/ui/core/InvisibleText'], 
 	 * @param {boolean} bSelected Flag indicating if this is the currently selected item
 	 */
 	TabStripRenderer.renderItem = function (oRm, oControl, oItem, bSelected) {
+		var sTooltip = oItem.getTooltip();
+
 		oRm.write("<div id='" + oItem.getId() + "'");
 		oRm.addClass(TabStripItem.CSS_CLASS);
 		if (oItem.getModified()) {
@@ -85,17 +87,34 @@ sap.ui.define(['./TabStripItem', 'sap/ui/Device', 'sap/ui/core/InvisibleText'], 
 		}
 		oRm.writeClasses();
 
+		if (sTooltip){
+			oRm.writeAttributeEscaped("title", sTooltip);
+		}
+
 		oRm.writeElementData(oItem);
 
-		oRm.writeAccessibilityState(oItem, getTabStripItemAccAttributes(oItem, oControl.getParent(), sap.ui.getCore().byId(oControl.getSelectedItem())));
+		oRm.writeAccessibilityState(oItem, getTabStripItemAccAttributes(oItem, oControl, sap.ui.getCore().byId(oControl.getSelectedItem())));
 
 		oRm.write(">");
 
-		oRm.write("<span id='" + getTabTextDomId(oItem) + "' class='" + TabStripItem.CSS_CLASS_LABEL + "'>");
+		// write icon
+		if (oItem.getIcon()) {
+			oRm.renderControl(oItem._getImage());
+		}
 
-		this.renderItemText(oRm, oItem);
+		oRm.write("<div"); // Start texts container
+		oRm.addClass("sapMTSTexts");
+		oRm.writeClasses();
+		oRm.write(">");
+		oRm.write("<div id='" + getTabTextDomId(oItem) + "-addText' class='" + TabStripItem.CSS_CLASS_TEXT + "'>");
+		this.renderItemText(oRm, oItem.getAdditionalText());
+		oRm.write("</div>");
 
-		oRm.write("</span>");
+
+		oRm.write("<div id='" + getTabTextDomId(oItem) + "-text' class='" + TabStripItem.CSS_CLASS_LABEL + "'>");
+		this.renderItemText(oRm, oItem.getText());
+		oRm.write("</div>");
+		oRm.write("</div>");
 
 		this.renderItemCloseButton(oRm, oItem);
 
@@ -108,8 +127,7 @@ sap.ui.define(['./TabStripItem', 'sap/ui/Device', 'sap/ui/core/InvisibleText'], 
 	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer
 	 * @param {sap.m.TabStripItem} oItem <code>TabStripItem</code> instance which text to be rendered
 	 */
-	TabStripRenderer.renderItemText = function (oRm, oItem) {
-		var sItemText = oItem.getText();
+	TabStripRenderer.renderItemText = function (oRm, sItemText) {
 
 		if (sItemText.length > TabStripItem.DISPLAY_TEXT_MAX_LENGTH) {
 			oRm.writeEscaped(sItemText.slice(0, TabStripItem.DISPLAY_TEXT_MAX_LENGTH));
@@ -245,13 +263,19 @@ sap.ui.define(['./TabStripItem', 'sap/ui/Device', 'sap/ui/core/InvisibleText'], 
 	 * @returns {Object} The accessibility attributes for given <code>TabStripItem</code>
 	 * @private
 	 */
-	function getTabStripItemAccAttributes(oItem, oTabStripParent, oSelectedItem) {
-		var mAccAttributes = { role: "tab"},
+	function getTabStripItemAccAttributes(oItem, oTabStrip, oSelectedItem) {
+
+		var aItems = oTabStrip.getItems(),
+			iIndex = aItems.indexOf(oItem),
+			oTabStripParent = oTabStrip.getParent(),
+			mAccAttributes = { role: "tab"},
 			sDescribedBy = InvisibleText.getStaticId("sap.m", "TABSTRIP_ITEM_CLOSABLE") + " ";
 
 		sDescribedBy += InvisibleText.getStaticId("sap.m", oItem.getModified() ? "TABSTRIP_ITEM_MODIFIED" : "TABSTRIP_ITEM_NOT_MODIFIED");
 		mAccAttributes["describedby"] = sDescribedBy;
-		mAccAttributes["labelledby"] = getTabTextDomId(oItem);
+		mAccAttributes["posinset"] = iIndex + 1;
+		mAccAttributes["setsize"] = aItems.length;
+		mAccAttributes["labelledby"] = getTabTextDomId(oItem) + "-addText " + getTabTextDomId(oItem) + "-text";
 		if (oTabStripParent && oTabStripParent.getRenderer && oTabStripParent.getRenderer().getContentDomId) {
 			mAccAttributes["controls"] = oTabStripParent.getRenderer().getContentDomId(oTabStripParent);
 		}

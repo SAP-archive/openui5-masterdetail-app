@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -9,9 +9,10 @@ sap.ui.define([
 	'./library',
 	'sap/ui/core/Control',
 	'sap/ui/core/IconPool',
+	'sap/ui/Device',
 	'./PanelRenderer'
 ],
-	function(library, Control, IconPool, PanelRenderer) {
+	function(library, Control, IconPool, Device, PanelRenderer) {
 	"use strict";
 
 	// shortcut for sap.m.PanelAccessibleRole
@@ -61,7 +62,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -296,7 +297,9 @@ sap.ui.define([
 	};
 
 	Panel.prototype.onBeforeRendering = function () {
-		this._updateIconAriaLabelledBy();
+		if (Device.browser.msie || Device.browser.edge) {
+			this._updateIconAriaLabelledBy();
+		}
 	};
 
 	Panel.prototype.onAfterRendering = function () {

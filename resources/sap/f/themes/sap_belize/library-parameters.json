@@ -1,13 +1,25 @@
 {
 	"default": {
-		"sapUiContentPadding": "1rem",
-		"sapUiCardHeaderIconColor": "#6a6d70",
+		"_sap_f_Card_Content_Padding": "1rem",
+		"_sap_f_Card_Header_Icon_Color": "#6a6d70",
+		"_sap_f_Card_Header_Border_Bottom": "1px solid #cccccc",
+		"_sap_f_Card_Header_Hover_Color": "#fafafa",
+		"_sap_f_Card_Header_Active_Color": "#f7f7f7",
+		"_sap_f_ShellBar_PaddingDesktop": "3",
+		"_sap_f_ShellBar_PaddingTablet": "2",
+		"_sap_f_ShellBar_PaddingPhone": "1",
+		"_sap_f_ShellBar_ChildMargin": "4",
+		"_sap_f_ShellBar_CoPilotWidth": "48",
 		"_sap_f_Avatar_Color": "#ffffff",
 		"_sap_f_FlexibleColumnLayout_ButtonBackground": "#e4ecf5",
 		"_sap_f_FlexibleColumnLayout_ButtonHoverBackground": "#d1e0ee"
 	},
 	"scopes": {
 		"sapContrast": {
+			"_sap_f_Card_Header_Icon_Color": "#cae4fb",
+			"_sap_f_Card_Header_Border_Bottom": "1px solid #69859d",
+			"_sap_f_Card_Header_Hover_Color": "#435667",
+			"_sap_f_Card_Header_Active_Color": "#45596a",
 			"_sap_f_FlexibleColumnLayout_ButtonBackground": "#45596a",
 			"_sap_f_FlexibleColumnLayout_ButtonHoverBackground": "#4f667a"
 		}

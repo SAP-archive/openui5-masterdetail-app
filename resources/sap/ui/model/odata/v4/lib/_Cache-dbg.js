@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -15,7 +15,12 @@ sap.ui.define([
 ], function (_GroupLock, _Helper, _Requestor, Log, SyncPromise, jQuery) {
 	"use strict";
 
-	var sMessagesAnnotation = "@com.sap.vocabularies.Common.v1.Messages",
+	var // Matches if ending with a transient key predicate:
+		//   EMPLOYEE($uid=id-1550828854217-16) -> aMatches[0] === "($uid=id-1550828854217-16)"
+		//   @see sap.base.util.uid
+		rEndsWithTransientPredicate = /\(\$uid=[-\w]+\)$/,
+		sMessagesAnnotation = "@com.sap.vocabularies.Common.v1.Messages",
+		rNumber = /^-?\d+$/,
 		// Matches two cases:  segment with predicate or simply predicate:
 		//   EMPLOYEE(ID='42') -> aMatches[1] === "EMPLOYEE", aMatches[2] === "(ID='42')"
 		//   (ID='42') ->  aMatches[1] === "",  aMatches[2] === "(ID='42')"
@@ -25,7 +30,7 @@ sap.ui.define([
 	 * Adds the given delta to the collection's $count if there is one.
 	 *
 	 * @param {object} mChangeListeners A map of change listeners by path
-	 * @param {string} sPath The path of the collection in the cache
+	 * @param {string} sPath The path of the collection in the cache (as used by change listeners)
 	 * @param {array} aCollection The collection
 	 * @param {number} iDelta The delta
 	 */
@@ -62,7 +67,7 @@ sap.ui.define([
 	 * <code>undefined</code>, but not <code>Infinity</code>.
 	 *
 	 * @param {object} mChangeListeners A map of change listeners by path
-	 * @param {string} sPath The path of the collection in the cache
+	 * @param {string} sPath The path of the collection in the cache (as used by change listeners)
 	 * @param {array} aCollection The collection
 	 * @param {string|number} vCount The count
 	 */
@@ -123,7 +128,7 @@ sap.ui.define([
 	 * @param {string} sEditUrl
 	 *   The entity's edit URL
 	 * @param {string} sPath
-	 *   The entity's path within the cache
+	 *   The entity's path within the cache (as used by change listeners)
 	 * @param {function} fnCallback
 	 *   A function which is called after a transient entity has been deleted from the cache or
 	 *   after the entity has been deleted from the server and from the cache; the index of the
@@ -141,7 +146,7 @@ sap.ui.define([
 
 		return this.fetchValue(_GroupLock.$cached, sParentPath).then(function (vCacheData) {
 			var oEntity = vDeleteProperty
-					? vCacheData[vDeleteProperty]
+					? vCacheData[Cache.from$skip(vDeleteProperty, vCacheData)]
 					: vCacheData, // deleting at root level
 				mHeaders,
 				sKeyPredicate = _Helper.getPrivateAnnotation(oEntity, "predicate"),
@@ -173,25 +178,13 @@ sap.ui.define([
 					} // else: map 404 to 200
 				})
 				.then(function () {
-					var sPredicate;
+					var iIndex;
 
 					if (Array.isArray(vCacheData)) {
-						if (vCacheData[vDeleteProperty] !== oEntity) {
-							// oEntity might have moved due to parallel insert/delete
-							vDeleteProperty = vCacheData.indexOf(oEntity);
-						}
-						if (vDeleteProperty === "-1") {
-							delete vCacheData[-1];
-						} else {
-							sPredicate = _Helper.getPrivateAnnotation(oEntity, "predicate");
-							if (sPredicate) {
-								delete vCacheData.$byPredicate[sPredicate];
-							}
-							vCacheData.splice(vDeleteProperty, 1);
-						}
-						addToCount(that.mChangeListeners, sParentPath, vCacheData, -1);
-						that.iLimit -= 1;
-						fnCallback(Number(vDeleteProperty), vCacheData);
+						// oEntity might have moved due to parallel insert/delete
+						iIndex = vCacheData.indexOf(oEntity);
+						that.removeElement(vCacheData, iIndex, sKeyPredicate, sParentPath);
+						fnCallback(iIndex, vCacheData);
 					} else {
 						if (vDeleteProperty) {
 							// set to null and notify listeners
@@ -202,7 +195,8 @@ sap.ui.define([
 						}
 						fnCallback();
 					}
-					that.oRequestor.reportBoundMessages(that.sResourcePath, [], [sEntityPath]);
+					that.oRequestor.getModelInterface().reportBoundMessages(that.sResourcePath, [],
+						[sEntityPath]);
 				});
 		});
 	};
@@ -252,7 +246,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Creates a transient entity with index -1 in the list and adds a POST request to the batch
+	 * Creates a transient entity at the front of the list and adds a POST request to the batch
 	 * group with the given ID. If the POST request failed, <code>fnErrorCallback</code> is called
 	 * with an Error object, the POST request is automatically added again to the same batch
 	 * group (for SubmitMode.API) or parked (for SubmitMode.Auto or SubmitMode.Direct). Parked POST
@@ -263,7 +257,9 @@ sap.ui.define([
 	 * @param {sap.ui.base.SyncPromise} oPostPathPromise
 	 *   A SyncPromise resolving with the resource path for the POST request
 	 * @param {string} sPath
-	 *   The collection's path within the cache
+	 *   The collection's path within the cache (as used by change listeners)
+	 * @param {string} sTransientPredicate
+	 *   A (temporary) key predicate for the transient entity: "($uid=...)"
 	 * @param {string} [oEntityData={}]
 	 *   The initial entity data
 	 * @param {function} fnCancelCallback
@@ -276,8 +272,8 @@ sap.ui.define([
 	 *
 	 * @public
 	 */
-	Cache.prototype.create = function (oGroupLock, oPostPathPromise, sPath, oEntityData,
-			fnCancelCallback, fnErrorCallback) {
+	Cache.prototype.create = function (oGroupLock, oPostPathPromise, sPath, sTransientPredicate,
+			oEntityData, fnCancelCallback, fnErrorCallback) {
 		var aCollection,
 			bKeepTransientPath = oEntityData && oEntityData["@$ui5.keepTransientPath"],
 			that = this;
@@ -285,7 +281,9 @@ sap.ui.define([
 		// Clean-up when the create has been canceled.
 		function cleanUp() {
 			_Helper.removeByPath(that.mPostRequests, sPath, oEntityData);
-			delete aCollection[-1];
+			aCollection.shift();
+			aCollection.$created -= 1;
+			delete aCollection.$byPredicate[sTransientPredicate];
 			fnCancelCallback();
 		}
 
@@ -303,7 +301,7 @@ sap.ui.define([
 			return SyncPromise.all([
 				that.oRequestor.request("POST", sPostPath, oPostGroupLock, null, oEntityData,
 					setCreatePending, cleanUp, undefined,
-					_Helper.buildPath(that.sResourcePath, sPath, "-1")),
+					_Helper.buildPath(that.sResourcePath, sPath, sTransientPredicate)),
 				that.fetchTypes()
 			]).then(function (aResult) {
 				var oCreatedEntity = aResult[0],
@@ -314,19 +312,22 @@ sap.ui.define([
 				addToCount(that.mChangeListeners, sPath, aCollection, 1);
 				_Helper.removeByPath(that.mPostRequests, sPath, oEntityData);
 				that.visitResponse(oCreatedEntity, aResult[1],
-					_Helper.getMetaPath(_Helper.buildPath(that.sMetaPath, sPath)), sPath + "/-1",
-					bKeepTransientPath);
+					_Helper.getMetaPath(_Helper.buildPath(that.sMetaPath, sPath)),
+					sPath + sTransientPredicate, bKeepTransientPath);
 				if (!bKeepTransientPath) {
 					sPredicate = _Helper.getPrivateAnnotation(oCreatedEntity, "predicate");
 					if (sPredicate) {
 						aCollection.$byPredicate[sPredicate] = oEntityData;
-						_Helper.updateTransientPaths(that.mChangeListeners, sPath, sPredicate);
+						_Helper.updateTransientPaths(that.mChangeListeners, sTransientPredicate,
+							sPredicate);
+						// Do not remove transient predicate from aCollection.$byPredicate; some
+						// contexts still use the transient predicate to access the data
 					}
 				}
 				// update the cache with the POST response
 				_Helper.updateSelected(that.mChangeListeners,
-					_Helper.buildPath(sPath, sPredicate || "-1"), oEntityData, oCreatedEntity,
-					_Helper.getSelectForPath(that.mQueryOptions, sPath));
+					_Helper.buildPath(sPath, sPredicate || sTransientPredicate), oEntityData,
+					oCreatedEntity, _Helper.getSelectForPath(that.mQueryOptions, sPath));
 
 				return oEntityData;
 			}, function (oError) {
@@ -345,13 +346,18 @@ sap.ui.define([
 		oEntityData = jQuery.extend(true, {}, oEntityData);
 		// remove any property starting with "@$ui5."
 		oEntityData = _Requestor.cleanPayload(oEntityData);
+		_Helper.setPrivateAnnotation(oEntityData, "transientPredicate", sTransientPredicate);
 
 		aCollection = this.fetchValue(_GroupLock.$cached, sPath).getResult();
 		if (!Array.isArray(aCollection)) {
 			throw new Error("Create is only supported for collections; '" + sPath
 					+ "' does not reference a collection");
 		}
-		aCollection[-1] = oEntityData;
+		aCollection.unshift(oEntityData);
+		aCollection.$created += 1;
+		// if the nested collection is empty $byPredicate is not available, create it on demand
+		aCollection.$byPredicate = aCollection.$byPredicate || {};
+		aCollection.$byPredicate[sTransientPredicate] = oEntityData;
 
 		return oPostPathPromise.then(function (sPostPath) {
 			sPostPath += that.oRequestor.buildQueryString(that.sMetaPath, that.mQueryOptions, true);
@@ -411,7 +417,7 @@ sap.ui.define([
 				sPropertyPath += "/";
 			}
 			sPropertyPath += sPath.split("/").slice(0, iPathLength).join("/");
-			return that.oRequestor
+			return that.oRequestor.getModelInterface()
 				.fetchMetadata(that.sMetaPath + _Helper.getMetaPath(sPropertyPath))
 				.then(function (oProperty) {
 					if (!oProperty) {
@@ -472,7 +478,7 @@ sap.ui.define([
 						vValue = vValue.$byPredicate[aMatches[2]]; // search the key predicate
 					}
 				} else {
-					vValue = vValue[sSegment];
+					vValue = vValue[Cache.from$skip(sSegment, vValue)];
 				}
 				// missing advertisement is not an error
 				return vValue === undefined && sSegment[0] !== "#"
@@ -524,7 +530,7 @@ sap.ui.define([
 		 */
 		function fetchType(sMetaPath) {
 			aPromises.push(that.oRequestor.fetchTypeForPath(sMetaPath).then(function (oType) {
-				var oMessageAnnotation = that.oRequestor
+				var oMessageAnnotation = that.oRequestor.getModelInterface()
 						.fetchMetadata(sMetaPath + "/" + sMessagesAnnotation).getResult();
 
 				if (oMessageAnnotation) {
@@ -566,6 +572,19 @@ sap.ui.define([
 	};
 
 	/**
+	 * Gets the <code>Promise</code> which resolves with a map of minimum and maximum values.
+	 *
+	 * @returns {Promise}
+	 *   <code>undefined</code> because no minimum or maximum can be requested here
+	 *
+	 * @private
+	 * @see sap.ui.model.odata.v4.lib._AggregationCache#getMeasureRangePromise
+	 */
+	Cache.prototype.getMeasureRangePromise = function () {
+		return undefined;
+	};
+
+	/**
 	 * Returns <code>true</code> if there are pending changes below the given path.
 	 *
 	 * @param {string} sPath
@@ -586,7 +605,7 @@ sap.ui.define([
 	/**
 	 * Patches the cache at the given path with the given data.
 	 *
-	 * @param {string} sPath The path
+	 * @param {string} sPath The path (as used by change listeners)
 	 * @param {object} oData The data to patch with
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise to be resolved with the patched data
@@ -613,6 +632,39 @@ sap.ui.define([
 	 */
 	Cache.prototype.registerChange = function (sPath, oListener) {
 		_Helper.addByPath(this.mChangeListeners, sPath, oListener);
+	};
+
+	/**
+	 * Removes the element at the given index from the given array, taking care of
+	 * <code>$byPredicate</code>, <code>$created</code>, the array's count, and a collection cache's
+	 * limit (if applicable).
+	 *
+	 * @param {object[]} aElements
+	 *   The array of elements
+	 * @param {number} iIndex
+	 *   The array index of the old element to be removed
+	 * @param {string} sPredicate
+	 *   The key predicate of the old element to be removed
+	 * @param {string} sParentPath
+	 *   The array's path within the cache (as used by change listeners)
+	 */
+	Cache.prototype.removeElement = function (aElements, iIndex, sPredicate, sParentPath) {
+		var oElement = aElements[iIndex],
+			sTransientPredicate;
+
+		aElements.splice(iIndex, 1);
+		if (sPredicate) {
+			delete aElements.$byPredicate[sPredicate];
+		}
+		sTransientPredicate = _Helper.getPrivateAnnotation(oElement, "transientPredicate");
+		if (sTransientPredicate) {
+			aElements.$created -= 1;
+			delete aElements.$byPredicate[sTransientPredicate];
+		}
+		addToCount(this.mChangeListeners, sParentPath, aElements, -1);
+		if (!sParentPath && "iLimit" in this) {
+			this.iLimit -= 1;
+		}
 	};
 
 	/**
@@ -719,7 +771,7 @@ sap.ui.define([
 	 * @param {string} sEditUrl
 	 *   The edit URL for the entity which is updated via PATCH
 	 * @param {string} [sEntityPath]
-	 *   Path of the entity, relative to the cache
+	 *   Path of the entity, relative to the cache (as used by change listeners)
 	 * @param {string} [sUnitOrCurrencyPath]
 	 *   Path of the unit or currency for the property, relative to the entity
 	 * @param {boolean} [bPatchWithoutSideEffects=false]
@@ -995,7 +1047,8 @@ sap.ui.define([
 		 *    The index in the collection if the instance is part of a collection
 		 */
 		function visitInstance(oInstance, sMetaPath, sInstancePath, sContextUrl, iIndex) {
-			var sPredicate,
+			var aMatches,
+				sPredicate,
 				oType = mTypeForMetaPath[sMetaPath],
 				sMessageProperty = oType && oType[sMessagesAnnotation]
 					&& oType[sMessagesAnnotation].$Path,
@@ -1005,8 +1058,11 @@ sap.ui.define([
 			sPredicate = that.calculateKeyPredicate(oInstance, mTypeForMetaPath, sMetaPath);
 			if (iIndex !== undefined) {
 				sInstancePath = _Helper.buildPath(sInstancePath, sPredicate || iIndex);
-			} else if (!bKeepTransientPath && sPredicate && sInstancePath.endsWith("/-1")) {
-				sInstancePath = sInstancePath.slice(0, -3) + sPredicate;
+			} else if (!bKeepTransientPath && sPredicate) {
+				aMatches = rEndsWithTransientPredicate.exec(sInstancePath);
+				if (aMatches) {
+					sInstancePath = sInstancePath.slice(0, -aMatches[0].length) + sPredicate;
+				}
 			}
 			if (sRootPath && !aCachePaths) {
 				// remove messages only for the part of the cache that is updated
@@ -1032,6 +1088,7 @@ sap.ui.define([
 					return;
 				}
 				if (Array.isArray(vPropertyValue)) {
+					vPropertyValue.$created = 0; // number of (client-side) created elements
 					// compute count
 					vPropertyValue.$count = undefined; // see setCount
 					sCount = oInstance[sProperty + "@odata.count"];
@@ -1059,7 +1116,7 @@ sap.ui.define([
 			visitInstance(oRoot, sRootMetaPath || this.sMetaPath, sRootPath || "", sRequestUrl);
 		}
 		if (bHasMessages) {
-			this.oRequestor.reportBoundMessages(
+			this.oRequestor.getModelInterface().reportBoundMessages(
 				this.fnGetOriginalResourcePath
 					? this.fnGetOriginalResourcePath(oRoot)
 					: this.sResourcePath,
@@ -1091,9 +1148,10 @@ sap.ui.define([
 		this.aElements = [];               // the available elements
 		this.aElements.$byPredicate = {};
 		this.aElements.$count = undefined; // see setCount
+		this.aElements.$created = 0;       // number of (client-side) created elements
 		this.aElements.$tail = undefined;  // promise for a read w/o $top
 		this.iLimit = Infinity;            // the upper limit for the count (for the case that the
-									       // exact value is unknown)
+										   // exact value is unknown)
 		this.oSyncPromiseAll = undefined;
 	}
 
@@ -1184,7 +1242,7 @@ sap.ui.define([
 	 * right to it. If not, the full prefetch length is added to this side.
 	 *
 	 * @param {number} iStart
-	 *   The start index for the data request in model coordinates (starting with 0 or -1)
+	 *   The start index for the data request
 	 * @param {number} iLength
 	 *   The number of requested entries
 	 * @param {number} iPrefetchLength
@@ -1232,10 +1290,12 @@ sap.ui.define([
 	 * Returns the resource path including the query string with $skip and $top if needed.
 	 *
 	 * @param {number} iStart
-	 *   The index of the first element to request ($skip)
+	 *   The start index of the range
 	 * @param {number} iEnd
-	 *   The index after the last element to request ($skip + $top)
+	 *   The index after the last element
 	 * @returns {string} The resource path including the query string
+	 * @throws {Error}
+	 *   If there are created elements inside the given range
 	 *
 	 * @private
 	 */
@@ -1244,6 +1304,13 @@ sap.ui.define([
 			iExpectedLength = iEnd - iStart,
 			sResourcePath = this.sResourcePath + this.sQueryString;
 
+		if (this.aElements.$created) {
+			if (iStart) {
+				iStart -= 1;
+			} else {
+				throw new Error("Must not request created element");
+			}
+		}
 		if (iStart > 0 || iExpectedLength < Infinity) {
 			sResourcePath += sDelimiter + "$skip=" + iStart;
 		}
@@ -1257,9 +1324,9 @@ sap.ui.define([
 	 * Handles a GET response by updating the cache data and the $count-values recursively.
 	 *
 	 * @param {number} iStart
-	 *   The index of the first element to request ($skip)
+	 *   The start index of the range
 	 * @param {number} iEnd
-	 *   The index after the last element to request ($skip + $top)
+	 *   The index after the last element
 	 * @param {object} oResult The result of the GET request
 	 * @param {object} mTypeForMetaPath A map from meta path to the entity type (as delivered by
 	 *   {@link #fetchTypes})
@@ -1290,8 +1357,9 @@ sap.ui.define([
 			}
 		}
 		if (iResultLength < iEnd - iStart) { // a short read
-			iCount = Math.min(getCount(this.aElements), iStart + iResultLength);
-			this.aElements.length = iCount;
+			iCount = Math.min(getCount(this.aElements),
+				iStart + iResultLength - this.aElements.$created);
+			this.aElements.length = this.aElements.$created + iCount;
 			// If the server did not send a count, the calculated count is greater than 0
 			// and the element before has not been read yet, we do not know the count:
 			// The element might or might not exist.
@@ -1307,7 +1375,7 @@ sap.ui.define([
 	 * Returns a promise to be resolved with an OData object for a range of the requested data.
 	 *
 	 * @param {number} iIndex
-	 *   The start index of the range in model coordinates; the first row has index -1 or 0!
+	 *   The start index of the range
 	 * @param {number} iLength
 	 *   The length of the range; <code>Infinity</code> is supported
 	 * @param {number} iPrefetchLength
@@ -1342,13 +1410,11 @@ sap.ui.define([
 			aElementsRange,
 			iEnd,
 			iGapStart = -1,
-			iLowerBound = this.aElements[-1] ? -1 : 0,
 			oRange,
-			iStart = Math.max(iIndex, 0), // for Array#slice()
 			that = this;
 
-		if (iIndex < iLowerBound) {
-			throw new Error("Illegal index " + iIndex + ", must be >= " + iLowerBound);
+		if (iIndex < 0) {
+			throw new Error("Illegal index " + iIndex + ", must be >= 0");
 		}
 		if (iLength < 0) {
 			throw new Error("Illegal length " + iLength + ", must be >= 0");
@@ -1361,7 +1427,7 @@ sap.ui.define([
 		}
 
 		oRange = this.getReadRange(iIndex, iLength, iPrefetchLength);
-		iEnd = Math.min(oRange.start + oRange.length, this.iLimit);
+		iEnd = Math.min(oRange.start + oRange.length, this.aElements.$created + this.iLimit);
 		n = Math.min(iEnd, Math.max(oRange.start, this.aElements.length) + 1);
 
 		for (i = oRange.start; i < n; i++) {
@@ -1382,8 +1448,7 @@ sap.ui.define([
 
 		oGroupLock.unlock();
 
-		// Note: this.aElements[-1] cannot be a promise...
-		aElementsRange = this.aElements.slice(iStart, iEnd);
+		aElementsRange = this.aElements.slice(iIndex, iEnd);
 		if (this.aElements.$tail) { // Note: if available, it must be ours!
 			aElementsRange.push(this.aElements.$tail);
 		}
@@ -1393,12 +1458,10 @@ sap.ui.define([
 			that.checkActive();
 			oResult = {
 				"@odata.context" : that.sContext,
-				value : that.aElements.slice(iStart, iEnd)
+				value : that.aElements.slice(iIndex, iEnd)
 			};
 			oResult.value.$count = that.aElements.$count;
-			if (iIndex === -1) {
-				oResult.value.unshift(that.aElements[-1]); // Note: returns new length!
-			}
+
 			return oResult;
 		});
 	};
@@ -1409,9 +1472,9 @@ sap.ui.define([
 	 * request is running, all indexes in this range contain the Promise.
 	 *
 	 * @param {number} iStart
-	 *   The index of the first element to request ($skip)
+	 *   The start index of the range
 	 * @param {number} iEnd
-	 *   The index after the last element to request ($skip + $top)
+	 *   The index after the last element
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the group ID
 	 * @param {function} [fnDataRequested]
@@ -1449,7 +1512,7 @@ sap.ui.define([
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the group ID
 	 * @param {number} iIndex
-	 *   The index of the element to be refreshed
+	 *   The array index of the element to be refreshed
 	 * @param {function} [fnDataRequested]
 	 *   The function is called just before the back-end request is sent.
 	 *   If no back-end request is needed, the function is not called.
@@ -1479,9 +1542,9 @@ sap.ui.define([
 			this.fetchTypes()
 		]).then(function (aResult) {
 			var oElement = aResult[0];
-			// _Helper.updateExisting cannot be used because navigation properties cannot be handled
-			that.aElements[iIndex] = that.aElements.$byPredicate[sPredicate] = oElement;
-			that.visitResponse(oElement, aResult[1], that.sMetapath, sPredicate);
+
+			that.replaceElement(iIndex, sPredicate, oElement, aResult[1]);
+
 			return oElement;
 		});
 
@@ -1496,12 +1559,13 @@ sap.ui.define([
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the group ID
 	 * @param {number} iIndex
-	 *   The index of the element to be refreshed
+	 *   The array index of the element to be refreshed
 	 * @param {function} [fnDataRequested]
 	 *   The function is called just before the back-end request is sent.
 	 *   If no back-end request is needed, the function is not called.
 	 * @param {function} [fnOnRemove]
-	 *   A function which is called after an entity does not match the binding's filter anymore,
+	 *   A function which is called with the array index of the element after an entity does not
+	 *   match the binding's filter anymore,
 	 *   see {@link sap.ui.model.odata.v4.ODataListBinding#filter}
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise which resolves with <code>undefined</code> when the entity is updated in
@@ -1514,22 +1578,15 @@ sap.ui.define([
 		var that = this;
 
 		return this.fetchTypes().then(function (mTypeForMetaPath) {
-			var sKey,
-				aKeyFilters = [],
-				oEntity = that.aElements[iIndex],
-				mKeyProperties = _Helper.getKeyProperties(oEntity,
-					"/" + that.sResourcePath, mTypeForMetaPath),
+			var oEntity = that.aElements[iIndex],
 				sPredicate = _Helper.getPrivateAnnotation(oEntity, "predicate"),
 				mQueryOptions = jQuery.extend({}, that.mQueryOptions),
 				sFilterOptions = mQueryOptions["$filter"],
 				sReadUrl = that.sResourcePath;
 
-			for (sKey in mKeyProperties) {
-				aKeyFilters.push(sKey + " eq " + mKeyProperties[sKey]);
-			}
 
 			mQueryOptions["$filter"] = (sFilterOptions ? "(" + sFilterOptions + ") and " : "")
-				+ aKeyFilters.join(" and ");
+				+ _Helper.getKeyFilter(oEntity, that.sMetaPath, mTypeForMetaPath);
 
 			sReadUrl += that.oRequestor.buildQueryString(that.sMetaPath, mQueryOptions, false,
 				that.bSortExpandSelect);
@@ -1546,24 +1603,139 @@ sap.ui.define([
 						throw new Error(
 							"Unexpected server response, more than one entity returned.");
 					} else if (oResult.value.length === 0) {
-						if (iIndex === -1) {
-							delete that.aElements[-1];
-						} else {
-							that.aElements.splice(iIndex, 1);
-						}
-						delete that.aElements.$byPredicate[sPredicate];
-						addToCount(that.mChangeListeners, "", that.aElements, -1);
-						that.iLimit -= 1;
+						that.removeElement(that.aElements, iIndex, sPredicate, "");
 						fnOnRemove(iIndex);
 					} else {
-						oResult = oResult.value[0];
-						// _Helper.updateExisting cannot be used because navigation properties
-						// cannot be handled
-						that.aElements[iIndex] = that.aElements.$byPredicate[sPredicate] = oResult;
-						that.visitResponse(oResult, mTypeForMetaPath, that.sMetapath, sPredicate);
+						that.replaceElement(iIndex, sPredicate, oResult.value[0], mTypeForMetaPath);
 					}
 				});
 		});
+	};
+
+	/**
+	 * Replaces the old element at the given index by the given new element and calls
+	 * <code>visitReponse</code> for the new element. Updates also the reference in
+	 * <code>$byPredicate</code> for the transient predicate of the old element.
+	 *
+	 * @param {number} iIndex
+	 *   The array index of the old element to be replaced
+	 * @param {string} sPredicate
+	 *   The key predicate of the old element to be replaced
+	 * @param {object} oElement
+	 *   The new element
+	 * @param {object} mTypeForMetaPath
+	 *   A map from meta path to the entity type (as delivered by {@link #fetchTypes})
+	 *
+	 * @private
+	 */
+	CollectionCache.prototype.replaceElement = function (iIndex, sPredicate, oElement,
+			mTypeForMetaPath) {
+		var oOldElement = this.aElements[iIndex],
+			sTransientPredicate,
+			that = this;
+
+		// _Helper.updateExisting cannot be used because navigation properties cannot be handled
+		this.aElements[iIndex] = this.aElements.$byPredicate[sPredicate] = oElement;
+		sTransientPredicate = _Helper.getPrivateAnnotation(oOldElement, "transientPredicate");
+		if (sTransientPredicate) {
+			that.aElements.$byPredicate[sTransientPredicate] = oElement;
+			_Helper.setPrivateAnnotation(oElement, "transientPredicate", sTransientPredicate);
+		}
+		this.visitResponse(oElement, mTypeForMetaPath, undefined, sPredicate);
+	};
+
+	/**
+	 * Returns a promise to be resolved when the side effects have been applied to the given element
+	 * range and all created elements. All other elements are discarded!
+	 *
+	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
+	 *   A lock for the ID of the group that is associated with the request;
+	 *   see {sap.ui.model.odata.v4.lib._Requestor#request} for details
+	 * @param {string[]} aPaths
+	 *   The "14.5.11 Expression edm:NavigationPropertyPath" or
+	 *   "14.5.13 Expression edm:PropertyPath" strings describing which properties need to be loaded
+	 *   because they may have changed due to side effects of a previous update
+	 * @param {object} mNavigationPropertyPaths
+	 *   Hash set of collection-valued navigation property meta paths (relative to this cache's
+	 *   root) which need to be refreshed, maps string to <code>true</code>; is modified
+	 * @param {number} iStart
+	 *   The array index of the first element to request side effects for
+	 * @param {number} iLength
+	 *   The number of elements to request side effects for; <code>Infinity</code> is supported
+	 * @returns {Promise}
+	 *   A promise resolving without a defined result, or <code>null</code> if a key property is
+	 *   missing
+	 *
+	 * @public
+	 */
+	CollectionCache.prototype.requestSideEffects = function (oGroupLock, aPaths,
+			mNavigationPropertyPaths, iStart, iLength) {
+		var oElement,
+			sFilter,
+			aFilters = [],
+			mQueryOptions = _Helper.intersectQueryOptions(this.mQueryOptions, aPaths,
+				this.oRequestor.getModelInterface().fetchMetadata, this.sMetaPath,
+				mNavigationPropertyPaths),
+			sResourcePath,
+			mTypeForMetaPath = this.fetchTypes().getResult(),
+			that = this,
+			i;
+
+		if (!mQueryOptions) {
+			return SyncPromise.resolve(); // micro optimization: use *sync.* promise which is cached
+		}
+
+		// collect key filters and discard elements outside of range
+		for (i = 0; i < this.aElements.length; i += 1) {
+			oElement = this.aElements[i];
+			if (!oElement || _Helper.hasPrivateAnnotation(oElement, "transient")) {
+				continue;
+			}
+			if ((i < iStart || i >= iStart + iLength)
+				&& !_Helper.hasPrivateAnnotation(oElement, "transientPredicate"))  {
+				delete this.aElements.$byPredicate[
+					_Helper.getPrivateAnnotation(oElement, "predicate")];
+				delete this.aElements[i];
+				continue;
+			}
+			sFilter = _Helper.getKeyFilter(oElement, this.sMetaPath, mTypeForMetaPath);
+			if (!sFilter) {
+				return null; // missing key property
+			}
+			aFilters.push(sFilter);
+		}
+		this.aElements.length = iLength
+			? Math.min(iStart + iLength, this.aElements.length) // do not increase length
+			: this.aElements.$created;
+		if (!aFilters.length) {
+			return SyncPromise.resolve(); // micro optimization: use *sync.* promise which is cached
+		}
+
+		mQueryOptions.$filter = aFilters.join(" or ");
+		_Helper.selectKeyProperties(mQueryOptions, mTypeForMetaPath[this.sMetaPath]);
+		delete mQueryOptions.$count;
+		delete mQueryOptions.$orderby;
+		delete mQueryOptions.$search;
+		sResourcePath = this.sResourcePath
+			+ this.oRequestor.buildQueryString(this.sMetaPath, mQueryOptions, false, true);
+
+		return this.oRequestor.request("GET", sResourcePath, oGroupLock).then(function (oResult) {
+				var oElement, sPredicate, i, n;
+
+				if (oResult.value.length !== aFilters.length) {
+					throw new Error("Expected " + aFilters.length + " row(s), but instead saw "
+						+ oResult.value.length);
+				}
+				// Note: iStart makes no sense here (use NaN instead), but is not needed because
+				// we know we have key predicates
+				that.visitResponse(oResult, mTypeForMetaPath, undefined, "", false, NaN);
+				for (i = 0, n = oResult.value.length; i < n; i += 1) {
+					oElement = oResult.value[i];
+					sPredicate = _Helper.getPrivateAnnotation(oElement, "predicate");
+					_Helper.updateExisting(that.mChangeListeners, sPredicate,
+						that.aElements.$byPredicate[sPredicate], oElement);
+				}
+			});
 	};
 
 	//*********************************************************************************************
@@ -1703,7 +1875,7 @@ sap.ui.define([
 		this.sMetaPath = sMetaPath || this.sMetaPath; // overrides Cache c'tor
 		this.bPost = bPost;
 		this.bPosting = false;
-		this.oPromise = null;
+		this.oPromise = null; // a SyncPromise for the current value
 	}
 
 	// make SingleCache a Cache
@@ -1836,40 +2008,58 @@ sap.ui.define([
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the ID of the group that is associated with the request;
 	 *   see {sap.ui.model.odata.v4.lib._Requestor#request} for details
-	 * @param {string[]} aPaths The "14.5.11 Expression edm:NavigationPropertyPath" or
+	 * @param {string[]} aPaths
+	 *   The "14.5.11 Expression edm:NavigationPropertyPath" or
 	 *   "14.5.13 Expression edm:PropertyPath" strings describing which properties need to be loaded
 	 *   because they may have changed due to side effects of a previous update
+	 * @param {object} mNavigationPropertyPaths
+	 *   Hash set of collection-valued navigation property meta paths (relative to this cache's
+	 *   root) which need to be refreshed, maps string to <code>true</code>; is modified
 	 * @param {string} [sResourcePath=this.sResourcePath]
 	 *   A resource path relative to the service URL; it must not contain a query string
 	 * @returns {Promise}
-	 *   A promise resolving with the updated data
+	 *   A promise resolving with the updated data, or rejected with an error if loading of side
+	 *   effects fails.
 	 * @throws {Error} If the side effects require a $expand
 	 *
 	 * @public
 	 */
-	SingleCache.prototype.requestSideEffects = function (oGroupLock, aPaths, sResourcePath) {
-		var mQueryOptions = _Helper.intersectQueryOptions(this.mQueryOptions, aPaths,
-				this.oRequestor.getModelInterface().fnFetchMetadata,
-				this.sMetaPath + "/$Type"), // add $Type because of return value context
+	SingleCache.prototype.requestSideEffects = function (oGroupLock, aPaths,
+			mNavigationPropertyPaths, sResourcePath) {
+		var oOldValuePromise = this.fetchValue(_GroupLock.$cached, ""),
+			mQueryOptions = _Helper.intersectQueryOptions(this.mQueryOptions, aPaths,
+				this.oRequestor.getModelInterface().fetchMetadata,
+				this.sMetaPath + "/$Type", // add $Type because of return value context
+				mNavigationPropertyPaths),
+			oResult,
 			that = this;
 
-		if (mQueryOptions === null) {
-			return this.fetchValue(_GroupLock.$cached, "");
+		if (!mQueryOptions) {
+			return oOldValuePromise;
 		}
 
-		return Promise.all([
-			this.oRequestor.request("GET", (sResourcePath || this.sResourcePath)
-					+ this.oRequestor.buildQueryString(this.sMetaPath, mQueryOptions, false, true),
-				oGroupLock),
-			this.fetchTypes()
+		sResourcePath = (sResourcePath || this.sResourcePath)
+			+ this.oRequestor.buildQueryString(this.sMetaPath, mQueryOptions, false, true);
+		oResult = SyncPromise.all([
+			this.oRequestor.request("GET", sResourcePath, oGroupLock),
+			this.fetchTypes(),
+			oOldValuePromise
 		]).then(function (aResult) {
-			var oNewValue = aResult[0];
+			var oNewValue = aResult[0],
+				oOldValue = aResult[2];
 
 			// visit response to report the messages
-			that.visitResponse(oNewValue, aResult[1], that.sMetaPath);
+			that.visitResponse(oNewValue, aResult[1]);
+			_Helper.updateExisting(that.mChangeListeners, "", oOldValue, oNewValue);
 
-			return that.patch("", oNewValue);
+			return oOldValue;
 		});
+		this.oPromise = oResult.catch(function () {
+			// if side effects cannot be requested, keep the old value!
+			return oOldValuePromise;
+		});
+
+		return oResult;
 	};
 
 	//*********************************************************************************************
@@ -1965,6 +2155,23 @@ sap.ui.define([
 			fnGetOriginalResourcePath, bPost, sMetaPath, bFetchOperationReturnType) {
 		return new SingleCache(oRequestor, sResourcePath, mQueryOptions, bSortExpandSelect,
 			fnGetOriginalResourcePath, bPost, sMetaPath, bFetchOperationReturnType);
+	};
+
+	/**
+	 * Transforms a numeric path segment from $skip to array index.
+	 *
+	 * @param {string} sSegment - A path segment
+	 * @param {any[]} aCollection - A collection
+	 * @returns {number|string}
+	 *   Either the path segment itself or an array index transformed from $skip according to the
+	 *   collection's "$created" count.
+	 *
+	 * @private
+	 */
+	Cache.from$skip = function (sSegment, aCollection) {
+		return rNumber.test(sSegment)
+			? aCollection.$created + Number(sSegment)
+			: sSegment;
 	};
 
 	/**

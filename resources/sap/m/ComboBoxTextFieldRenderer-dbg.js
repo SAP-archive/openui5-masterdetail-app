@@ -1,14 +1,15 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
 	'./InputBaseRenderer',
 	'sap/ui/core/Renderer',
-	'sap/ui/core/LabelEnablement'
+	'sap/ui/core/LabelEnablement',
+	'sap/ui/Device'
 ],
-	function(InputBaseRenderer, Renderer, LabelEnablement) {
+	function(InputBaseRenderer, Renderer, LabelEnablement, Device) {
 		"use strict";
 
 		/**
@@ -45,8 +46,10 @@ sap.ui.define([
 		 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer.
 		 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered.
 		 */
-		ComboBoxTextFieldRenderer.writeOuterAttributes = function(oRm, oControl) {
+		ComboBoxTextFieldRenderer.writeAccAttributes = function(oRm, oControl) {
 			if (sap.ui.getCore().getConfiguration().getAccessibility()) {
+				oRm.writeAttribute("aria-haspopup", "listbox");
+				oRm.writeAttribute("aria-autocomplete", "inline");
 				oRm.writeAttribute("role", "combobox");
 			}
 		};
@@ -58,17 +61,19 @@ sap.ui.define([
 		 */
 		ComboBoxTextFieldRenderer.getAriaRole = function() {};
 
+
 		/**
-		 * Retrieves the accessibility state of the control.
-		 * To be overwritten by subclasses.
+		 * Returns the inner aria describedby ids for the accessibility.
 		 *
-		 * @param {sap.ui.core.Control} oControl An object representation of the control that should be rendered.
-		 * @returns {object} The accessibility state of the control
+		 * @param {sap.ui.core.Control} oControl an object representation of the control.
+		 * @returns {String|undefined}
 		 */
-		ComboBoxTextFieldRenderer.getAccessibilityState = function(oControl) {
-			var mAccessibilityState = InputBaseRenderer.getAccessibilityState.call(this, oControl);
-			mAccessibilityState.autocomplete = "both";
-			return mAccessibilityState;
+		ComboBoxTextFieldRenderer.getAriaDescribedBy = function(oControl) {
+			var sAriaDescribedBy = InputBaseRenderer.getAriaDescribedBy.apply(this, arguments);
+			if (Device.browser.msie) {
+				return (sAriaDescribedBy || "") + " " + oControl.oInvisibleText.getId();
+			}
+			return sAriaDescribedBy;
 		};
 
 		/**

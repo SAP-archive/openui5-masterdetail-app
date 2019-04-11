@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -49,6 +49,8 @@ sap.ui.define([
 
 	// shortcut for sap.ui.core.CalendarType
 	var CalendarType = coreLibrary.CalendarType;
+
+	var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.m");
 
 	// lazy dependency to sap/ui/unified/Calendar
 	var Calendar;
@@ -130,7 +132,7 @@ sap.ui.define([
 	 * the close event), or select Cancel.
 	 *
 	 * @extends sap.m.DateTimeField
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -218,12 +220,18 @@ sap.ui.define([
 					/**
 					 * Date range containing the start and end date displayed in the <code>Calendar</code> popup.
 					 */
-					dateRange : {type : "sap.ui.unified.DateRange"}
+					dateRange : {type : "sap.ui.unified.DateRange"},
+
+					/**
+					 * Indicates if the event is fired, due to popup being opened.
+					 */
+					afterPopupOpened : {type : "boolean"}
 
 				}
 			}
 		},
-		designtime: "sap/m/designtime/DatePicker.designtime"
+		designtime: "sap/m/designtime/DatePicker.designtime",
+		dnd: { draggable: false, droppable: true }
 	}});
 
 
@@ -285,7 +293,7 @@ sap.ui.define([
 			id: this.getId() + "-icon",
 			src: this.getIconSrc(),
 			noTabStop: true,
-			title: ""
+			tooltip: oResourceBundle.getText("OPEN_PICKER_TEXT")
 		});
 
 		// idicates whether the picker is still open
@@ -301,6 +309,17 @@ sap.ui.define([
 		oIcon.attachPress(function () {
 			this.toggleOpen(this._bShouldClosePicker);
 		}, this);
+	};
+
+	/**
+	 * Returns if the last entered value is valid.
+	 *
+	 * @returns {boolean}
+	 * @public
+	 * @since 1.64
+	 */
+	DatePicker.prototype.isValidValue = function() {
+		return this._bValid;
 	};
 
 	/**
@@ -374,7 +393,7 @@ sap.ui.define([
 		var oValueHelpIcon = this._getValueHelpIcon();
 
 		if (oValueHelpIcon) {
-			oValueHelpIcon.setProperty("visible", this.getEnabled(), true);
+			oValueHelpIcon.setProperty("visible", this.getEditable(), true);
 		}
 	};
 
@@ -557,6 +576,7 @@ sap.ui.define([
 			this._oMinDate = new Date(oDate.getTime());
 			var oDateValue = this.getDateValue();
 			if (oDateValue && oDateValue.getTime() < oDate.getTime()) {
+				this._bValid = false;
 				Log.warning("DateValue not in valid date range", this);
 			}
 		} else {
@@ -596,6 +616,7 @@ sap.ui.define([
 			this._oMaxDate = new Date(oDate.getTime());
 			var oDateValue = this.getDateValue();
 			if (oDateValue && oDateValue.getTime() > oDate.getTime()) {
+				this._bValid = false;
 				Log.warning("DateValue not in valid date", this);
 			}
 		} else {
@@ -635,6 +656,7 @@ sap.ui.define([
 
 		if (oDateValue &&
 			(oDateValue.getTime() < this._oMinDate.getTime() || oDateValue.getTime() > this._oMaxDate.getTime())) {
+			this._bValid = false;
 			Log.error("dateValue " + oDateValue.toString() + "(value=" + this.getValue() + ") does not match " +
 				"min/max date range(" + this._oMinDate.toString() + " - " + this._oMaxDate.toString() + "). App. " +
 				"developers should take care to maintain dateValue/value accordingly.", this);
@@ -972,7 +994,8 @@ sap.ui.define([
 
 		// Fire navigate event when the calendar popup opens
 		this.fireNavigate({
-			dateRange: this._getVisibleDatesRange(this._oCalendar)
+			dateRange: this._getVisibleDatesRange(this._oCalendar),
+			afterPopupOpened: true
 		});
 
 	}
@@ -1112,7 +1135,7 @@ sap.ui.define([
 				sValue = this._formatValue(oDate);
 			}
 		}
-		oInfo.type = sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("ACC_CTR_TYPE_DATEINPUT");
+		oInfo.type = oResourceBundle.getText("ACC_CTR_TYPE_DATEINPUT");
 		oInfo.description = [sValue, oRenderer.getLabelledByAnnouncement(this), oRenderer.getDescribedByAnnouncement(this)].join(" ").trim();
 		return oInfo;
 	};

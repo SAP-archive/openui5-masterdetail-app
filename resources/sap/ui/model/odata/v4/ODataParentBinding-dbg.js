@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -38,6 +38,8 @@ sap.ui.define([
 		this.iPatchCounter = 0;
 		// whether all sent PATCHes have been successfully processed
 		this.bPatchSuccess = true;
+		// see #getResumePromise
+		this.oResumePromise = undefined;
 	}
 
 	asODataBinding(ODataParentBinding.prototype);
@@ -120,23 +122,6 @@ sap.ui.define([
 		if (this.iPatchCounter === 1) {
 			this.fireEvent("patchSent");
 		}
-	};
-
-	/**
-	 * Adds the given paths to $select of the given query options.
-	 *
-	 * @param {object} mQueryOptions The query options
-	 * @param {string[]} aSelectPaths The paths to add to $select
-	 *
-	 * @private
-	 */
-	ODataParentBinding.prototype.addToSelect = function (mQueryOptions, aSelectPaths) {
-		mQueryOptions.$select = mQueryOptions.$select || [];
-		aSelectPaths.forEach(function (sPath) {
-			if (mQueryOptions.$select.indexOf(sPath) < 0 ) {
-				mQueryOptions.$select.push(sPath);
-			}
-		});
 	};
 
 	/**
@@ -262,10 +247,9 @@ sap.ui.define([
 	 *   Map of binding parameters, see {@link sap.ui.model.odata.v4.ODataModel#bindList} and
 	 *   {@link sap.ui.model.odata.v4.ODataModel#bindContext}
 	 * @throws {Error}
-	 *   If the binding's root binding is suspended, there are pending changes or if
-	 *   <code>mParameters</code> is missing, contains binding-specific or unsupported parameters,
-	 *   contains unsupported values, or contains the property "$expand" or "$select" when the model
-	 *   is in auto-$expand/$select mode.
+	 *   If there are pending changes or if <code>mParameters</code> is missing, contains
+	 *   binding-specific or unsupported parameters, contains unsupported values, or contains the
+	 *   property "$expand" or "$select" when the model is in auto-$expand/$select mode.
 	 *
 	 * @public
 	 * @since 1.45.0
@@ -306,7 +290,6 @@ sap.ui.define([
 			}
 		}
 
-		this.checkSuspended();
 		if (!mParameters) {
 			throw new Error("Missing map of binding parameters");
 		}
@@ -334,6 +317,7 @@ sap.ui.define([
 		}
 
 		if (sChangeReason) {
+			this.createReadGroupLock(this.getGroupId(), true);
 			this.applyParameters(mBindingParameters, sChangeReason);
 		}
 	};
@@ -368,7 +352,7 @@ sap.ui.define([
 					if (oCache.$resourcePath === sResourcePath) {
 						return updateDependents();
 					}
-					return that.refreshInternal(); // entity of context changed
+					return that.refreshInternal(""); // entity of context changed
 				}).catch(function (oError) {
 					that.oModel.reportError("Failed to update " + that, sClassName, oError);
 				});
@@ -387,6 +371,8 @@ sap.ui.define([
 	 *   The path for the POST request or a SyncPromise that resolves with that path
 	 * @param {string} sPathInCache
 	 *   The path within the cache where to create the entity
+	 * @param {string} sTransientPredicate
+	 *   A (temporary) key predicate for the transient entity: "($uid=...)"
 	 * @param {object} oInitialData
 	 *   The initial data for the created entity
 	 * @param {function} fnCancelCallback
@@ -398,17 +384,17 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataParentBinding.prototype.createInCache = function (oUpdateGroupLock, vCreatePath,
-			sPathInCache, oInitialData, fnCancelCallback) {
+			sPathInCache, sTransientPredicate, oInitialData, fnCancelCallback) {
 		var that = this;
 
 		return this.oCachePromise.then(function (oCache) {
 			if (oCache) {
-				return oCache.create(oUpdateGroupLock, vCreatePath, sPathInCache, oInitialData,
-					fnCancelCallback, function (oError) {
+				return oCache.create(oUpdateGroupLock, vCreatePath, sPathInCache,
+					sTransientPredicate, oInitialData, fnCancelCallback,
+					function (oError) {
 						// error callback
 						that.oModel.reportError("POST on '" + vCreatePath
-								+ "' failed; will be repeated automatically",
-							"sap.ui.model.odata.v4.ODataParentBinding", oError);
+							+ "' failed; will be repeated automatically", sClassName, oError);
 				}).then(function (oCreatedEntity) {
 					if (oCache.$resourcePath) {
 						// Ensure that a cache containing a persisted created entity is recreated
@@ -419,8 +405,8 @@ sap.ui.define([
 				});
 			}
 			return that.oContext.getBinding().createInCache(oUpdateGroupLock, vCreatePath,
-				_Helper.buildPath(that.oContext.iIndex, that.sPath, sPathInCache), oInitialData,
-				fnCancelCallback);
+				_Helper.buildPath(that.oContext.iIndex, that.sPath, sPathInCache),
+				sTransientPredicate, oInitialData, fnCancelCallback);
 		});
 	};
 
@@ -471,16 +457,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Destroys the object. The object must not be used anymore after this function was called.
-	 *
-	 * @public
-	 * @since 1.61
-	 */
-	ODataParentBinding.prototype.destroy = function () {
-		this.aChildCanUseCachePromises = [];
-	};
-
-	/**
 	 * Deletes the entity in the cache. If the binding doesn't have a cache, it forwards to the
 	 * parent binding adjusting the path.
 	 *
@@ -522,6 +498,17 @@ sap.ui.define([
 		}
 		return this.oContext.getBinding().deleteFromCache(oGroupLock, sEditUrl,
 			_Helper.buildPath(this.oContext.iIndex, this.sPath, sPath), fnCallback);
+	};
+
+	/**
+	 * Destroys the object. The object must not be used anymore after this function was called.
+	 *
+	 * @public
+	 * @since 1.61
+	 */
+	ODataParentBinding.prototype.destroy = function () {
+//		this.mAggregatedQueryOptions = undefined;
+		this.aChildCanUseCachePromises = [];
 	};
 
 	/**
@@ -622,8 +609,9 @@ sap.ui.define([
 			if (sChildMetaPath === ""
 				|| oProperty
 				&& (oProperty.$kind === "Property" || oProperty.$kind === "NavigationProperty")) {
-				mWrappedChildQueryOptions = that.wrapChildQueryOptions(sBaseMetaPath,
-					sChildMetaPath, mChildQueryOptions);
+				mWrappedChildQueryOptions = _Helper.wrapChildQueryOptions(sBaseMetaPath,
+					sChildMetaPath, mChildQueryOptions,
+					that.oModel.oRequestor.getModelInterface().fetchMetadata);
 				if (mWrappedChildQueryOptions) {
 					return that.aggregateQueryOptions(mWrappedChildQueryOptions, bCacheImmutable);
 				}
@@ -633,10 +621,8 @@ sap.ui.define([
 				return that.aggregateQueryOptions(mChildQueryOptions, bCacheImmutable);
 			}
 			Log.error("Failed to enhance query options for auto-$expand/$select as the path '"
-					+ sFullMetaPath
-					+ "' does not point to a property",
-				JSON.stringify(oProperty),
-				"sap.ui.model.odata.v4.ODataParentBinding");
+					+ sFullMetaPath + "' does not point to a property",
+				JSON.stringify(oProperty), sClassName);
 			return false;
 		});
 		this.aChildCanUseCachePromises.push(oCanUseCachePromise);
@@ -649,10 +635,12 @@ sap.ui.define([
 						that.mAggregatedQueryOptions));
 				}
 				return oCache;
-			}).catch(function (oError) {
-				that.oModel.reportError("Failed to update cache for binding " + that, sClassName,
-					oError);
 			});
+		// catch the error, but keep the rejected promise
+		this.oCachePromise.catch(function (oError) {
+			that.oModel.reportError(that + ": Failed to enhance query options for "
+				+ "auto-$expand/$select for child " + sChildPath,  sClassName, oError);
+		});
 		return oCanUseCachePromise;
 	};
 
@@ -701,6 +689,45 @@ sap.ui.define([
 	};
 
 	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#getResumePromise
+	 */
+	ODataParentBinding.prototype.getResumePromise = function () {
+		return this.oResumePromise;
+	};
+
+	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#hasPendingChangesInDependents
+	 */
+	ODataParentBinding.prototype.hasPendingChangesInDependents = function () {
+		var aDependents = this.getDependentBindings();
+
+		return aDependents.some(function (oDependent) {
+			var oCache, bHasPendingChanges;
+
+			if (oDependent.oCachePromise.isFulfilled()) {
+				// Pending changes for this cache are only possible when there is a cache already
+				oCache = oDependent.oCachePromise.getResult();
+				if (oCache && oCache.hasPendingChangesForPath("")) {
+					return true;
+				}
+			}
+			if (oDependent.mCacheByResourcePath) {
+				bHasPendingChanges = Object.keys(oDependent.mCacheByResourcePath)
+					.some(function (sPath) {
+						return oDependent.mCacheByResourcePath[sPath].hasPendingChangesForPath("");
+					});
+				if (bHasPendingChanges) {
+					return true;
+				}
+			}
+			// Ask dependents, they might have no cache, but pending changes in mCacheByResourcePath
+			return oDependent.hasPendingChangesInDependents();
+		});
+	};
+
+	/**
 	 * Initializes the OData list binding: Fires a 'change' event in case the binding has a
 	 * resolved path and its root binding is not suspended.
 	 *
@@ -726,25 +753,41 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataParentBinding.prototype.isPatchWithoutSideEffects = function () {
-		return !!this.mParameters.$$patchWithoutSideEffects;
+		return this.mParameters.$$patchWithoutSideEffects
+			|| !this.isRoot() && this.oContext
+				&& this.oContext.getBinding().isPatchWithoutSideEffects();
+	};
+
+	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#isMeta
+	 */
+	ODataParentBinding.prototype.isMeta = function () {
+		return false;
 	};
 
 	/**
 	 * Refreshes all dependent bindings with the given parameters and waits for them to have
 	 * finished.
 	 *
+	 * @param {string} sResourcePathPrefix
+	 *   The resource path prefix which is used to delete the dependent caches and corresponding
+	 *   messages; may be "" but not <code>undefined</code>
 	 * @param {string} [sGroupId]
 	 *   The group ID to be used for refresh
 	 * @param {boolean} [bCheckUpdate]
-	 *   If <code>true</code>, a property binding is expected to check for updates.
+	 *   If <code>true</code>, a property binding is expected to check for updates
 	 * @returns {sap.ui.base.SyncPromise}
-	 *   A promise resolving when all dependent bindings are refreshed
+	 *   A promise resolving when all dependent bindings are refreshed; it is rejected if the
+	 *   binding's root binding is suspended and a group ID different from the binding's group ID is
+	 *   given
 	 *
 	 * @private
 	 */
-	ODataParentBinding.prototype.refreshDependentBindings = function (sGroupId, bCheckUpdate) {
+	ODataParentBinding.prototype.refreshDependentBindings = function (sResourcePathPrefix, sGroupId,
+			bCheckUpdate) {
 		return SyncPromise.all(this.getDependentBindings().map(function (oDependentBinding) {
-			return oDependentBinding.refreshInternal(sGroupId, bCheckUpdate);
+			return oDependentBinding.refreshInternal(sResourcePathPrefix, sGroupId, bCheckUpdate);
 		}));
 	};
 
@@ -761,6 +804,24 @@ sap.ui.define([
 	};
 
 	/**
+	 * Refreshes the binding; expects it to be suspended.
+	 *
+	 * @param {string} sGroupId
+	 *   The group ID to be used for the refresh
+	 * @throws {Error}
+	 *   If a group ID different from the binding's group ID is given
+
+	 * @private
+	 */
+	ODataParentBinding.prototype.refreshSuspended = function (sGroupId) {
+		if (sGroupId && sGroupId !== this.getGroupId()) {
+			throw new Error(this + ": Cannot refresh a suspended binding with group ID '"
+				+ sGroupId  + "' (own group ID is '" + this.getGroupId() + "')");
+		}
+		this.setResumeChangeReason(ChangeReason.Refresh);
+	};
+
+	/**
 	 * Loads side effects for the given context of this binding.
 	 *
 	 * @param {string} sGroupId
@@ -770,13 +831,13 @@ sap.ui.define([
 	 *   "14.5.13 Expression edm:PropertyPath" strings describing which properties need to be loaded
 	 *   because they may have changed due to side effects of a previous update
 	 * @param {sap.ui.model.odata.v4.Context} [oContext]
-	 *   The context instance for which to request side effects; if missing, the whole binding is
-	 *   affected
+	 *   The context for which to request side effects; if missing, the whole binding is affected
 	 * @returns {sap.ui.base.SyncPromise}
 	 *   A promise resolving without a defined result, or rejected with an error if loading of side
 	 *   effects fails
 	 * @throws {Error}
-	 *   If this binding does not use own service data requests
+	 *   If this binding does not use own service data requests or if the binding's root binding is
+	 *   suspended and the given group ID is not the binding's group
 	 *
 	 * @abstract
 	 * @function
@@ -784,6 +845,34 @@ sap.ui.define([
 	 * @private
 	 * @see sap.ui.model.odata.v4.Context#requestSideEffects
 	 */
+
+	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#resetChangesInDependents
+	 */
+	ODataParentBinding.prototype.resetChangesInDependents = function () {
+		this.getDependentBindings().forEach(function (oDependent) {
+			var oCache;
+
+			if (oDependent.oCachePromise.isFulfilled()) {
+				// Pending changes for this cache are only possible when there is a cache already
+				oCache = oDependent.oCachePromise.getResult();
+				if (oCache) {
+					oCache.resetChangesForPath("");
+				}
+				oDependent.resetInvalidDataState();
+			}
+			// mCacheByResourcePath may have changes nevertheless
+			if (oDependent.mCacheByResourcePath) {
+				Object.keys(oDependent.mCacheByResourcePath).forEach(function (sPath) {
+					oDependent.mCacheByResourcePath[sPath].resetChangesForPath("");
+				});
+			}
+			// Reset dependents, they might have no cache, but pending changes in
+			// mCacheByResourcePath
+			oDependent.resetChangesInDependents();
+		});
+	};
 
 	/**
 	 * Resumes this binding. The binding can again fire change events and trigger data service
@@ -813,13 +902,15 @@ sap.ui.define([
 			throw new Error("Cannot resume a not suspended binding: " + this);
 		}
 
-		this.bSuspended = false;
 		// wait one additional prerendering because resume itself only starts in a prerendering task
 		this.createReadGroupLock(this.getGroupId(), true, 1);
 		// dependent bindings are only removed in a *new task* in ManagedObject#updateBindings
 		// => must only resume in prerendering task
 		sap.ui.getCore().addPrerenderingTask(function () {
+			that.bSuspended = false;
 			that.resumeInternal(true);
+			that.oResumePromise.$resolve();
+			that.oResumePromise = undefined;
 		});
 	};
 
@@ -834,16 +925,8 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataParentBinding.prototype.selectKeyProperties = function (mQueryOptions, sMetaPath) {
-		var oType = this.oModel.getMetaModel().getObject(sMetaPath + "/");
-
-		if (oType && oType.$Key) {
-			this.addToSelect(mQueryOptions, oType.$Key.map(function (vKey) {
-				if (typeof vKey === "object") {
-					return vKey[Object.keys(vKey)[0]];
-				}
-				return vKey;
-			}));
-		}
+		_Helper.selectKeyProperties(mQueryOptions,
+			this.oModel.getMetaModel().getObject(sMetaPath + "/"));
 	};
 
 	/**
@@ -864,6 +947,8 @@ sap.ui.define([
 	 */
 	// @override sap.ui.model.Binding#suspend
 	ODataParentBinding.prototype.suspend = function () {
+		var fnResolve;
+
 		if (this.oOperation) {
 			throw new Error("Cannot suspend an operation binding: " + this);
 		}
@@ -878,6 +963,10 @@ sap.ui.define([
 		}
 
 		this.bSuspended = true;
+		this.oResumePromise = new SyncPromise(function (resolve, reject) {
+			fnResolve = resolve;
+		});
+		this.oResumePromise.$resolve = fnResolve;
 		if (this.oReadGroupLock) {
 			this.oReadGroupLock.unlock(true);
 			this.oReadGroupLock = undefined;
@@ -916,73 +1005,34 @@ sap.ui.define([
 	};
 
 	/**
-	 * Creates the query options for a child binding with the meta path given by its base
-	 * meta path and relative meta path. Adds the key properties to $select of all expanded
-	 * navigation properties. Requires that meta data for the meta path is already loaded so that
-	 * synchronous access to all prefixes of the relative meta path is possible.
-	 * If the relative meta path contains segments which are not a structural property or a
-	 * navigation property, the child query options cannot be created and the method returns
-	 * undefined.
-	 *
-	 * @param {string} sBaseMetaPath The meta path which is the starting point for the relative
-	 *   meta path
-	 * @param {string} sChildMetaPath The relative meta path
-	 * @param {object} mChildQueryOptions The child binding's query options
-	 *
-	 * @returns {object} The query options for the child binding or <code>undefined</code> in case
-	 *   the query options cannot be created, e.g. because $apply cannot be wrapped into $expand
-	 *
-	 * @private
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#visitSideEffects
 	 */
-	ODataParentBinding.prototype.wrapChildQueryOptions = function (sBaseMetaPath,
-			sChildMetaPath, mChildQueryOptions) {
-		var sExpandSelectPath = "",
-			i,
-			aMetaPathSegments = sChildMetaPath.split("/"),
-			oProperty,
-			sPropertyMetaPath = sBaseMetaPath,
-			mQueryOptions = {},
-			mQueryOptionsForPathPrefix = mQueryOptions;
+	ODataParentBinding.prototype.visitSideEffects = function (sGroupId, aPaths, oContext,
+			mNavigationPropertyPaths, aPromises, sPrefix) {
+		var aDependentBindings = oContext
+				? this.oModel.getDependentBindings(oContext)
+				: this.getDependentBindings();
 
-		if (sChildMetaPath === "") {
-			return mChildQueryOptions;
-		}
+		aDependentBindings.forEach(function (oDependentBinding) {
+			var sPath = _Helper.buildPath(sPrefix,
+					_Helper.getMetaPath(oDependentBinding.getPath())),
+				aStrippedPaths;
 
-		for (i = 0; i < aMetaPathSegments.length; i += 1) {
-			sPropertyMetaPath = _Helper.buildPath(sPropertyMetaPath, aMetaPathSegments[i]);
-			sExpandSelectPath = _Helper.buildPath(sExpandSelectPath, aMetaPathSegments[i]);
-			oProperty = this.oModel.getMetaModel().getObject(sPropertyMetaPath);
-			if (oProperty.$kind === "NavigationProperty") {
-				mQueryOptionsForPathPrefix.$expand = {};
-				mQueryOptionsForPathPrefix = mQueryOptionsForPathPrefix.$expand[sExpandSelectPath]
-					= (i === aMetaPathSegments.length - 1) // last segment in path
-						? mChildQueryOptions
-						: {};
-				this.selectKeyProperties(mQueryOptionsForPathPrefix, sPropertyMetaPath);
-				sExpandSelectPath = "";
-			} else if (oProperty.$kind !== "Property") {
-				return undefined;
+			if (oDependentBinding.oCachePromise.getResult()) {
+				// dependent binding which has its own cache => not an ODataPropertyBinding
+				aStrippedPaths = _Helper.stripPathPrefix(sPath, aPaths);
+				if (aStrippedPaths.length) {
+					aPromises.push(
+						oDependentBinding.requestSideEffects(sGroupId, aStrippedPaths));
+				}
+			} else if (mNavigationPropertyPaths[sPath]) {
+				aPromises.push(oDependentBinding.refreshInternal("", sGroupId));
+			} else {
+				oDependentBinding.visitSideEffects(sGroupId, aPaths, null,
+					mNavigationPropertyPaths, aPromises, sPath);
 			}
-		}
-		if (oProperty.$kind === "Property") {
-			if (Object.keys(mChildQueryOptions).length > 0) {
-				Log.error("Failed to enhance query options for "
-						+ "auto-$expand/$select as the child binding has query options, "
-						+ "but its path '" + sChildMetaPath + "' points to a structural "
-						+ "property",
-					JSON.stringify(mChildQueryOptions),
-					"sap.ui.model.odata.v4.ODataParentBinding");
-				return undefined;
-			}
-			this.addToSelect(mQueryOptionsForPathPrefix, [sExpandSelectPath]);
-		}
-		if ("$apply" in mChildQueryOptions) {
-			Log.debug("Cannot wrap $apply into $expand: " + sChildMetaPath,
-				JSON.stringify(mChildQueryOptions),
-				"sap.ui.model.odata.v4.ODataParentBinding");
-			return undefined;
-		}
-		return mQueryOptions;
+		});
 	};
 
 	function asODataParentBinding(oPrototype) {

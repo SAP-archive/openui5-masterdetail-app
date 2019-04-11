@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -95,7 +95,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -293,7 +293,6 @@ sap.ui.define([
 	};
 
 	DynamicPage.MEDIA = {
-		INVISIBLE: "sapUiHidden",
 		PHONE: "sapFDynamicPage-Std-Phone",
 		TABLET: "sapFDynamicPage-Std-Tablet",
 		DESKTOP: "sapFDynamicPage-Std-Desktop"
@@ -587,7 +586,8 @@ sap.ui.define([
 
 		this.setProperty("headerExpanded", false, true);
 		if (this._hasVisibleTitleAndHeader()) {
-			this.$titleArea.addClass("sapFDynamicPageTitleSnapped");
+			this.$titleArea.addClass(Device.system.phone && oDynamicPageTitle.getSnappedTitleOnMobile() ?
+					"sapFDynamicPageTitleSnappedTitleOnMobile" : "sapFDynamicPageTitleSnapped");
 			this._updateToggleHeaderVisualIndicators();
 			this._togglePinButtonVisibility(false);
 		}
@@ -623,7 +623,8 @@ sap.ui.define([
 
 		this.setProperty("headerExpanded", true, true);
 		if (this._hasVisibleTitleAndHeader()) {
-			this.$titleArea.removeClass("sapFDynamicPageTitleSnapped");
+			this.$titleArea.removeClass(Device.system.phone && oDynamicPageTitle.getSnappedTitleOnMobile() ?
+					"sapFDynamicPageTitleSnappedTitleOnMobile" : "sapFDynamicPageTitleSnapped");
 			this._updateToggleHeaderVisualIndicators();
 			if (!this.getPreserveHeaderStateOnScroll()) {
 				this._togglePinButtonVisibility(true);
@@ -1169,9 +1170,7 @@ sap.ui.define([
 	 * @private
 	 */
 	DynamicPage.prototype._updateMedia = function (iWidth) {
-		if (iWidth === 0) {
-			this._updateMediaStyle(DynamicPage.MEDIA.INVISIBLE);
-		} else if (iWidth <= DynamicPage.BREAK_POINTS.PHONE) {
+		if (iWidth <= DynamicPage.BREAK_POINTS.PHONE) {
 			this._updateMediaStyle(DynamicPage.MEDIA.PHONE);
 		} else if (iWidth <= DynamicPage.BREAK_POINTS.TABLET) {
 			this._updateMediaStyle(DynamicPage.MEDIA.TABLET);
@@ -1258,7 +1257,7 @@ sap.ui.define([
 		} else {
 			bHeaderExpanded = this.getHeaderExpanded();
 			bCollapseVisualIndicatorVisible = bHeaderExpanded;
-			bExpandVisualIndicatorVisible = !bHeaderExpanded;
+			bExpandVisualIndicatorVisible = Device.system.phone && this.getTitle().getAggregation("snappedTitleOnMobile") ? false : !bHeaderExpanded;
 		}
 
 		this._toggleCollapseVisualIndicator(bCollapseVisualIndicatorVisible);
@@ -1273,7 +1272,7 @@ sap.ui.define([
 		var oTitle = this.getTitle(),
 			bTitleActive = this._hasVisibleTitleAndHeader() && this.getToggleHeaderOnTitleClick();
 
-		this.$().toggleClass("sapFDynamicPageTitleClickEnabled", bTitleActive);
+		this.$().toggleClass("sapFDynamicPageTitleClickEnabled", bTitleActive && !Device.system.phone);
 		if (exists(oTitle)) {
 			oTitle._toggleFocusableState(bTitleActive);
 		}
@@ -1553,7 +1552,7 @@ sap.ui.define([
 				this._togglePinButtonVisibility(true);
 			}
 
-			if (this._bHeaderInTitleArea && this._headerBiggerThanAllowedToBeExpandedInTitleArea()) {
+			if (this.getHeaderExpanded() && this._bHeaderInTitleArea && this._headerBiggerThanAllowedToBeExpandedInTitleArea()) {
 				this._expandHeader(false /* remove header from title area */);
 				this._setScrollPosition(0);
 			}

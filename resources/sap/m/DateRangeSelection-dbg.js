@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -115,8 +115,8 @@ sap.ui.define([
 	 * compact mode and provides a touch-friendly size in cozy mode.
 	 *
 	 * @extends sap.m.DatePicker
-	 * @version 1.61.2
-	 * @version 1.61.2
+	 * @version 1.64.0
+	 * @version 1.64.0
 	 *
 	 * @constructor
 	 * @public
@@ -154,7 +154,8 @@ sap.ui.define([
 			 */
 			to : {type : "object", group : "Misc", defaultValue : null, deprecated: true}
 		},
-		designtime: "sap/m/designtime/DateRangeSelection.designtime"
+		designtime: "sap/m/designtime/DateRangeSelection.designtime",
+		dnd: { draggable: false, droppable: true }
 	}});
 
 	/**
@@ -511,7 +512,19 @@ sap.ui.define([
 		var oBinding = this.getBinding("value");
 
 		if (oBinding && oBinding.getType() instanceof sap.ui.model.type.DateInterval) {
-			aDates = oBinding.getType().parseValue(sValue, "string");
+			//The InputBase has it's own mechanism for handling parser exception that
+			//uses sap.ui.core.message.MessageMixin and MessageManager. This mechanism
+			//is triggered once the invalid value is set to the Input. In our case this
+			//was done in onChange function after parsing the value (in Binding case).
+			//When an invalid value is entered, it was causing an unhandled console error
+			//in DateRangeSelection control.
+			try {
+				aDates = oBinding.getType().parseValue(sValue, "string");
+			} catch (e) {
+				//for consistency reasons (like in the onchange method) we now return
+				//an array with two empty objects
+				return [undefined, undefined];
+			}
 			/** DateRangeSelection control uses local dates for its properties, so make sure returned values from
 			 * binding type formatter are restored to local dates if necessary.
 			 **/
@@ -527,8 +540,8 @@ sap.ui.define([
 		//If we have version of control with delimiter, then sValue should consist of two dates delimited with delimiter,
 		//hence we have to split the value to these dates
 		var sDelimiter = _getDelimiter.call(this);
-		sValue = sValue.trim();
 		if (sDelimiter && sValue) {
+			sValue = sValue.trim();
 			sValue = _trim(sValue, [sDelimiter, " "]);
 
 			aDates = sValue.split(sDelimiter);
@@ -762,6 +775,9 @@ sap.ui.define([
 			if (oDate1 && oDate2) {
 				var oDate1Old = this.getDateValue();
 				var oDate2Old = this.getSecondDateValue();
+
+				// the selected range includes all of the hours from the second date
+				oDate2.setHours(11, 59, 59);
 
 				var sValue;
 				if (!deepEqual(oDate1, oDate1Old) || !deepEqual(oDate2, oDate2Old)) {

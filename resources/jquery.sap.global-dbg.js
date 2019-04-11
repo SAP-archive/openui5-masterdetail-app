@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -50,7 +50,6 @@ sap.ui.define([
 	jQuery /*, jqueryUiPosition, ui5loaderAutoconfig, jquerySapStubs */) {
 
 	"use strict";
-
 
 	if ( !jQuery ) {
 		throw new Error("Loading of jQuery failed");
@@ -315,7 +314,7 @@ sap.ui.define([
 
 			if ( !oResult ) {
 				aScripts = document.querySelectorAll('SCRIPT[src]');
-				rBootScripts = /^(.*\/)?(?:sap-ui-(core|custom|boot|merged)(?:-.*)?)\.js(?:[?#]|$)/;
+				rBootScripts = /^([^?#]*\/)?(?:sap-ui-(?:core|custom|boot|merged)(?:-[^?#/]*)?|jquery.sap.global|ui5loader(?:-autoconfig)?)\.js(?:[?#]|$)/;
 				for ( i = 0; i < aScripts.length; i++ ) {
 					oResult = check(aScripts[i], rBootScripts);
 					if ( oResult ) {
@@ -419,7 +418,7 @@ sap.ui.define([
 	/**
 	 * Root Namespace for the jQuery plug-in provided by SAP SE.
 	 *
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 * @namespace
 	 * @public
 	 * @static

@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -27,6 +27,7 @@ sap.ui.define([
 		mUi5TypeForEdmType = {
 			"Edm.Boolean" : "sap.ui.model.odata.type.Boolean",
 			"Edm.Byte" : "sap.ui.model.odata.type.Byte",
+			"Edm.Date" : "sap.ui.model.odata.type.Date",
 			"Edm.DateTime" : "sap.ui.model.odata.type.DateTime",
 			"Edm.DateTimeOffset" : "sap.ui.model.odata.type.DateTimeOffset",
 			"Edm.Decimal" : "sap.ui.model.odata.type.Decimal",
@@ -39,7 +40,9 @@ sap.ui.define([
 			"Edm.SByte" : "sap.ui.model.odata.type.SByte",
 			"Edm.Single" : "sap.ui.model.odata.type.Single",
 			"Edm.String" : "sap.ui.model.odata.type.String",
-			"Edm.Time" : "sap.ui.model.odata.type.Time"
+			"Edm.Stream" : "sap.ui.model.odata.type.Stream",
+			"Edm.Time" : "sap.ui.model.odata.type.Time",
+			"Edm.TimeOfDay" : "sap.ui.model.odata.type.TimeOfDay"
 		};
 
 	Basics = {

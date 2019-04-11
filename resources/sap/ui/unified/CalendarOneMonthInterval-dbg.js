@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -61,7 +61,7 @@ sap.ui.define([
 		 * Navigation via year picker switches to the corresponding year and the same month as before the navigation.
 		 *
 		 * @extends sap.ui.unified.CalendarDateInterval
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 *
 		 * @constructor
 		 * @private
@@ -226,9 +226,12 @@ sap.ui.define([
 			}
 
 			oStartDate.setMonth(oStartDate.getMonth() + iShiftAmount);
+
 			oFocusedDate.setYear(oStartDate.getYear());
-			oFocusedDate.setMonth(oStartDate.getMonth());
-			oFocusedDate.setDate(oStartDate.getDate());
+			//BCP: 002075129400005182132018
+			//setting separately month and date afterwards could lead to not needed shifting of the month
+			oFocusedDate.setMonth(oStartDate.getMonth(), oStartDate.getDate());
+
 			this._setFocusedDate(oFocusedDate);
 			this._setStartDate(oStartDate, true);
 			oOneMonthDateRow.selectDate(oStartDate.toLocalJSDate());//TODO old behavior worked with UTC date set on public api

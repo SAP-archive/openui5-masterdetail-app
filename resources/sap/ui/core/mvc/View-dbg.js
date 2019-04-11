@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -56,7 +56,7 @@ sap.ui.define([
 	 * Also see {@link topic:91f28be26f4d1014b6dd926db0e91070 "Support for Unique IDs"} in the documentation.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.61.2
+	 * @version 1.64.0
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.View
@@ -878,7 +878,7 @@ sap.ui.define([
 	 * <li>{@link sap.ui.core.mvc.XMLView.create}</li>
 	 * <li>{@link sap.ui.core.mvc.JSView.create}</li>
 	 * <li>{@link sap.ui.core.mvc.JSONView.create}</li>
-	 * <li>{@link sap.ui.core.mvc.HMTLView.create}</li>
+	 * <li>{@link sap.ui.core.mvc.HTMLView.create}</li>
 	 * </ul>
 	 *
 	 * @param {object} mOptions A parameter map for the view instantiation. Specialized view types could bring in additional parameter.
@@ -889,7 +889,7 @@ sap.ui.define([
 	 * @param {any} [mOptions.viewData] The view data can hold user specific data. This data is available
 	 * during the whole lifecycle of the view and the controller
 	 * @param {any} [mOptions.definition] The view definition. Only supported for XML and HTML views.
-	 * See also {@link sap.ui.core.mvc.XMLView#create} and {@link sap.ui.core.mvc.HTMLView#create} for more information.
+	 * See also {@link sap.ui.core.mvc.XMLView.create} and {@link sap.ui.core.mvc.HTMLView.create} for more information.
 	 * @param {object} [mOptions.preprocessors] Can hold a map from the specified preprocessor type (e.g. "xml") to an array of
 	 * preprocessor configurations; each configuration consists of a <code>preprocessor</code> property (optional when
 	 * registered as on-demand preprocessor) and may contain further preprocessor-specific settings. The preprocessor can
@@ -935,6 +935,11 @@ sap.ui.define([
 			 });
 		})
 		.then(function(ViewClass) {
+			// Activate the asynchronous processing for XMLViews
+			if (ViewClass.getMetadata().isA("sap.ui.core.mvc.XMLView")) {
+				mParameters.processingMode = "sequential";
+			}
+
 			if (oOwnerComponent) {
 				return oOwnerComponent.runAsOwner(createView);
 			} else {
@@ -944,6 +949,10 @@ sap.ui.define([
 	};
 
 	/**
+	 * Used to bypass the public APIs returning a Promise.
+	 * Some internal use-cases need the View instance synchronously instead of the wrapping Promises
+	 * of the [...]View.create() factories: e.g. root-view creation in sap/ui/core/UIComponent
+	 * Internally, the views might still be loaded and processed asynchronously.
 	 * @sap-restricted sap.ui.core
 	 * @private
 	 * @see {sap.ui.view}

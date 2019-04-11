@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -56,7 +56,7 @@ sap.ui.define([
 		 *
 		 * @protected
 		 * @alias sap.ui.core.delegate.ScrollEnablement
-		 * @version 1.61.2
+		 * @version 1.64.0
 		 * @author SAP SE
 		 */
 		var ScrollEnablement = BaseObject.extend("sap.ui.core.delegate.ScrollEnablement", /** @lends sap.ui.core.delegate.ScrollEnablement.prototype */ {
@@ -213,8 +213,12 @@ sap.ui.define([
 			/**
 			 * Scrolls to an element within a container.
 			 * @param {HTMLElement} oElement A DOM element.
-			 * @param {int} [iTime=0] The duration of animated scrolling in milliseconds. To scroll immediately without animation, give 0 as value.
-			 * @param {Array} Specifies the offset left and top for the DOM Element.
+			 * @param {int} [iTime=0]
+			 *           The duration of animated scrolling in milliseconds. To scroll immediately without animation,
+			 *           give 0 as value.
+			 * @param {int[]} [aOffset=[0,0]]
+			 *           Specifies an additional left and top offset of the target scroll position, relative to
+			 *           the upper left corner of the DOM element
 			 * @returns {sap.ui.core.delegate.ScrollEnablement}
 			 * @protected
 			 */

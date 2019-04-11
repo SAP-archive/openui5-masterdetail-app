@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -22,7 +22,7 @@ sap.ui.define([
 		 * Instantiates an SAPUI5 Route
 		 *
 		 * @class
-		 * @param {sap.ui.core.routing.Router} The router instance, the route will be added to.
+		 * @param {sap.ui.core.routing.Router} oRouter The router instance to which the route will be added
 		 * @param {object} oConfig configuration object for the route
 		 * @param {string} oConfig.name the name of the route - it will be used to retrieve the route from the router, it needs to be unique per router instance.</li>
 		 * @param {string} [oConfig.pattern] the url pattern where it needs to match again. A pattern may consist of the following:
@@ -159,9 +159,18 @@ sap.ui.define([
 						});
 						that._routeMatched(oArguments, true);
 					});
+
+					that._aRoutes[iIndex].switched.add(function() {
+						that._routeSwitched();
+					});
 				});
 			},
 
+			_routeSwitched: function() {
+				this.fireEvent("switched", {
+					name: this._oConfig.name
+				});
+			},
 
 			/**
 			 * Destroys a route
@@ -392,6 +401,23 @@ sap.ui.define([
 			detachPatternMatched : function(fnFunction, oListener) {
 				return this.detachEvent("patternMatched", fnFunction, oListener);
 			},
+
+			/**
+			 * The 'switched' event is only fired, when the last matched route is has been left and another route is matched.
+			 *
+			 * @name sap.ui.core.routing.Route#switched
+			 * @event
+			 * @param {sap.ui.base.Event} oEvent
+			 * @param {sap.ui.base.EventProvider} oEvent.getSource
+			 * @param {object} oEvent.getParameters
+			 * @param {string} oEvent.getParameters.name The name of the route
+			 * @param {object} oEvent.getParameters.arguments A key-value pair object which contains the arguments defined in the route
+			 *  resolved with the corresponding information from the current URL hash
+			 * @param {object} oEvent.getParameters.config The configuration object of the route
+			 * @private
+			 * @ui5-restricted sap.ui.core.routing
+			 * @since 1.62
+			 */
 
 			_validateConfig: function(oConfig) {
 				if (!oConfig.name) {

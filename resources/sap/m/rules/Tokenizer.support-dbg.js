@@ -1,5 +1,5 @@
 /*!
- * UI development toolkit for HTML5 (OpenUI5)
+ * OpenUI5
  * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
@@ -26,16 +26,12 @@ function(SupportLib) {
 			resolution : "Do not use the Tokenizer control standalone.",
 			check : function(oIssueManager, oCoreFacade, oScope) {
 				var oTokenizers = oScope.getElementsByClassName("sap.m.Tokenizer"),
-					bParent,
-					sParentControlName,
-					oParent;
+					bParent, oParent;
 				oTokenizers.forEach(function (oTokenizer) {
 					oParent = oTokenizer.getParent();
-					sParentControlName = oParent && oParent.getMetadata().getName();
-					bParent = oParent && sParentControlName === "sap.m.MultiInput" ||
-								sParentControlName === "sap.m.MultiComboBox" ||
+					bParent = oParent && oParent instanceof sap.m.MultiInput || oParent instanceof sap.m.MultiComboBox ||
 								// Value Help Dialog uses the tokenizer in a vertical layout
-								(sParentControlName === "sap.ui.layout.VerticalLayout" &&
+								(oParent instanceof sap.ui.layout.VerticalLayout &&
 								oParent.hasStyleClass("compVHTokenizerHLayout"));
 
 					if (!bParent) {
