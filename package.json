@@ -10,22 +10,16 @@
     "karma-ci": "karma start karma-ci.conf.js",
     "watch": "npm run karma",
     "test": "npm run lint && rimraf coverage && npm run karma-ci",
-    "build": "rimraf dist && ui5 build --a"
+    "build": "rimraf dist && ui5 build -a"
   },
-  "dependencies": {
-    "@openui5/sap.f": "^1.64.0",
-    "@openui5/sap.m": "^1.64.0",
-    "@openui5/sap.ui.core": "^1.64.0",
-    "@openui5/sap.ui.layout": "^1.64.0",
-    "@openui5/themelib_sap_belize": "^1.64.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@ui5/cli": "^1.0.0",
+    "@ui5/cli": "^2.2.6",
     "eslint": "^4.19.1",
     "karma": "^4.0.1",
     "karma-chrome-launcher": "^2.2.0",
     "karma-coverage": "^1.1.2",
-    "karma-ui5": "^1.0.0",
+    "karma-ui5": "^2.1.2",
     "rimraf": "^2.6.2"
   }
 }
