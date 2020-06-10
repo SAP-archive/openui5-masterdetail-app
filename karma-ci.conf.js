@@ -5,6 +5,8 @@ module.exports = function(config) {
 
 	require("./karma.conf")(config);
 
+	process.env.CHROME_BIN = require("puppeteer").executablePath();
+
 	config.set({
 
 		preprocessors: {
@@ -34,7 +36,7 @@ module.exports = function(config) {
 
 		reporters: ['progress', 'coverage'],
 
-		browsers: ['CustomChromeHeadless'],
+		browsers: ['CustomChromeHeadlessNoSandbox'],
 
 		singleRun: true
 	});

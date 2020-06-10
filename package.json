@@ -20,6 +20,7 @@
     "karma-chrome-launcher": "^2.2.0",
     "karma-coverage": "^1.1.2",
     "karma-ui5": "^2.1.2",
+    "puppeteer": "^3.3.0",
     "rimraf": "^2.6.2"
   }
 }
