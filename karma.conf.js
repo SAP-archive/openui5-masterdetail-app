@@ -13,8 +13,6 @@ module.exports = function(config) {
 
 		reporters: ['progress'],
 
-		logLevel: config.LOG_INFO,
-
 		browserConsoleLogOptions: {
 			level: 'warn'
 		},
@@ -26,9 +24,12 @@ module.exports = function(config) {
 				base: "Chrome",
 				flags: chromeFlags
 			},
-			CustomChromeHeadless: {
+			CustomChromeHeadlessNoSandbox: {
 				base: "ChromeHeadless",
-				flags: chromeFlags
+				flags: [
+					...chromeFlags,
+					"--no-sandbox"
+				]
 			}
 		},
 
