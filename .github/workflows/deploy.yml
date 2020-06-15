@@ -20,6 +20,14 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v1.4.2
+      with:
+        node-version: "14.x"
+
+    - run: npm ci
+    - run: npm run build
+
     - name: GitHub Pages action
       uses: peaceiris/actions-gh-pages@v3.6.1
       with:
