@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -37,8 +37,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText"],
 			oAccAttributes = {}, // additional accessibility attributes
 			sToolTipValue,
 			sRefreshToolTip = oSF.getRefreshButtonTooltip(),
-			sResetToolTipValue,
-			bAccessibility = sap.ui.getCore().getConfiguration().getAccessibility();
+			sResetToolTipValue;
 
 		// container
 		rm.write("<div");
@@ -127,34 +126,16 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText"],
 				}
 			}
 
-			var sInvisibleTextId = oSF.getId() + "-I" + "-labelledby";
-			oAccAttributes.labelledby = {
-				value: sInvisibleTextId,
-				append: true
-			};
+			oAccAttributes.disabled = null;
 
 			rm.writeAccessibilityState(oSF, oAccAttributes);
 
 			rm.write(">");
 
-			//Invisible text for ACC purpose - announcing placeholder when there is Label or Tooltip for the Input
-			if (bAccessibility) {
-				var sAnnouncement = oSF.getPlaceholder() || "";
-				if (sAnnouncement) {
-					rm.write("<span");
-					rm.writeAttribute("id", sInvisibleTextId);
-					rm.writeAttribute("aria-hidden", "true");
-					rm.addClass("sapUiInvisibleText");
-					rm.writeClasses();
-					rm.write(">");
-					rm.writeEscaped(sAnnouncement.trim());
-					rm.write("</span>");
-				}
-			}
-
 			if (oSF.getEnabled()) {
 				// 2. Reset button
 				rm.write("<div");
+				rm.writeAttribute("aria-hidden", true);
 				rm.writeAttribute("id", oSF.getId() + "-reset");
 				sResetToolTipValue = sValue === "" ? this.oSearchFieldToolTips.SEARCH_BUTTON_TOOLTIP : this.oSearchFieldToolTips.RESET_BUTTON_TOOLTIP;
 				rm.writeAttributeEscaped("title", sResetToolTipValue); // initial rendering reset is search when no value is set
@@ -172,6 +153,7 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText"],
 				// 3. Search/Refresh button
 				if (bShowSearchBtn) {
 					rm.write("<div");
+					rm.writeAttribute("aria-hidden", true);
 					rm.writeAttribute("id", oSF.getId() + "-search");
 					rm.addClass("sapMSFS"); // search
 					rm.addClass("sapMSFB"); // button
@@ -190,6 +172,10 @@ sap.ui.define(["sap/ui/Device", "sap/ui/core/InvisibleText"],
 			}
 
 			rm.write("</form>");
+
+			if (oSF.getEnableSuggestions()) {
+				rm.write('<span id="' + oSF.getId() + '-SuggDescr" class="sapUiPseudoInvisibleText" role="status" aria-live="polite"></span>');
+			}
 
 		rm.write("</div>");
 

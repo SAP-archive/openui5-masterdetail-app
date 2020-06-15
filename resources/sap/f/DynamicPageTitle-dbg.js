@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -85,7 +85,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -308,14 +308,14 @@ sap.ui.define([
 				 * Visual indication for expanding while using SnappedTitleOnMobile.
 				 * @since 1.63
 				 */
-				_snappedTitleOnMobileIcon: {type: "sap.ui.core.Icon", multiple: false,  visibility: "hidden"},
-
+				_snappedTitleOnMobileIcon: {type: "sap.ui.core.Icon", multiple: false,  visibility: "hidden"}
+			},
+			associations : {
 				/**
-				 * Internal span tag for correct representation of the accessibility requirements.
-				 * Upon focus, the <code>DynamicPageTitle</code> control has the focus outline, but the <code>_focusSpan</code> is the real focused DOM element.
-				 * @since 1.60
+				 * Association to controls / IDs which describe this control (see WAI-ARIA attribute aria-describedby).
+				 * @since 1.78
 				 */
-				_focusSpan: {type: "sap.ui.core.HTML", multiple: false,  visibility: "hidden"}
+				ariaDescribedBy : {type : "sap.ui.core.Control", multiple : true, singularName : "ariaDescribedBy"}
 			},
 			events: {
 				/**
@@ -418,12 +418,17 @@ sap.ui.define([
 	DynamicPageTitle.prototype.onBeforeRendering = function () {
 		this._getActionsToolbar();
 		this._observeControl(this.getBreadcrumbs());
+		this._detachFocusSpanHandlers();
 	};
 
 	DynamicPageTitle.prototype.onAfterRendering = function () {
 		this._cacheDomElements();
+		this._attachFocusSpanHandlers();
 		this._toggleState(this._bExpandedState);
+		this._toggleFocusableState(this._bIsFocusable);
 		this._doNavigationActionsLayout();
+		// Needs update in order to determine its visibility by visibility of its content.
+		this._updateTopAreaVisibility();
 	};
 
 	DynamicPageTitle.prototype.exit = function () {
@@ -495,33 +500,6 @@ sap.ui.define([
 	};
 
 	/**
-	 * Sets the value of the <code>backgroundDesign</code> property.
-	 *
-	 * @param {sap.m.BackgroundDesign} sBackgroundDesign - new value of the <code>backgroundDesign</code>
-	 * @return {sap.f.DynamicPageTitle} <code>this</code> to allow method chaining
-	 * @public
-	 * @since 1.58
-	 */
-	DynamicPageTitle.prototype.setBackgroundDesign = function (sBackgroundDesign) {
-		var sCurrentBackgroundDesign = this.getBackgroundDesign(),
-			$domRef = this.$(),
-			sCssClassPrefix = "sapFDynamicPageTitle";
-
-		if (sCurrentBackgroundDesign === sBackgroundDesign) {
-			return this;
-		}
-
-		this.setProperty("backgroundDesign", sBackgroundDesign, true);
-
-		if ($domRef.length) {
-			$domRef.removeClass(sCssClassPrefix + sCurrentBackgroundDesign);
-			$domRef.addClass(sCssClassPrefix + sBackgroundDesign);
-		}
-
-		return this;
-	};
-
-	/**
 	 * Fires the <code>DynamicPageTitle</code> press event.
 	 * @param {jQuery.Event} oEvent The <code>tap</code> event object
 	 */
@@ -537,11 +515,21 @@ sap.ui.define([
 	};
 
 	DynamicPageTitle.prototype.onmouseover = function () {
+		if (this._bTitleMouseOverFired) {
+			return;
+		}
+
 		this.fireEvent("_titleMouseOver");
+		this._bTitleMouseOverFired = true;
 	};
 
-	DynamicPageTitle.prototype.onmouseout = function () {
+	DynamicPageTitle.prototype.onmouseout = function (oEvent) {
+		if (oEvent && this.getDomRef().contains(oEvent.relatedTarget)) {
+			return;
+		}
+
 		this.fireEvent("_titleMouseOut");
+		this._bTitleMouseOverFired = false;
 	};
 
 	DynamicPageTitle.prototype.onkeyup = function (oEvent) {
@@ -555,7 +543,9 @@ sap.ui.define([
 	 * @param {jQuery.Event} oEvent The SPACE keyboard key press event object
 	 */
 	DynamicPageTitle.prototype.onsapspace = function (oEvent) {
-		oEvent.preventDefault();
+		if (oEvent.srcControl === this) {
+			oEvent.preventDefault();
+		}
 	};
 
 	/**
@@ -707,6 +697,7 @@ sap.ui.define([
 		this.$expandHeadingWrapper = this.$("expand-heading-wrapper");
 		this.$snappedWrapper = this.$("snapped-wrapper");
 		this.$expandWrapper = this.$("expand-wrapper");
+		this._$focusSpan = this.$("focusSpan");
 	};
 
 	/**
@@ -766,9 +757,11 @@ sap.ui.define([
 
 		this._bIsFocusable = bFocusable;
 
-		$oTitleFocusSpan = this._getFocusSpan().$();
+		$oTitleFocusSpan = this._getFocusSpan();
 
-		bFocusable ? $oTitleFocusSpan.attr("tabindex", 0) : $oTitleFocusSpan.removeAttr("tabindex");
+		if ($oTitleFocusSpan) {
+			bFocusable ? $oTitleFocusSpan.show() : $oTitleFocusSpan.hide();
+		}
 	};
 
 	/* ========== DynamicPageTitle actions and navigationActions processing ========== */
@@ -922,10 +915,13 @@ sap.ui.define([
 	 * @private
 	 */
 	DynamicPageTitle.prototype._showNavigationActionsInTopArea = function () {
-		var oNavigationBar = this._getNavigationActionsToolbar();
+		var oNavigationBar = this._getNavigationActionsToolbar(),
+			oLastFocusedElement;
 
 		if (this.$topNavigationActionsArea && this.$topNavigationActionsArea.length > 0) {
+			oLastFocusedElement = document.activeElement;
 			this.$topNavigationActionsArea.html(oNavigationBar.$());
+			oLastFocusedElement && oLastFocusedElement.focus();
 		}
 
 		this._bNavigationActionsInTopArea = true;
@@ -936,10 +932,13 @@ sap.ui.define([
 	 * @private
 	 */
 	DynamicPageTitle.prototype._showNavigationActionsInMainArea = function () {
-		var oNavigationBar = this._getNavigationActionsToolbar();
+		var oNavigationBar = this._getNavigationActionsToolbar(),
+			oLastFocusedElement;
 
 		if (this.$mainNavigationActionsArea && this.$mainNavigationActionsArea.length > 0) {
+			oLastFocusedElement = document.activeElement;
 			this.$mainNavigationActionsArea.html(oNavigationBar.$());
+			oLastFocusedElement && oLastFocusedElement.focus();
 		}
 
 		this._bNavigationActionsInTopArea = false;
@@ -1061,6 +1060,10 @@ sap.ui.define([
 
 		this._bExpandedState = bExpanded;
 
+		if (!this.getDomRef()) {
+			return;
+		}
+
 		if (Device.system.phone && this.getSnappedTitleOnMobile()) {
 			this.$snappedTitleOnMobileWrapper.toggleClass("sapUiHidden", bExpanded);
 			this.$topArea.toggleClass("sapUiHidden", !bExpanded);
@@ -1176,7 +1179,7 @@ sap.ui.define([
 	 * @private
 	 */
 	DynamicPageTitle.prototype._focusExpandButton = function () {
-		this._getExpandButton().$().focus();
+		this._getExpandButton().$().trigger("focus");
 	};
 
 	/**
@@ -1326,7 +1329,7 @@ sap.ui.define([
 	 */
 	DynamicPageTitle.prototype._onContentSizeChange = function (oEvent) {
 		var iContentSize = oEvent.getParameter("contentSize");
-		this._setContentAreaFlexBasis(iContentSize, oEvent.getSource().$().parent());
+			this._setContentAreaFlexBasis(iContentSize, oEvent.getSource().$().parent());
 	};
 
 	/**
@@ -1356,10 +1359,12 @@ sap.ui.define([
 
 	DynamicPageTitle.prototype._updateARIAState = function (bExpanded) {
 		var sARIAText = this._getARIALabelReferences(bExpanded) || DynamicPageTitle.DEFAULT_HEADER_TEXT_ID,
-			$oFocusSpan = this._getFocusSpan().$();
+			$oFocusSpan = this._getFocusSpan();
 
-		$oFocusSpan.attr("aria-labelledby", sARIAText);
-		$oFocusSpan.attr("aria-expanded", bExpanded);
+		if ($oFocusSpan) {
+			$oFocusSpan.attr("aria-labelledby", sARIAText);
+			$oFocusSpan.attr("aria-expanded", bExpanded);
+		}
 		return this;
 	};
 
@@ -1375,38 +1380,46 @@ sap.ui.define([
 	};
 
 	DynamicPageTitle.prototype._focus = function () {
-		this._getFocusSpan().$().focus();
+		this._getFocusSpan().trigger("focus");
+	};
+
+	DynamicPageTitle.prototype._getAriaDescribedByReferences = function () {
+		var aTexts = this.getAriaDescribedBy(),
+			sDescribedBy = DynamicPageTitle.TOGGLE_HEADER_TEXT_ID;
+
+		if (aTexts.length > 0) {
+			sDescribedBy += " " + aTexts.join(" ");
+		}
+
+		return sDescribedBy;
+	};
+
+	DynamicPageTitle.prototype._attachFocusSpanHandlers = function () {
+		this._$focusSpan.on("focusin", this._addFocusClass.bind(this));
+		this._$focusSpan.on("focusout", this._removeFocusClass.bind(this));
+		this._$focusSpan.on("keyup", function (oEvent) {
+			if (oEvent && oEvent.which === KeyCodes.SPACE && !oEvent.shiftKey) {
+				this.fireEvent("_titlePress");
+			}
+		}.bind(this));
+		this._$focusSpan.on("keydown", function (oEvent) {
+			if (oEvent && oEvent.which === KeyCodes.ENTER) {
+				this.fireEvent("_titlePress");
+			}
+		}.bind(this));
+	};
+
+	DynamicPageTitle.prototype._detachFocusSpanHandlers = function () {
+		if (this._$focusSpan) {
+			this._$focusSpan.off("focusin");
+			this._$focusSpan.off("focusout");
+			this._$focusSpan.off("keyup");
+			this._$focusSpan.off("keydown");
+		}
 	};
 
 	DynamicPageTitle.prototype._getFocusSpan = function () {
-		if (!this.getAggregation("_focusSpan")) {
-			var sTabIndex = this._bIsFocusable ? 'tabindex="0"' : '',
-				sLabelledBy = this._getARIALabelReferences(this._bExpandedState) || DynamicPageTitle.DEFAULT_HEADER_TEXT_ID,
-				oFocusSpan = new HTML({
-					id: this.getId() + "-focusSpan",
-					preferDOM: false,
-					content: '<span class="sapFDynamicPageTitleFocusSpan" role="button" ' + sTabIndex +
-							'data-sap-ui="' + this.getId() + '-focusSpan"' +
-							' aria-expanded="' + this._bExpandedState +
-							'" aria-labelledby="' + sLabelledBy +
-							'" aria-describedby="' + DynamicPageTitle.TOGGLE_HEADER_TEXT_ID + '"></span>'
-				});
-
-			oFocusSpan.onfocusin = this._addFocusClass.bind(this);
-			oFocusSpan.onfocusout = this._removeFocusClass.bind(this);
-			oFocusSpan.onsapenter = function () {
-				this.fireEvent("_titlePress");
-			}.bind(this);
-			oFocusSpan.onkeyup = function (oEvent) {
-				if (oEvent && oEvent.which === KeyCodes.SPACE && !oEvent.shiftKey) {
-					this.fireEvent("_titlePress");
-				}
-			}.bind(this);
-
-			this.setAggregation("_focusSpan", oFocusSpan, true);
-		}
-
-		return this.getAggregation("_focusSpan");
+		return this._$focusSpan;
 	};
 
 	DynamicPageTitle.prototype._addFocusClass = function () {

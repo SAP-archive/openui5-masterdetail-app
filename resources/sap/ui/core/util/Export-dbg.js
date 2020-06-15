@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 /*global Promise */// declare unusual global vars for JSLint/SAPUI5 validation
@@ -134,10 +134,11 @@ sap.ui.define(['sap/ui/core/Control', './ExportColumn', './ExportRow', './Export
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 * @since 1.22.0
 	 *
 	 * @public
+	 * @deprecated Since version 1.73
 	 * @alias sap.ui.core.util.Export
 	 */
 	var Export = Control.extend('sap.ui.core.util.Export', {

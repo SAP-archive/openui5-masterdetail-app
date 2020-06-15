@@ -1,14 +1,13 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([], function () {
 	"use strict";
 
-	var HeaderRenderer = {},
-		oRb = sap.ui.getCore().getLibraryResourceBundle("sap.f");
+	var HeaderRenderer = {};
 
 	/**
 	 * Render a header.
@@ -17,44 +16,103 @@ sap.ui.define([], function () {
 	 * @param {sap.f.cards.Header} oControl An object representation of the control that should be rendered
 	 */
 	HeaderRenderer.render = function (oRm, oControl) {
+
+		var sStatus = oControl.getStatusText(),
+			oTitle = oControl.getAggregation("_title"),
+			oSubtitle = oControl.getAggregation("_subtitle"),
+			oAvatar = oControl.getAggregation("_avatar"),
+			bLoading = oControl.isLoading(),
+			oBindingInfos = oControl.mBindingInfos,
+			oToolbar = oControl.getToolbar();
+
 		oRm.write("<div");
 		oRm.writeControlData(oControl);
 		oRm.writeAttribute("tabindex", "0");
 		oRm.addClass("sapFCardHeader");
+
+		if (bLoading) {
+			oRm.addClass("sapFCardHeaderLoading");
+		}
+
+		if (oControl.hasListeners("press")) {
+			oRm.addClass("sapFCardClickable");
+		}
+
 		//Accessibility state
 		oRm.writeAccessibilityState(oControl, {
-			role: "group",
-			labelledBy: {value: oControl._getHeaderAccessibility(), append: true},
-			roledescription: {value: oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER"), append: true}
+			role: oControl._sAriaRole,
+			labelledby: {value: oControl._getHeaderAccessibility(), append: true},
+			roledescription: {value: oControl._sAriaRoleDescritoion, append: true},
+			level: {value: oControl._sAriaHeadingLevel}
 		});
 		oRm.writeClasses();
 		oRm.write(">");
 
-		if (oControl.getIconSrc() || oControl.getIconInitials()) {
-			oRm.renderControl(oControl._getAvatar());
-		}
-
-		if (oControl.getTitle()) {
+		if (oControl.getIconSrc() || oControl.getIconInitials() || oBindingInfos.iconSrc) {
 			oRm.write("<div");
-			oRm.addClass("sapFCardHeaderText");
+			oRm.addClass("sapFCardHeaderImage");
 			oRm.writeClasses();
 			oRm.write(">");
-			oRm.renderControl(oControl._getTitle());
-			if (oControl.getSubtitle()) {
-				oRm.renderControl(oControl._getSubtitle());
+			if (oBindingInfos.iconSrc) {
+				oAvatar.addStyleClass("sapFCardHeaderItemBinded");
 			}
+			oRm.renderControl(oAvatar);
 			oRm.write("</div>");
 		}
 
-		var sStatus = oControl.getStatusText();
-		if (sStatus) {
-			oRm.write("<span");
-			oRm.addClass("sapFCardStatus");
+		oRm.write("<div");
+		oRm.addClass("sapFCardHeaderText");
+		oRm.writeClasses();
+		oRm.write(">");
+
+		if (oControl.getTitle() || oBindingInfos.title) {
+			oRm.write("<div");
+			oRm.addClass("sapFCardHeaderTextFirstLine");
 			oRm.writeClasses();
 			oRm.write(">");
-			oRm.writeEscaped(sStatus);
-			oRm.write("</span>");
+
+			if (oBindingInfos.title) {
+				oTitle.addStyleClass("sapFCardHeaderItemBinded");
+			}
+			oRm.writeClasses();
+			oRm.renderControl(oTitle);
+
+			if (sStatus !== undefined) {
+				oRm.write("<span");
+				oRm.writeAttribute('id', oControl.getId() + '-status');
+				oRm.addClass("sapFCardStatus");
+				if (oBindingInfos.statusText) {
+					oRm.addClass("sapFCardHeaderItemBinded");
+				}
+				oRm.writeClasses();
+				oRm.write(">");
+				oRm.writeEscaped(sStatus);
+				oRm.write("</span>");
+			}
+
+			oRm.write("</div>");
+
+			if (oControl.getSubtitle() || oBindingInfos.subtitle) {
+				if (oBindingInfos.subtitle) {
+					oSubtitle.addStyleClass("sapFCardHeaderItemBinded");
+				}
+				oRm.renderControl(oSubtitle);
+			}
 		}
+
+		oRm.write("</div>");
+
+		if (oToolbar) {
+			oRm.write("<div");
+			oRm.addClass("sapFCardHeaderToolbar");
+			oRm.writeClasses();
+			oRm.write(">");
+
+			oRm.renderControl(oToolbar);
+
+			oRm.write("</div>");
+		}
+
 		oRm.write("</div>");
 	};
 

@@ -1,17 +1,19 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
 	"sap/m/OverflowToolbarLayoutData",
 	"sap/ui/Device",
-	"sap/ui/core/theming/Parameters",
+	"sap/ui/core/ResizeHandler",
+	"sap/ui/dom/units/Rem",
 	"sap/m/library"
 ], function (
 	OverflowToolbarLayoutData,
 	Device,
-	Parameters,
+	ResizeHandler,
+	Rem,
 	library
 ) {
 	"use strict";
@@ -19,25 +21,20 @@ sap.ui.define([
 	// shortcut for sap.m.OverflowToolbarPriority
 	var OverflowToolbarPriority = library.OverflowToolbarPriority;
 
-	var oControl;
+	/**
+	 * Constant based on UX concept for search bar behavior;
+	 */
+	var MIN_SEARCHBAR_WIDTH_REM = 12;
 
 	/**
 	 * Class taking care of the control responsive behaviour.
 	 * @alias sap/f/shellBar/ResponsiveHandler
-	 * @experimental Since 1.63. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 * @since 1.63
 	 * @private
 	 * @property {object} oContext the context of the ShellBar control instance
 	 */
 	var ResponsiveHandler = function (oContext) {
-		oControl = oContext;
-
-		// Get and calculate padding's
-		this._iREMSize = parseInt(jQuery("body").css("font-size"));
-		this._iChildControlMargin = parseInt(Parameters.get("_sap_f_ShellBar_ChildMargin"));
-		this._iDoubleChildControlMargin = this._iChildControlMargin * 2;
-		this._iCoPilotWidth = parseInt(Parameters.get("_sap_f_ShellBar_CoPilotWidth")) + this._iDoubleChildControlMargin;
-		this._iHalfCoPilotWidth = this._iCoPilotWidth / 2;
+		this._oControl = oContext;
 
 		// Delegate used to attach on ShellBar lifecycle events
 		this._oDelegate = {
@@ -46,100 +43,51 @@ sap.ui.define([
 		};
 
 		// Attach Event Delegates
-		oControl.addDelegate(this._oDelegate, false, this);
+		this._oControl.addDelegate(this._oDelegate, false, this);
 
-		// Init resize handler method
-		this._fnResize = this._resize;
+		this.sCurrentRange = "";
+
+		this._bAttachedManagedSearchHandler = false;
 
 		// Attach events
-		oControl._oOverflowToolbar.attachEvent("_controlWidthChanged", this._handleResize, this);
+		this._oControl._iResizeHandlerId = ResizeHandler.register(this._oControl, this._handleResize.bind(this));
+
+		this._iMinSearchWidth = Rem.toPx(MIN_SEARCHBAR_WIDTH_REM);
 	};
+
 
 	/**
 	 * Lifecycle event handler for ShellBar onAfterRendering event
 	 */
 	ResponsiveHandler.prototype.onAfterRendering = function () {
-		this._oDomRef = oControl.getDomRef(); // Cache DOM Reference
 
-		if (oControl._oMegaMenu) {
-			// Attach on internal button image load
-			this._oButton = oControl._oMegaMenu.getAggregation("_button");
-			if (this._oButton && this._oButton._image) {
-				// We need to update all the measurements of the control when the image is loaded in the DOM as we can't
-				// measure it before that
-				this._oButton._image.attachEvent("load", this._updateMegaMenuWidth, this);
-			}
+		var bPhoneRange = Device.media.getCurrentRange("Std", this._oControl.$().outerWidth(true)).name === "Phone";
+		this._oButton = this._oControl._oMegaMenu && this._oControl._oMegaMenu.getAggregation("_button");
+		this._oDomRef = this._oControl.getDomRef(); // Cache DOM Reference
+		this.bIsMegaMenuConfigured = this._oControl._oTitleControl &&
+		this._oControl._oTitleControl === this._oControl._oMegaMenu;
+
+		if (this._oControl._oManagedSearch && !this._bAttachedManagedSearchHandler) {
+			this._oControl._oManagedSearch.attachEvent("_updateVisualState", this._switchOpenStateOnSearch, this);
+
+			this._bAttachedManagedSearchHandler = true;
 		}
 
-		this._initResize();
+		if (bPhoneRange) {
+			this._transformTitleControlMobile();
+		}
+
 		this._handleResize();
-	};
-
-	/**
-	 * Lifecycle event handler for ShellBar onBeforeRendering event
-	 */
-	ResponsiveHandler.prototype.onBeforeRendering = function () {
-		if (oControl._oHomeIcon) {
-			oControl._oHomeIcon.attachEvent("load", this._updateHomeIconWidth, this);
-		}
 	};
 
 	/**
 	 * Lifecycle event handler for cleaning after the control is not needed anymore
 	 */
 	ResponsiveHandler.prototype.exit = function () {
-		if (oControl._oOverflowToolbar) {
-			oControl._oOverflowToolbar.detachEvent("_controlWidthChanged", this._handleResize, this);
+		if (this._oControl._iResizeHandlerId) {
+			ResizeHandler.deregister(this._oControl._iResizeHandlerId);
+			this._oControl._iResizeHandlerId = null;
 		}
-		if (oControl._oHomeIcon) {
-			oControl._oHomeIcon.detachEvent("load", this._updateHomeIconWidth, this);
-		}
-		if (this._oButton) {
-			this._oButton.detachEvent("load", this._updateMegaMenuWidth, this);
-		}
-		oControl.removeDelegate(this._oDelegate);
-	};
-
-	/**
-	 * Initialize the resize handler by caching some sizes which are changing only control property changes or image
-	 * loads of child controls. We don't need to update these cached sizes on control width changes.
-	 * @private
-	 */
-	ResponsiveHandler.prototype._initResize = function () {
-		this._iStaticWidth = 0;
-
-		this._iMBWidth = this.getTargetWidth(oControl._oMegaMenu) + 65/* Control padding and arrow */ + (2 * this._iChildControlMargin);
-		this._iTitleWidth = this.getTargetWidth(oControl._oSecondTitle);
-
-		if (oControl._oHomeIcon) {
-			this._iStaticWidth += oControl._oHomeIcon.$().outerWidth(true);
-		}
-
-		if (oControl._oNavButton) {
-			this._iStaticWidth += 36 + this._iDoubleChildControlMargin;
-		}
-
-		if (oControl._oMenuButton) {
-			this._iStaticWidth += 36 + this._iDoubleChildControlMargin;
-		}
-	};
-
-	/**
-	 * Handler for the homeIcon image load event
-	 * @private
-	 */
-	ResponsiveHandler.prototype._updateHomeIconWidth = function () {
-		this._initResize();
-		this._fnResize();
-	};
-
-	/**
-	 * Handler for the MegaMenu image load event
-	 * @private
-	 */
-	ResponsiveHandler.prototype._updateMegaMenuWidth = function () {
-		this._initResize();
-		this._fnResize();
 	};
 
 	/**
@@ -153,18 +101,28 @@ sap.ui.define([
 	ResponsiveHandler.prototype._handleResize = function () {
 		if (!this._oDomRef) {return;}
 
-		var $Control = oControl.$(),
+		var $Control = this._oControl.$(),
 			iWidth = $Control.outerWidth(),
 			oCurrentRange = Device.media.getCurrentRange("Std", iWidth),
 			bPhoneRange;
 
+		this.sCurrentRange = oCurrentRange.name;
 		// Adapt control padding's outside the managed area
 		if (oCurrentRange) {
-			bPhoneRange = oCurrentRange.name === "Phone";
+			bPhoneRange = this.sCurrentRange === "Phone";
 
-			$Control.toggleClass("sapFShellBarSizeDesktop", oCurrentRange.name === "Desktop");
-			$Control.toggleClass("sapFShellBarSizeTablet", oCurrentRange.name === "Tablet");
+			$Control.toggleClass("sapFShellBarSizeDesktop", this.sCurrentRange === "Desktop");
+			$Control.toggleClass("sapFShellBarSizeTablet", this.sCurrentRange === "Tablet");
 			$Control.toggleClass("sapFShellBarSizePhone", bPhoneRange);
+		}
+
+		/**
+		 * Resize adaptation for the Search Bar UX requirements
+		 */
+		if (this._oControl._oManagedSearch && this._oControl._oManagedSearch.getIsOpen()) {
+			setTimeout(this._adaptSearch.bind(this), 100);
+		} else {
+			this._oControl._bSearchPlaceHolder = false;
 		}
 
 		if (this._iPreviousWidth === iWidth) {
@@ -173,29 +131,36 @@ sap.ui.define([
 		this._iPreviousWidth = iWidth;
 
 		// If none of the managed controls are available - no further adaptation is needed
-		if (!oControl._oNavButton &&
-			!oControl._oMenuButton &&
-			!oControl._oHomeIcon &&
-			!oControl._oMegaMenu &&
-			!oControl._oSecondTitle &&
-			!oControl._oCopilot) {
+		if (!this._oControl._oNavButton &&
+			!this._oControl._oMenuButton &&
+			!this._oControl._oHomeIcon &&
+			!this._oControl._oMegaMenu &&
+			!this._oControl._oSecondTitle &&
+			!this._oControl._oManagedSearch &&
+			!this._oControl._oCopilot) {
 			return;
 		}
 
 		// Note: We change the final resize handler depending on available width of the control. This is done
 		// only once when we go from mobile to desktop size and back.
 		if (bPhoneRange && !this.bWasInPhoneRange) {
-			this._fnResize = this._resizeOnPhone;
 			this._transformToPhoneState();
-			return;
-		} else if (!bPhoneRange && this.bWasInPhoneRange) {
-			this._fnResize = this._resize;
-			this._transformToRegularState();
-			return;
-		}
 
-		// We call the final resize handler which will resize the managed controls according to the UX rules
-		setTimeout(this._fnResize.bind(this), 0);
+		} else if (!bPhoneRange && this.bWasInPhoneRange) {
+			this._transformToRegularState();
+
+		}
+	};
+
+	ResponsiveHandler.prototype._switchOpenStateOnSearch = function () {
+		var oSearch = this._oControl._oManagedSearch;
+		if (!oSearch) {return; }
+		if (this.bWasInPhoneRange) {
+			this._transformToPhoneState();
+		} else {
+			this._transformToRegularState();
+		}
+		this._oControl.toggleStyleClass("sapFShellBarSearchIsOpen", oSearch.getIsOpen());
 	};
 
 	/**
@@ -203,213 +168,166 @@ sap.ui.define([
 	 * @private
 	 */
 	ResponsiveHandler.prototype._transformToPhoneState = function () {
+		var oSearch = this._oControl._oManagedSearch,
+			aOverflowControls = this._oControl._getOverflowToolbar().getContent(),
+			oSpacer = this._oControl._oToolbarSpacer;
 		// Second title should not be visible
-		if (oControl._oSecondTitle) {
-			oControl._oSecondTitle.setVisible(false);
+		if (this._oControl._oSecondTitle) {
+			this._oControl._oSecondTitle.setVisible(false);
 		}
 
-		// Home icon should not be visible
-		if (oControl._oHomeIcon) {
-			oControl._oHomeIcon.setVisible(false);
-			// We should inject the homeIcon in the MegaMenu and remove the text
-			if (oControl._oMegaMenu) {
-				oControl._oMegaMenu.setWidth("auto").setText("").setIcon(oControl.getHomeIcon());
-			}
+		this._transformTitleControlMobile();
+
+		if (!this._bControlsLayoutDataCached) {
+			// Cache controls layout data
+			this._cacheControlsLayoutData();
+			this._bControlsLayoutDataCached = true;
 		}
-
-		// Cache controls layout data
-		this._cacheControlsLayoutData();
-
 		// Force all controls in the overflow
-		oControl._aOverflowControls.forEach(function (oControl) {
+		aOverflowControls.forEach(function (oControl) {
+			if (oControl === oSpacer) { return; }
+
 			oControl.setLayoutData(new OverflowToolbarLayoutData({
 				priority: OverflowToolbarPriority.AlwaysOverflow
 			}));
 		});
 
 		this.bWasInPhoneRange = true;
-		oControl.invalidate();
-	};
 
+		if (oSearch) {
+			oSearch.setPhoneMode(true);
+
+			if (oSearch.getIsOpen()) {
+				this._toggleAllControlsExceptSearch(true);
+
+				this._bSearchWasOpen = true;
+			} else if (this._bSearchWasOpen) {
+				this._toggleAllControlsExceptSearch(false);
+
+				this._bSearchWasOpen = false;
+			}
+		}
+
+		this._oControl.invalidate();
+	};
 	/**
 	 * Apply's UX rules to the control for bigger than phone screen sizes
 	 * @private
 	 */
 	ResponsiveHandler.prototype._transformToRegularState = function () {
+		var oSearch = this._oControl._oManagedSearch;
 		// Second title should be visible
-		if (oControl._oSecondTitle) {
-			oControl._oSecondTitle.setVisible(true);
+		this._toggleAllControlsExceptSearch(false);
+
+		if (this._oControl._oSecondTitle) {
+			this._oControl._oSecondTitle.setVisible(true);
 		}
 
 		// Home icon should be visible
-		if (oControl._oHomeIcon) {
-			oControl._oHomeIcon.setVisible(true);
+		if (this._oControl._oHomeIcon) {
 			// If we have MegaMenu we should get back the Icon and restore it's text
-			if (oControl._oMegaMenu) {
-				oControl._oMegaMenu.setWidth("auto").setText(oControl._sTitle).setIcon("");
+			if (this._oControl._oMegaMenu) {
+				this._oControl._oMegaMenu.setText(this._oControl._sTitle).setIcon("");
+			}
+			if (this._oControl._oPrimaryTitle) {
+				this._oControl._oPrimaryTitle.setText(this._oControl._sTitle);
+			}
+			if (this.bIsMegaMenuConfigured) {
+				this._oControl._oHomeIcon.setVisible(true);
 			}
 		}
 
-		// Restore controls layout data from cache
-		this._restoreControlsLayoutData();
+		if (this._bControlsLayoutDataCached) {
+			// Restore controls layout data from cache
+			this._restoreControlsLayoutData();
+			this._bControlsLayoutDataCached = false;
+		}
 
 		this.bWasInPhoneRange = false;
-		oControl.invalidate();
+
+		if (oSearch) {
+			oSearch.setPhoneMode(false);
+			this._oControl._bSearchPlaceHolder = false;
+		}
+		this._oControl.invalidate();
 	};
 
 	/**
-	 * Responsive handler for phone screen sizes.
-	 * Applies managed controls sizes according to UX rules.
+	 * Applies different configuration for mobile for some of the contained controls
 	 * @private
 	 */
-	ResponsiveHandler.prototype._resizeOnPhone = function () {
-		var iWidth,
-			iAvailableWidth;
 
-		if  (oControl._oCopilot) {
-			iWidth = oControl.$().width() - this._iCoPilotWidth;
-			iAvailableWidth = (iWidth / 2) - this._iStaticWidth;
-		} else {
-			iWidth = oControl.$().width();
-			iAvailableWidth = iWidth - this._iStaticWidth - this._getWidthOfAllNonManagedControls();
+	ResponsiveHandler.prototype._transformTitleControlMobile = function (){
+		var bControlUpdateNeeded;
+		// Home icon should not be visible
+		if (!this._oControl._oHomeIcon) { return; }
+			// We should inject the homeIcon in the MegaMenu and remove the text
+		bControlUpdateNeeded = this.bIsMegaMenuConfigured && this._oControl._oHomeIcon.getVisible() ||
+			!this.bIsMegaMenuConfigured && !this._oControl._oHomeIcon.getVisible();
+		if (this._oControl._oMegaMenu) {
+			this._oControl._oMegaMenu.setText("").setIcon(this._oControl.getHomeIcon());
+		}
+		if (this._oControl._oPrimaryTitle) {
+			this._oControl._oPrimaryTitle.setText("");
 		}
 
-		if (!oControl._oHomeIcon && oControl._sTitle) {
-			if (this._iMBWidth >= iAvailableWidth) {
-				// Applied width should be without margins
-				oControl._oMegaMenu.setWidth((iAvailableWidth - this._iDoubleChildControlMargin) + "px");
-			} else {
-				// Applied width should be without margins
-				oControl._oMegaMenu.setWidth((this._iMBWidth - this._iDoubleChildControlMargin) + "px");
+		if (bControlUpdateNeeded) {
+			this._oControl._oHomeIcon.setVisible(!this.bIsMegaMenuConfigured);
+			this._oControl.invalidate();
+		}
+	};
+
+	/**
+	 * Apply UX rules for open search on resize event
+	 * @private
+	 */
+
+	ResponsiveHandler.prototype._adaptSearch = function () {
+		var oSearch = this._oControl._oManagedSearch,
+			iSearchWidth;
+
+		if (!oSearch || this.sCurrentRange === "Phone") {
+			return;
+		}
+
+		iSearchWidth = oSearch.$().width();
+
+		if (this._oControl._bSearchPlaceHolder){
+			if (iSearchWidth >= this._iMinSearchWidth) {
+				this._oControl._bSearchPlaceHolder = false;
+				this._toggleAllControlsExceptSearch(false);
 			}
+		} else if (iSearchWidth < this._iMinSearchWidth) {
+			this._oControl._bSearchPlaceHolder = true;
+			this._toggleAllControlsExceptSearch(true);
+		} else if (oSearch.hasStyleClass("sapFShellBarSearchOpenTick")) {
+			oSearch.removeStyleClass("sapFShellBarSearchOpenTick");
+			this._adaptSearch();
 		}
 
-		if (oControl._oMegaMenu) {
-			iAvailableWidth -= oControl._oMegaMenu.$().outerWidth(true);
-		}
-
-		if (iAvailableWidth < 0) {iAvailableWidth = 0;}
-		oControl._oControlSpacer.setWidth(iAvailableWidth + "px");
+		return this;
 	};
 
 	/**
-	 * Responsive handler for bigger than phone screen sizes.
-	 * Calculates the available width for managed controls based on ShellBar state.
+	 * Applies CSS class to the parent element, which conducts the visibility of all elements "under" the search bar
 	 * @private
 	 */
-	ResponsiveHandler.prototype._resize = function () {
-		var iWidth = oControl.$().width(),
-			iAvailableWidth,
-			iOTBControls;
-
-		if (!oControl._oCopilot) {
-			iOTBControls = this._getWidthOfAllNonManagedControls();
-			iAvailableWidth = iWidth - iOTBControls - this._iStaticWidth - (8 * this._iREMSize);
-
-			this._adaptManagedWidthControls(iAvailableWidth);
-			return;
-		}
-
-		iAvailableWidth = (iWidth / 2) - this._iHalfCoPilotWidth - this._iStaticWidth;
-		this._adaptManagedWidthControls(iAvailableWidth);
+	ResponsiveHandler.prototype._toggleAllControlsExceptSearch = function (bShow) {
+		var oSearch = this._oControl._oManagedSearch;
+		this._oControl.toggleStyleClass("sapFShellBarFullSearch", bShow);
+		oSearch && oSearch.toggleStyleClass("sapFShellBarSearchFullWidth", bShow);
 	};
-
-	/**
-	 * Utility method to measure all non-managed controls that are part of the OverflowToolbar but are not in the
-	 * overflow part of the control.
-	 * @returns {int} Sum of all visible control widths
-	 * @private
-	 */
-	ResponsiveHandler.prototype._getWidthOfAllNonManagedControls = function () {
-		var aControls = oControl._oOverflowToolbar.$().children(),
-			iOTBControls = 0;
-
-		aControls.filter(function (i, oDomRef) {
-			var $Ctr = jQuery(oDomRef),
-				oCtr = $Ctr.control(0);
-
-			if (oCtr === oControl._oNavButton) {return false;}
-			if (oCtr === oControl._oMenuButton) {return false;}
-			if (oCtr === oControl._oHomeIcon) {return false;}
-			if (oCtr === oControl._oMegaMenu) {return false;}
-			if (oCtr === oControl._oSecondTitle) {return false;}
-			if (oCtr === oControl._oControlSpacer) {return false;}
-			if (oCtr === oControl._oToolbarSpacer) {return false;}
-
-			iOTBControls += $Ctr.outerWidth(true);
-			return true;
-		});
-
-		return iOTBControls;
-	};
-
-	/**
-	 * Final resize handler which handles control widths of all managed controls according to UX rules and the available
-	 * width for them. Keep in mind that this handler takes care for different scenarios based on availability of
-	 * managed controls. This handler is taking care for bigger than phone screen sizes.
-	 * @param {int} iAvailableWidth The available width for the managed controls
-	 * @private
-	 */
-	ResponsiveHandler.prototype._adaptManagedWidthControls = function (iAvailableWidth) {
-		var bHasTitle = oControl._sTitle,
-			iMBWidth = bHasTitle ? this._iMBWidth : 36 + this._iDoubleChildControlMargin,
-			iTitleWidth = this._iTitleWidth,
-			iCollectiveWidth = iMBWidth + iTitleWidth,
-			oSecondTitle = oControl._oSecondTitle,
-			oMegaMenu = oControl._oMegaMenu,
-			oControlSpacer = oControl._oControlSpacer,
-			iSecondTitleWidth;
-
-		if (!oMegaMenu) {
-			iCollectiveWidth -= 36 + this._iDoubleChildControlMargin;
-		}
-
-		if (iCollectiveWidth < 0) {iCollectiveWidth = 0;}
-		if (iMBWidth < 0) {iMBWidth = 0;}
-
-		if (iMBWidth >= iAvailableWidth) {
-			oControlSpacer && oControlSpacer.setWidth("0px");
-			oSecondTitle && oSecondTitle.setWidth("0px");
-
-			// Applied width should be without margins
-			bHasTitle && oMegaMenu.setWidth((iAvailableWidth - this._iDoubleChildControlMargin) + "px");
-			return;
-		} else {
-			// Applied width should be without margins
-			bHasTitle && oMegaMenu.setWidth((iMBWidth - this._iDoubleChildControlMargin) + "px");
-		}
-
-		if (iAvailableWidth >= iMBWidth && iAvailableWidth <= iCollectiveWidth) {
-
-			iSecondTitleWidth = iAvailableWidth - iMBWidth;
-			if (iSecondTitleWidth < 0) {iSecondTitleWidth = 0;}
-
-			if (iSecondTitleWidth > 32 /* min-width of the Second Title */) {
-				oControlSpacer && oControlSpacer.setWidth("0px");
-				oSecondTitle && oSecondTitle.setWidth(iSecondTitleWidth + "px");
-			} else {
-				oControlSpacer && oControlSpacer.setWidth(iSecondTitleWidth + "px");
-				oSecondTitle && oSecondTitle.setWidth("0px");
-			}
-			return;
-		} else {
-			oSecondTitle && oSecondTitle.setWidth(iTitleWidth + "px");
-		}
-
-		if (iAvailableWidth > iCollectiveWidth) {
-			oControlSpacer && oControlSpacer.setWidth((iAvailableWidth - iCollectiveWidth) + "px");
-		}
-	};
-
 	/**
 	 * Cache layout data of all the controls that should go into the overflow
 	 * @private
 	 */
 	ResponsiveHandler.prototype._cacheControlsLayoutData = function () {
+		var aOverflowControls = this._oControl._getOverflowToolbar().getContent();
+
 		this._oCachedLayoutData = {};
-		oControl._aOverflowControls.forEach(function (oCtr) {
+		aOverflowControls.forEach(function (oCtr) {
 			this._oCachedLayoutData[oCtr.getId()] = oCtr.getLayoutData();
-		}.bind(this));
+		}, this);
 	};
 
 	/**
@@ -417,47 +335,14 @@ sap.ui.define([
 	 * @private
 	 */
 	ResponsiveHandler.prototype._restoreControlsLayoutData = function () {
-		oControl._aOverflowControls.forEach(function (oCtr) {
+		var aOverflowControls = this._oControl._getOverflowToolbar().getContent();
+
+		aOverflowControls.forEach(function (oCtr) {
 			var oLayoutData = this._oCachedLayoutData[oCtr.getId()];
 			if (oLayoutData) {
 				oCtr.setLayoutData(oLayoutData);
 			}
-		}.bind(this));
-	};
-
-	/**
-	 * Retrieve the target width of a control text by rendering a div with a specific font size in the static area
-	 * to measure the width of the text and then removing the not needed div.
-	 * @param {sap.ui.core.Control} oCtr the control with "text" property
-	 * @param {boolean} [bBold=false] should we measure bold text
-	 * @returns {int} the width of the measured text
-	 */
-	ResponsiveHandler.prototype.getTargetWidth = function (oCtr, bBold) {
-		if (!oCtr) {return 0;}
-
-		var sText = oCtr.getText(),
-			oDiv = document.createElement("div"),
-			oText = document.createTextNode(sText),
-			oStaticArea = sap.ui.getCore().getStaticAreaRef(),
-			iWidth;
-
-		// Create div and add to static area
-		oDiv.appendChild(oText);
-		oDiv.style.setProperty("white-space", "nowrap");
-		oDiv.style.setProperty("display", "inline-block");
-		oDiv.style.setProperty("font-size", "0.875rem");
-		if (bBold) {
-			oDiv.style.setProperty("font-weight", "bold");
-		}
-		oStaticArea.appendChild(oDiv);
-
-		// Record width
-		iWidth = oDiv.scrollWidth;
-
-		// Remove child from static area
-		oStaticArea.removeChild(oDiv);
-
-		return iWidth;
+		}, this);
 	};
 
 	return ResponsiveHandler;

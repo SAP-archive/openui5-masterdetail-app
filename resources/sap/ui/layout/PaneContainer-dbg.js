@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -21,11 +21,11 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 	 * @class
 	 * PaneContainer is an abstraction of Splitter.
 	 *
-	 * Could be used as an aggregation of ResponsiveSplitter or other PaneContainers.
+	 * Could be used as an aggregation of ResponsiveSplitter or nested in other PaneContainers.
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -43,7 +43,7 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 		defaultAggregation : "panes",
 		aggregations : {
 			/**
-			 The Pane that will be shown when there is no suitable pane for ResponsiveSplitter's current width.
+			 * The panes to be split. The control will show n-1 splitter bars between n controls in this aggregation.
 			 */
 			panes: { type: "sap.ui.core.Element", multiple: true, singularName: "pane" }
 		}
@@ -54,8 +54,11 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 			orientation: this.getOrientation(),
 			height: "100%"
 		});
+	};
 
-		this._oSplitter._bUseIconForSeparator = false;
+	PaneContainer.prototype.exit = function () {
+		this._oSplitter.destroy();
+		this._oSplitter = null;
 	};
 
 	/**
@@ -84,7 +87,8 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 	 * @returns {sap.ui.layout.PaneContainer} this to allow method chaining.
 	 */
 	PaneContainer.prototype.setLayoutData = function(oLayoutData) {
-		return this._oSplitter.setLayoutData(oLayoutData);
+		this._oSplitter.setLayoutData(oLayoutData);
+		return this;
 	};
 
 	/**

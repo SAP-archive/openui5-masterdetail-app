@@ -1,38 +1,40 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	"sap/ui/core/Element",
-	"sap/m/Label",
+	"sap/m/Title",
 	"sap/m/Image",
-	"sap/tnt/InfoLabel",
 	"./ContentButton",
 	"sap/m/MenuButton",
 	"sap/m/OverflowToolbar",
 	"sap/m/OverflowToolbarButton",
-	"./ControlSpacer",
 	"sap/m/ToolbarSpacer",
 	"sap/m/OverflowToolbarLayoutData",
+	"sap/m/FlexItemData",
 	"./CoPilot",
 	"./Accessibility",
-	"sap/m/library"
+	"sap/m/library",
+	"sap/ui/core/library",
+	"sap/ui/core/theming/Parameters",
+	"sap/m/HBox"
 ], function(
-	Element,
-	Label,
+	Title,
 	Image,
-	InfoLabel,
 	ContentButton,
 	MenuButton,
 	OverflowToolbar,
 	OverflowToolbarButton,
-	ControlSpacer,
 	ToolbarSpacer,
 	OverflowToolbarLayoutData,
+	FlexItemData,
 	CoPilot,
 	Accessibility,
-	library
+	library,
+	coreLibrary,
+	Parameters,
+	HBox
 ) {
 	"use strict";
 
@@ -45,11 +47,13 @@ sap.ui.define([
 	// shortcut for sap.m.ButtonType
 	var ButtonType = library.ButtonType;
 
+	// shortcut for sap.ui.core.TitleLevel
+	var TitleLevel = coreLibrary.TitleLevel;
+
 	/**
 	 * Factory class which is used to create internal controls used by the ShellBar control and care for their
 	 * lifecycle.
 	 * @alias sap/f/shellBar/Factory
-	 * @experimental Since 1.63. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 * @since 1.63
 	 * @private
 	 */
@@ -64,20 +68,28 @@ sap.ui.define([
 			this._oControls.oOverflowToolbar = new OverflowToolbar({
 				design: ToolbarDesign.Transparent,
 				style: "Clear"
-			}).addStyleClass("sapFShellBarOTB");
-			this._oControls.oOverflowToolbar._getOverflowButton().addStyleClass("sapFShellBarOverflowButton");
+			}).addStyleClass("sapFShellBarOTB")
+			.setLayoutData(
+				new FlexItemData({
+					growFactor: 1,
+					shrinkFactor: 1,
+					minWidth: "0px",
+					maxWidth: "100%"
+				})
+			);
+			this._oControls.oOverflowToolbar._getOverflowButton().addStyleClass("sapFShellBarItem sapFShellBarOverflowButton");
 		}
 		return this._oControls.oOverflowToolbar;
 	};
 
-	Factory.prototype.getControlSpacer = function () {
-		if (!this._oControls.oControlSpacer) {
-			this._oControls.oControlSpacer = new ControlSpacer().setLayoutData(
-				new OverflowToolbarLayoutData({
-					priority: OverflowToolbarPriority.NeverOverflow
-				}));
+
+	Factory.prototype.getAdditionalBox = function () {
+		if (!this._oControls.oAdditionalBox) {
+			this._oControls.oAdditionalBox = new HBox({alignItems: "Center"})
+				.addStyleClass("sapFShellBarOAHB");
 		}
-		return this._oControls.oControlSpacer;
+
+		return this._oControls.oAdditionalBox;
 	};
 
 	Factory.prototype.getToolbarSpacer = function () {
@@ -89,12 +101,17 @@ sap.ui.define([
 
 	Factory.prototype.getSecondTitle = function () {
 		if (!this._oControls.oSecondTitle) {
-			this._oControls.oSecondTitle = new Label()
+			this._oControls.oSecondTitle = new Title({
+				titleStyle: TitleLevel.H6
+			})
 				.addStyleClass("sapFShellBarSecondTitle")
-				.setLayoutData(new OverflowToolbarLayoutData({
-					priority: OverflowToolbarPriority.NeverOverflow
+				.setLayoutData(
+					new FlexItemData({
+						shrinkFactor: 2,
+						minWidth: "1px"
 				}));
 		}
+		this._oControls.oSecondTitle._sFontSize = Parameters.get("_sap_f_ShellBar_SecondTitle_FontSize");
 		return this._oControls.oSecondTitle;
 	};
 
@@ -109,10 +126,7 @@ sap.ui.define([
 					this._oContext.fireEvent("avatarPressed", {avatar: this._oControls.oAvatarButton.getAvatar()});
 				}.bind(this)
 			})
-			.addStyleClass("sapFShellBarProfile")
-			.setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+			.addStyleClass("sapFShellBarProfile");
 		}
 		return this._oControls.oAvatarButton;
 	};
@@ -126,10 +140,7 @@ sap.ui.define([
 					this._oContext.fireEvent("homeIconPressed", {icon: this._oControls.oHomeIcon});
 				}.bind(this)
 			})
-			.addStyleClass("sapFShellBarHomeIcon")
-			.setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+			.addStyleClass("sapFShellBarHomeIcon");
 		}
 		return this._oControls.oHomeIcon;
 	};
@@ -138,14 +149,35 @@ sap.ui.define([
 		if (!this._oControls.oMegaMenu) {
 			this._oControls.oMegaMenu = new MenuButton({
 				type: ButtonType.Transparent,
-				iconDensityAware: false
-			})
-			.addStyleClass("sapFSHMegaMenu")
-			.setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+				iconDensityAware: false,
+				layoutData: new FlexItemData({
+					shrinkFactor: 0,
+					minWidth: "0px",
+					maxWidth: "100%"
+				})
+			}).addStyleClass("sapFSHMegaMenu");
 		}
+		this._oControls.oMegaMenu._sFontSize = Parameters.get("_sap_f_ShellBar_PrimaryTitle_FontSize");
+
 		return this._oControls.oMegaMenu;
+	};
+
+	Factory.prototype.getPrimaryTitle = function () {
+		if (!this._oControls.oPrimaryTitle) {
+			this._oControls.oPrimaryTitle = new Title({
+				titleStyle: TitleLevel.H6,
+				level: TitleLevel.H1
+			})
+				.setLayoutData(
+					new FlexItemData({
+						shrinkFactor: 0,
+						minWidth: "0px",
+						maxWidth: "100%"
+					})
+				).addStyleClass("sapFShellBarPrimaryTitle");
+		}
+		this._oControls.oPrimaryTitle._sFontSize = Parameters.get("_sap_f_ShellBar_PrimaryTitle_FontSize");
+		return this._oControls.oPrimaryTitle;
 	};
 
 	Factory.prototype.getCopilot = function () {
@@ -155,10 +187,7 @@ sap.ui.define([
 				press: function () {
 					this._oContext.fireEvent("copilotPressed", {image: this._oControls.oCopilot});
 				}.bind(this)
-			})
-			.setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+			});
 		}
 		return this._oControls.oCopilot;
 	};
@@ -180,6 +209,14 @@ sap.ui.define([
 		return this._oControls.oSearch;
 	};
 
+	Factory.prototype.getManagedSearch = function () {
+		if (!this._oControls.oManagedSearch) {
+			this._oControls.oManagedSearch = this._oContext.getSearchManager()._oSearch;
+		}
+
+		return this._oControls.oManagedSearch;
+	};
+
 	Factory.prototype.getNavButton = function () {
 		if (!this._oControls.oNavButton) {
 			this._oControls.oNavButton = new OverflowToolbarButton({
@@ -189,9 +226,7 @@ sap.ui.define([
 				press: function () {
 					this._oContext.fireEvent("navButtonPressed", {button: this._oControls.oNavButton});
 				}.bind(this)
-			}).setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+			});
 		}
 		return this._oControls.oNavButton;
 	};
@@ -201,10 +236,11 @@ sap.ui.define([
 			this._oControls.oMenuButton = new OverflowToolbarButton({
 				icon: "sap-icon://menu2",
 				type: ButtonType.Transparent,
-				tooltip: this._oAcc.getEntityTooltip("MENU")
-			}).setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.NeverOverflow
-			}));
+				tooltip: this._oAcc.getEntityTooltip("MENU"),
+				press: function () {
+					this._oContext.fireEvent("menuButtonPressed", {button: this._oControls.oMenuButton});
+				}.bind(this)
+			});
 		}
 		return this._oControls.oMenuButton;
 	};
@@ -239,9 +275,6 @@ sap.ui.define([
 					this._oContext.fireEvent("productSwitcherPressed", {button: this._oControls.oProductSwitcher});
 				}.bind(this)
 			})
-			.setLayoutData(new OverflowToolbarLayoutData({
-				priority: OverflowToolbarPriority.High
-			}))
 			.addStyleClass("sapFShellBarGridButton");
 		}
 		return this._oControls.oProductSwitcher;

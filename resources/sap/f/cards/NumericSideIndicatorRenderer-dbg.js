@@ -1,15 +1,15 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides default renderer for control sap.f.cards.NumericSideIndicatorRenderer
 sap.ui.define([],
 	function () {
-        "use strict";
+		"use strict";
 
-        var NumericSideIndicatorRenderer = {};
+		var NumericSideIndicatorRenderer = {};
 
 		/**
 		 * Render a numeric header side indicator.
@@ -18,9 +18,14 @@ sap.ui.define([],
 		 * @param {sap.f.cards.NumericHeader} oControl An object representation of the control that should be rendered
 		 */
 		NumericSideIndicatorRenderer.render = function (oRm, oControl) {
+			var oBindingInfos = oControl.mBindingInfos;
+
 			oRm.write("<div");
 			oRm.writeControlData(oControl);
 			oRm.addClass("sapFCardHeaderSideIndicator");
+			if (oBindingInfos.title || oBindingInfos.number || oBindingInfos.unit) {
+				oRm.addClass("sapFCardHeaderItemBinded");
+			}
 			oRm.writeClasses();
 			oRm.writeStyles();
 			oRm.write(">");
@@ -32,6 +37,9 @@ sap.ui.define([],
 			}
 			oRm.write("<div");
 			oRm.addClass("sapFCardHeaderSINumber");
+			if (oBindingInfos.title || oBindingInfos.number || oBindingInfos.unit) {
+				oRm.addClass("sapFCardHeaderItemBinded");
+			}
 			oRm.writeClasses();
 			oRm.write(">");
 

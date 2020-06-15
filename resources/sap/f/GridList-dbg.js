@@ -1,19 +1,21 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
+	"./library",
 	"sap/m/ListBase",
 	"sap/ui/base/ManagedObjectObserver",
 	"sap/ui/layout/cssgrid/GridLayoutDelegate",
-	"sap/ui/layout/cssgrid/GridItemLayoutData",
+	"sap/ui/layout/cssgrid/GridLayoutBase",
 	"./GridListRenderer"
 ], function(
+	library,
 	ListBase,
 	ManagedObjectObserver,
 	GridLayoutDelegate,
-	GridItemLayoutData,
+	GridLayoutBase,
 	GridListRenderer
 ) {
 	"use strict";
@@ -41,6 +43,8 @@ sap.ui.define([
 	 * Every item can override its size by specifying the number of columns and/or rows it will take in the grid.
 	 * This is done using {@link sap.ui.layout.cssgrid.GridItemLayoutData GridItemLayoutData}.
 	 *
+	 * For best visualization, items of type {@link sap.f.GridListItem sap.f.GridListItem} should be used inside the <code>items</code> aggregation.
+	 *
 	 * <h3>Usage</h3>
 	 *
 	 * For general cases, use the default grid configuration of the <code>GridList</code>.
@@ -59,6 +63,14 @@ sap.ui.define([
 	 * <li>If only the layout is required, use {@link sap.ui.layout.cssgrid.CSSGrid} instead.
 	 * </ul>
 	 *
+	 * <h3>Drag and drop:</h3>
+	 * Drag and drop is enabled for the <code>GridList</code> with enhanced visualization and interaction, better suited for grid items. This is configured by using the <code>{@link sap.f.dnd.GridDropInfo}</code>.
+	 *
+	 * Similar to the <code>{@link sap.ui.core.dnd.DropInfo}</code>, <code>{@link sap.f.dnd.GridDropInfo}</code> has to be added to the <code>dragDropConfig</code> aggregation, by using <code>{@link sap.ui.core.Element#addDragDropConfig}</code>.
+	 *
+	 * Both <code>{@link sap.ui.core.dnd.DropInfo}</code> and <code>{@link sap.f.dnd.GridDropInfo}</code> can be used to configure drag and drop.
+	 * The difference is that the <code>{@link sap.f.dnd.GridDropInfo}</code> will provide a drop indicator, which mimics the size of the dragged item and shows the potential drop position inside the grid.
+	 *
 	 * <h3>Current Limitations</h3>
 	 * <ul>
 	 * <li>For Microsoft Internet Explorer some layouts are not supported, due to browser specifics.</li>
@@ -69,7 +81,7 @@ sap.ui.define([
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @extends sap.m.ListBase
 	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
@@ -82,7 +94,10 @@ sap.ui.define([
 	 */
 	var GridList = ListBase.extend("sap.f.GridList", { metadata : {
 		library: "sap.f",
-		interfaces: ["sap.ui.layout.cssgrid.IGridConfigurable"],
+		interfaces: [
+			"sap.ui.layout.cssgrid.IGridConfigurable",
+			"sap.f.dnd.IGridDroppable"
+		],
 		aggregations: {
 
 			/**
@@ -108,6 +123,15 @@ sap.ui.define([
 		this._oGridObserver.observe(this, { aggregations: ["items"] });
 	};
 
+	GridList.prototype.onfocusin = function() {
+		ListBase.prototype.onfocusin.apply(this, arguments);
+
+		this._oItemNavigation = this.getItemNavigation();
+		if (this._oItemNavigation) {
+			//Enable Up/Left Arrow and Down/Right Arrow to navigate
+			this._oItemNavigation.setTableMode(false, false);
+		}
+	};
 	GridList.prototype.exit = function () {
 		this._removeGridLayoutDelegate();
 
@@ -188,7 +212,7 @@ sap.ui.define([
 	 * @private
 	 */
 	GridList.prototype._onAfterItemRendering = function () {
-		GridItemLayoutData._setItemStyles(this);
+		GridLayoutBase.setItemStyles(this);
 	};
 
 	/**
@@ -199,7 +223,7 @@ sap.ui.define([
 	 * @param {jQuery.Event} oEvent The event from a layoutDataChange
 	 */
 	GridList.prototype.onLayoutDataChange = function (oEvent) {
-		GridItemLayoutData._setItemStyles(oEvent.srcControl);
+		GridLayoutBase.setItemStyles(oEvent.srcControl);
 	};
 
 	return GridList;

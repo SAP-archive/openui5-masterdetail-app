@@ -1,25 +1,22 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
 	'sap/ui/core/Control',
-	"sap/f/cards/ActionEnablement",
 	'sap/m/NumericContent',
 	'sap/m/Text',
-	'sap/f/cards/Data',
-	'sap/ui/model/json/JSONModel',
 	"sap/f/cards/NumericSideIndicator",
-	"sap/f/cards/NumericHeaderRenderer"
+	"sap/f/cards/NumericHeaderRenderer",
+	"sap/ui/core/Core"
 ], function (
 		Control,
-		ActionEnablement,
 		NumericContent,
 		Text,
-		Data,
-		JSONModel,
-		NumericSideIndicator
+		NumericSideIndicator,
+		NumericHeaderRenderer,
+		Core
 	) {
 		"use strict";
 
@@ -30,22 +27,23 @@ sap.ui.define([
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * A control used to group a set of card attributes in a header.
+	 * Displays general information in the header of the {@link sap.f.Card} and allows the
+	 * configuration of a numeric value visualization.
 	 *
-	 * <h3>Overview</h3>
-	 * The <code>NumericHeader</code> shows general information about the card and allows the configuration of a numeric value visualization.
-	 * You can configure the title, subtitle, status text and icon, using properties.
+	 * You can configure the title, subtitle, status text and icon, using the provided properties.
+	 * To add more side number indicators, use the <code>sideIndicators</code> aggregation.
 	 *
-	 * <h3>Usage</h3>
-	 * To show only basic information, use {@link sap.f.cards.Header Header} instead.
-	 * It is possible to add more side number indicators, using the <code>sideIndicators</code> aggregation.
-	 * You should always set a title.
-	 * You should always have a maximum of two side indicators.
+	 * <b>Notes:</b>
+	 * <ul>
+	 * <li>You should always set a title.</li>
+	 * <li>You should always have a maximum of two side indicators.</li>
+	 * <li>To show only basic information, use {@link sap.f.cards.Header Header} instead.</li>
+	 * </ul>
 	 *
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -55,6 +53,7 @@ sap.ui.define([
 	 */
 	var NumericHeader = Control.extend("sap.f.cards.NumericHeader", {
 		metadata: {
+			library: "sap.f",
 			interfaces: ["sap.f.cards.IHeader"],
 			properties: {
 
@@ -67,6 +66,11 @@ sap.ui.define([
 				 * The subtitle of the card
 				 */
 				subtitle: { "type": "string", group: "Appearance" },
+
+				/**
+				 * Defines the status text.
+				 */
+				statusText: { type: "string", defaultValue: "" },
 
 				/**
 				 * General unit of measurement for the header. Displayed as side information to the subtitle.
@@ -106,6 +110,13 @@ sap.ui.define([
 			aggregations: {
 
 				/**
+				 * Defines the toolbar.
+				 * @experimental Since 1.75
+				 * @since 1.75
+				 */
+				toolbar: { type: "sap.ui.core.Control", multiple: false },
+
+				/**
 				 * Additional side number indicators. For example "Deviation" and "Target". Not more than two side indicators should be used.
 				 */
 				sideIndicators: { type: "sap.f.cards.NumericSideIndicator", multiple: true },
@@ -142,20 +153,30 @@ sap.ui.define([
 				 */
 				press: {}
 			}
-		},
-		constructor: function (vId, mSettings) {
-			if (typeof vId !== "string") {
-				mSettings = vId;
-			}
-
-			if (mSettings && mSettings.serviceManager) {
-				this._oServiceManager = mSettings.serviceManager;
-				delete mSettings.serviceManager;
-			}
-
-			Control.apply(this, arguments);
 		}
 	});
+
+	/**
+	 * Initialization hook.
+	 * @private
+	 */
+	NumericHeader.prototype.init = function () {
+		this._oRb = Core.getLibraryResourceBundle("sap.f");
+
+		this.data("sap-ui-fastnavgroup", "true", true); // Define group for F6 handling
+	};
+
+	NumericHeader.prototype.exit = function () {
+		this._oRb = null;
+	};
+
+	/**
+	 * Called before the control is rendered.
+	 * @private
+	 */
+	NumericHeader.prototype.onBeforeRendering = function () {
+		this._setAccessibilityAttributes();
+	};
 
 	/**
 	 * Sets the title.
@@ -358,7 +379,7 @@ sap.ui.define([
 				withMargin: false,
 				nullifyValue: false,
 				animateTextChange: false,
-				truncateValueTo: 5
+				truncateValueTo: 100
 			});
 			this.setAggregation("_mainIndicator", oControl);
 		}
@@ -366,84 +387,23 @@ sap.ui.define([
 		return oControl;
 	};
 
-	NumericHeader.prototype.ontap = function () {
+	/**
+	 * Fires the <code>sap.f.cards.NumericHeader</code> press event.
+	 */
+	NumericHeader.prototype.ontap = function (oEvent) {
+		var srcControl = oEvent.srcControl;
+		if (srcControl && srcControl.getId().indexOf('overflowButton') > -1) { // better way?
+			return;
+		}
+
 		this.firePress();
 	};
 
 	/**
-	 * Creates an instance of NumericHeader with the given options.
-	 *
-	 * @private
-	 * @static
-	 * @param {map} mConfiguration A map containing the header configuration options.
-	 * @return {sap.f.cards.NumericHeader} The created NumericHeader
+	 * Fires the <code>sap.f.cards.NumericHeader</code> press event.
 	 */
-	NumericHeader.create = function(mConfiguration, oServiceManager) {
-		var mSettings = {
-			title: mConfiguration.title,
-			subtitle: mConfiguration.subTitle,
-			unitOfMeasurement: mConfiguration.unitOfMeasurement,
-			details: mConfiguration.details
-		};
-
-		if (mConfiguration.mainIndicator) {
-			mSettings.number = mConfiguration.mainIndicator.number;
-			mSettings.scale = mConfiguration.mainIndicator.unit;
-			mSettings.trend = mConfiguration.mainIndicator.trend;
-			mSettings.state = mConfiguration.mainIndicator.state; // TODO convert ValueState to ValueColor
-		}
-
-		if (mConfiguration.sideIndicators) {
-			mSettings.sideIndicators = mConfiguration.sideIndicators.map(function (mIndicator) { // TODO validate that it is an array and with no more than 2 elements
-				return new NumericSideIndicator(mIndicator);
-			});
-		}
-
-		if (oServiceManager) {
-			mSettings.serviceManager = oServiceManager;
-		}
-
-		var oHeader = new NumericHeader(mSettings);
-
-		if (mConfiguration.data) {
-			this._handleData(oHeader, mConfiguration.data);
-		}
-
-		return oHeader;
-	};
-
-	/**
-	 * Creates an instance of NumericHeader with the given options
-	 *
-	 * @private
-	 * @static
-	 * @param {sap.f.cards.NumericHeader} oHeader The header for which the data is
-	 * @param {object} oData Data configuration
-	 */
-	NumericHeader._handleData = function (oHeader, oData) {
-		var oModel = new JSONModel();
-
-		var oRequest = oData.request;
-		if (oData.json && !oRequest) {
-			oModel.setData(oData.json);
-		}
-
-		if (oRequest) {
-			Data.fetch(oRequest).then(function (data) {
-				oModel.setData(data);
-				oModel.refresh();
-				oHeader.fireEvent("_updated");
-			}).catch(function (oError) {
-				// TODO: Handle errors. Maybe add error message
-			});
-		}
-
-		oHeader.setModel(oModel)
-			.bindElement({
-				path: oData.path || "/"
-			});
-
-		// TODO Check if model is destroyed when header is destroyed
+	NumericHeader.prototype.onsapselect = function () {
+		this.firePress();
 	};
 
 	/**
@@ -455,12 +415,30 @@ sap.ui.define([
 	NumericHeader.prototype._getHeaderAccessibility = function () {
 		var sTitleId = this._getTitle() ? this._getTitle().getId() : "",
 			sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
+			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
 			sUnitOfMeasureId = this._getUnitOfMeasurement() ? this._getUnitOfMeasurement().getId() : "",
 			sSideIndicatorsId = this.getSideIndicators() ? this._getSideIndicatorIds() : "",
 			sDetailsId = this._getDetails() ? this._getDetails().getId() : "",
 			sMainIndicatorId = this._getMainIndicator() ? this._getMainIndicator().getId() : "";
 
-			return sTitleId + " " + sSubtitleId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsId + " " + sDetailsId;
+			return sTitleId + " " + sSubtitleId + " " + sStatusTextId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsId + " " + sDetailsId;
+	};
+
+	/**
+	 * Sets accessibility to the header to the header.
+	 *
+	 * @private
+	 */
+	NumericHeader.prototype._setAccessibilityAttributes = function () {
+		if (this.hasListeners("press")) {
+			this._sAriaRole = 'button';
+			this._sAriaHeadingLevel = undefined;
+			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_INTERACTIVE_CARD_HEADER");
+		} else {
+			this._sAriaRole = 'heading';
+			this._sAriaHeadingLevel = '3';
+			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER");
+		}
 	};
 
 	/**
@@ -478,7 +456,31 @@ sap.ui.define([
 		return sSideIndicatorIds;
 	};
 
-	ActionEnablement.enrich(NumericHeader);
+	NumericHeader.prototype.isLoading = function () {
+		return false;
+	};
+
+	NumericHeader.prototype.attachPress = function () {
+		var aMyArgs = Array.prototype.slice.apply(arguments);
+		aMyArgs.unshift("press");
+
+		Control.prototype.attachEvent.apply(this, aMyArgs);
+
+		this.invalidate();
+
+		return this;
+	};
+
+	NumericHeader.prototype.detachPress = function() {
+		var aMyArgs = Array.prototype.slice.apply(arguments);
+		aMyArgs.unshift("press");
+
+		Control.prototype.detachEvent.apply(this, aMyArgs);
+
+		this.invalidate();
+
+		return this;
+	};
 
 	return NumericHeader;
 });

@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -18,11 +18,12 @@ sap.ui.define(['sap/ui/core/Element', './library'],
 	 *
 	 * @class
 	 * Settings for accessible landmarks which can be applied to the container elements of a <code>sap.f.DynamicPage</code> control.
-	 * These landmarks are used by assistive technologies (such as screenreaders) to provide a meaningful page overview.
+	 *
+	 * These landmarks are used by assistive technologies (such as screen readers) to provide a meaningful page overview.
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public

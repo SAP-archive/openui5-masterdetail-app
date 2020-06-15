@@ -1,0 +1,6 @@
+/*!
+ * OpenUI5
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
+ */
+sap.ui.define(["sap/m/ListItemBaseRenderer","sap/ui/core/Renderer","sap/m/library"],function(e,r,n){"use strict";var t=n.ListType;var o=n.ListMode;var a=-1;var i=r.extend(e);i.apiVersion=2;i.renderLIAttributes=function(e,r){e.class("sapFGLI")};i.renderContentFormer=function(e,r){this.renderHighlight(e,r)};i.renderLIContentWrapper=function(r,n){r.openStart("div").class("sapFGLIWrapper").openEnd();this.renderToolbar(r,n);e.renderLIContentWrapper.apply(this,arguments);r.close("div")};i.renderContentLatter=function(e,r){};i.renderToolbar=function(r,n){var i=n.getMode(),s=i===o.Delete,d=n.getType();if(!n.getCounter()&&(i===""||i===o.None||i===o.SingleSelectMaster)&&(d===t.Inactive||d===t.Active)){return}r.openStart("div",n.getId()+"-gridListItemToolbar");r.class("sapFGLIToolbar");r.openEnd();if(!s){this.renderMode(r,n,a)}this.renderToolbarSpacer(r);e.renderContentLatter.apply(this,arguments);r.close("div")};i.renderLIContent=function(e,r){r.getContent().forEach(e.renderControl,e)};i.renderToolbarSpacer=function(e){e.openStart("div").class("sapFGLIToolbarSpacer").openEnd().close("div")};return i});

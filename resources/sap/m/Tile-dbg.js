@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -132,7 +132,7 @@ sap.ui.define([
 	 * @private
 	 */
 	Tile.prototype.setSize = function(iWidth,iHeight){
-		//jQuery.sap.log.debug("Set tile size, id:" + this.getId() + ", x:" + iWidth + ", y:" + iHeight);
+		//Log.debug("Set tile size, id:" + this.getId() + ", x:" + iWidth + ", y:" + iHeight);
 		this._width = iWidth;
 		this._height = iHeight;
 	};

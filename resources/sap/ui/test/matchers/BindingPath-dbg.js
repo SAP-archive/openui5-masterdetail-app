@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,15 +8,28 @@ sap.ui.define(['sap/ui/test/matchers/Matcher'], function(Matcher) {
 	"use strict";
 
 	/**
-	 * BindingPath - checks if a control has a specific binding
-	 * @since 1.60 Comparison is strict and can include one or more binding criteria:
-	 * - context path (matches children of bound controls, eg: items in a table)
-	 * - property path (matches controls with no context and a single bound property, eg: Text with binding for property text)
-	 * - context path + property path (matches children of bound controls, where the child has a binding for a certain property within the context)
+	 * @class
+	 * Checks if a control has a binding context with the exact same binding path.
 	 *
-	 * Before v1.60 he only available criteria is binding context path!
+	 * As of version 1.60, comparison is strict and can include one or more binding criteria:
+	 * <ul>
+	 * <li>context path (matches children of bound controls, eg: items in a table)</li>
+	 * <li>property path (matches controls with no context and a single bound property, eg: Text with binding for property text)</li>
+	 * <li>context path + property path (matches children of bound controls, where the child has a binding for a certain property within the context)</li>
+	 * </ul>
 	 *
-	 * @class BindingPath - checks if a control has a binding context with the exact same binding path
+	 * <b>Note:</b> Before version 1.60, the only available criteria is binding context path.
+	 *
+	 * As of version 1.72, it is available as a declarative matcher with the following syntax:
+	 * <code><pre>{
+	 *     bindingPath: {
+	 *         path: "string",
+	 *         modelName: "string",
+	 *         propertyPath: "string"
+	 *     }
+	 * }
+	 * </code></pre>
+	 *
 	 * @extends sap.ui.test.matchers.Matcher
 	 * @param {object} [mSettings] Map/JSON-object with initial settings for the new BindingPath.
 	 * @public
@@ -44,6 +57,7 @@ sap.ui.define(['sap/ui/test/matchers/Matcher'], function(Matcher) {
 				/**
 				 * The value of the binding property path that is used for matching.
 				 * If (context) path is also set, propertyPath will be assumed to be relative to the binding context path
+				 * @since 1.60
 				 */
 				propertyPath: {
 					type: "string"

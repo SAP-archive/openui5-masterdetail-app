@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -25,11 +25,10 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @private
-	 * @experimental Since 1.64. This class is experimental and provides only limited functionality. Also the API might be changed in future.
 	 * @since 1.64
 	 * @alias sap.f.shellBar.CoPilot
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel

@@ -1,6 +1,6 @@
 /*
  * ! OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -26,7 +26,7 @@ sap.ui.define([
 		* @extends sap.ui.core.Element
 		*
 		* @author SAP SE
-		* @version 1.64.0
+		* @version 1.78.1
 		*
 		* @constructor
 		* @public
@@ -161,7 +161,6 @@ sap.ui.define([
 					}
 
 					return new Link({
-						href : "#",
 						text : this.getValue(),
 						customData : [new CustomData({
 							key : "pageNumber",
@@ -176,22 +175,18 @@ sap.ui.define([
 		};
 
 		GroupElement.prototype.setProperty = function (sName, oValue) {
-			var mNavContext,
-			bSupressInvalidate = true;
+			var oQuickView = this.getQuickViewBase(),
+				bSuppressInvalidate = false;
 
-			if (this.getParent() && this.getParent().getParent() && this.getParent().getParent().getNavContext()) {
-				mNavContext = this.getParent().getParent().getNavContext();
-
-				if (mNavContext && mNavContext.quickView && mNavContext.quickView.isA('sap.m.QuickViewCard')) {
-					bSupressInvalidate = false;
-				}
+			if (oQuickView && oQuickView.isA("sap.m.QuickView")) {
+				bSuppressInvalidate = true;
 			}
 
-			Element.prototype.setProperty.call(this, sName, oValue, bSupressInvalidate);
+			Element.prototype.setProperty.call(this, sName, oValue, bSuppressInvalidate);
 
 			var oGroup = this.getParent();
 			if (!oGroup) {
-				return;
+				return this;
 			}
 
 			var oPage = oGroup.getParent();
@@ -202,6 +197,13 @@ sap.ui.define([
 			return this;
 		};
 
+		GroupElement.prototype.getQuickViewBase = function () {
+			var oParent = this.getParent();
+			if (oParent && oParent.getQuickViewBase) {
+				return oParent.getQuickViewBase();
+			}
+			return null;
+		};
 
 		return GroupElement;
 

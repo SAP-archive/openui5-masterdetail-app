@@ -1,18 +1,18 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 sap.ui.define([
 	"sap/ui/core/Control",
-	"sap/ui/layout/cssgrid/GridItemLayoutData",
+	"sap/ui/layout/cssgrid/GridLayoutBase",
 	"sap/ui/layout/cssgrid/GridBasicLayout",
 	"sap/ui/layout/cssgrid/GridLayoutDelegate",
 	"sap/ui/base/ManagedObjectObserver",
 	"sap/ui/layout/library",
 	"./CSSGridRenderer"
-], function (Control, GridItemLayoutData, GridBasicLayout, GridLayoutDelegate, ManagedObjectObserver) {
+], function (Control, GridLayoutBase, GridBasicLayout, GridLayoutDelegate, ManagedObjectObserver) {
 	"use strict";
 
 	/**
@@ -97,7 +97,7 @@ sap.ui.define([
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.layout.cssgrid.IGridConfigurable
@@ -328,7 +328,7 @@ sap.ui.define([
 	 * @private
 	 */
 	CSSGrid.prototype._onAfterItemRendering = function () {
-		GridItemLayoutData._setItemStyles(this);
+		GridLayoutBase.setItemStyles(this);
 	};
 
 	/**
@@ -338,7 +338,7 @@ sap.ui.define([
 	 * @param {jQuery.Event} [oEvent] The event from a layoutDataChange
 	 */
 	CSSGrid.prototype.onLayoutDataChange = function (oEvent) {
-		GridItemLayoutData._setItemStyles(oEvent.srcControl);
+		GridLayoutBase.setItemStyles(oEvent.srcControl);
 	};
 
 	/**

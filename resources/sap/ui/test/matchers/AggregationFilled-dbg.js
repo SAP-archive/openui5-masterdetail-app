@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,9 +12,17 @@ sap.ui.define([
 	"use strict";
 
 	/**
-	 * AggregationFilled - checks if an aggregation contains at least one entry.
+	 * @class
+	 * Checks if an aggregation contains at least one entry.
 	 *
-	 * @class AggregationFilled - checks if an aggregation contains at least one entry
+	 * As of version 1.72, it is available as a declarative matcher with the following syntax:
+	 * <code><pre>{
+	 *     aggregationFilled: {
+	 *         name: "string"
+	 *     }
+	 * }
+	 * </code></pre>
+	 *
 	 * @param {object} [mSettings] optional map/JSON-object with initial settings for the new AggregationFilledMatcher
 	 * @extends sap.ui.test.matchers.Matcher
 	 * @public
@@ -64,4 +72,4 @@ sap.ui.define([
 
 	});
 
-}, /* bExport= */ true);
+});

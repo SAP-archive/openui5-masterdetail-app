@@ -1,6 +1,6 @@
 /*
  * ! OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -29,7 +29,8 @@ sap.ui.define([
 	'sap/ui/Device',
 	'sap/ui/layout/form/ResponsiveGridLayout',
 	'./QuickViewPageRenderer',
-	"sap/base/security/encodeURL"
+	"sap/base/security/encodeURL",
+	"sap/ui/dom/jquery/Focusable" // jQuery Plugin "firstFocusableDomRef"
 ],
 	function(
 		library,
@@ -88,7 +89,7 @@ sap.ui.define([
 			* @extends sap.ui.core.Control
 			*
 			* @author SAP SE
-			* @version 1.64.0
+			* @version 1.78.1
 			*
 			* @constructor
 			* @public
@@ -162,6 +163,19 @@ sap.ui.define([
 									type: "string",
 									group: "Misc",
 									defaultValue: ""
+								},
+
+								/**
+								 * Defines the fallback icon displayed in case of wrong image src or loading issues.
+								 *
+								 * <b>Note</b> Accepted values are only icons from the SAP icon font.
+								 *
+								 * @since 1.69
+								 */
+								fallbackIcon: {
+									type: "sap.ui.core.URI",
+									group: "Appearance",
+									defaultValue: null
 								}
 							},
 							defaultAggregation: "groups",
@@ -323,6 +337,16 @@ sap.ui.define([
 			};
 
 			QuickViewPage.prototype.onAfterRenderingPage = function () {
+
+				var oParent = this.getParent(),
+					bIsInsideQuickView = oParent instanceof Control && oParent.isA('sap.m.QuickView');
+
+				// add tabindex=0, so the content can be scrolled with the keyboard
+				// jQuery Plugin "firstFocusableDomRef"
+				if (bIsInsideQuickView && !this._oPage.$().firstFocusableDomRef()) {
+					this._oPage.$('cont').attr('tabindex', 0);
+				}
+
 				if (this._bItemsChanged) {
 					var mNavContext = this.getNavContext();
 					if (mNavContext) {
@@ -389,6 +413,8 @@ sap.ui.define([
 			 */
 			QuickViewPage.prototype._getPageHeaderContent = function() {
 				var oIcon,
+					oFallbackIcon,
+					sFallbackIcon = this.getFallbackIcon(),
 					oVLayout = new VerticalLayout(),
 					oHLayout = new HorizontalLayout(),
 					sIcon = this.getIcon(),
@@ -402,24 +428,30 @@ sap.ui.define([
 
 				if (sIcon) {
 					if (this.getIcon().indexOf("sap-icon") == 0) {
-						oIcon = new Icon({
-							src: sIcon,
-							decorative: !sTitleUrl,
-							useIconTooltip: false,
-							tooltip: sTitle
-						});
+						oIcon = this._createIcon(sIcon, !sTitleUrl, sTitle);
 					} else {
 						oIcon = new Image({
 							src: sIcon,
 							decorative: false,
 							tooltip: sTitle
-						}).addStyleClass("sapUiIcon");
+						}).addStyleClass("sapUiIcon sapMQuickViewPageImage");
+
+						if (IconPool.isIconURI(sFallbackIcon)) {
+							oFallbackIcon = this._createIcon(sFallbackIcon, !sTitleUrl, sTitle);
+							oFallbackIcon.addStyleClass("sapMQuickViewThumbnail sapMQuickViewPageFallbackIconHidden");
+							oIcon.attachError(this._onImageLoadError.bind(this));
+							oHLayout.addContent(oFallbackIcon);
+						}
 					}
 
 					oIcon.addStyleClass("sapMQuickViewThumbnail");
 
 					if (sTitleUrl) {
 						oIcon.attachPress(this._crossApplicationNavigation(this));
+
+						if (oFallbackIcon) {
+							oFallbackIcon.attachPress(this._crossApplicationNavigation(this));
+						}
 					}
 
 					oHLayout.addContent(oIcon);
@@ -456,6 +488,23 @@ sap.ui.define([
 				oHLayout.addContent(oVLayout);
 
 				return oHLayout;
+			};
+
+			/**
+			 * @param {string} sIconSrc The source of the icon.
+			 * @param {boolean} bDecorative Whether the icon is decorative or not.
+			 * @param {string} sTooltip The tooltip of the icon.
+			 *
+			 * @returns {sap.ui.core.Icon} New Icon instance.
+			 * @private
+			 */
+			QuickViewPage.prototype._createIcon = function (sIconSrc, bDecorative, sTooltip) {
+				return new Icon({
+					src: sIconSrc,
+					decorative: bDecorative,
+					useIconTooltip: false,
+					tooltip: sTooltip
+				});
 			};
 
 			/**
@@ -678,18 +727,48 @@ sap.ui.define([
 
 			QuickViewPage.prototype.setProperty = function (sName, oValue) {
 
-				var mNavContext = this.getNavContext(),
-					bSupressInvalidate = true;
+				var oQuickView = this.getQuickViewBase(),
+					bSuppressInvalidate = false;
 
-				if (mNavContext && mNavContext.quickView && mNavContext.quickView.isA('sap.m.QuickViewCard')) {
-					bSupressInvalidate = false;
+				if (oQuickView && oQuickView.isA("sap.m.QuickView")) {
+					bSuppressInvalidate = true;
 				}
 
-				Control.prototype.setProperty.call(this, sName, oValue, bSupressInvalidate);
+				Control.prototype.setProperty.call(this, sName, oValue, bSuppressInvalidate);
 
 				this._updatePage();
 
 				return this;
+			};
+
+			QuickViewPage.prototype.getQuickViewBase = function () {
+				var oParent = this.getParent();
+				if (oParent && oParent.isA("sap.m.QuickViewBase")) {
+					return oParent;
+				}
+				return null;
+			};
+
+			/**
+			 * Handler for loading failures of the icon.
+			 * In such cases show the fallback icon, if given.
+			 *
+			 * @param {jQuery.Event} oEvent The event object.
+			 * @private
+			 */
+			QuickViewPage.prototype._onImageLoadError = function (oEvent) {
+				var FALLBACK_ICON_INDEX = 0,
+					oFallbackIcon = this._mPageContent.header.getContent()[FALLBACK_ICON_INDEX],
+					oFailedImage = oEvent.getSource(),
+					bRestoreFocus = document.activeElement === oFailedImage.getDomRef();
+
+				oFallbackIcon.removeStyleClass("sapMQuickViewPageFallbackIconHidden");
+				oFailedImage.addStyleClass("sapMQuickViewPageFailedImage");
+
+				// if before hiding the image it was the activeElement move the focus to the fallback icon
+				if (bRestoreFocus) {
+					oFallbackIcon.focus();
+				}
 			};
 
 			return QuickViewPage;

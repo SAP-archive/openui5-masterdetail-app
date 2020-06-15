@@ -1,12 +1,12 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides object sap.ui.core.util.XMLPreprocessor
 sap.ui.define([
-	"jquery.sap.global",
+	"sap/ui/thirdparty/jquery",
 	"sap/base/Log",
 	"sap/base/util/JSTokenizer",
 	"sap/base/util/ObjectPath",
@@ -578,8 +578,11 @@ sap.ui.define([
 		 *   binding contexts relevant for template pre-processing
 		 * @param {object} mSettings.models
 		 *   models relevant for template pre-processing
-		 * @returns {Element}
-		 *   <code>oRootElement</code>
+		 * @returns {Element|Promise}
+		 *   <code>oRootElement</code> or a promise which resolves with <code>oRootElement</code> as
+		 *   soon as processing is done, or is rejected with a corresponding error if processing
+		 *   fails; since 1.57.0, a promise is returned if and only if processing cannot complete
+		 *   synchronously
 		 *
 		 * @private
 		 */
@@ -1191,7 +1194,7 @@ sap.ui.define([
 					sCurrentName = sPreviousName;
 					oWithControl.$mFragmentContexts[sFragmentName] = false;
 					debugFinished(oElement);
-					iNestingLevel--;
+					iNestingLevel -= 1;
 				});
 			}
 
@@ -1267,7 +1270,8 @@ sap.ui.define([
 			 *   any XML DOM element
 			 * @returns {sap.ui.base.SyncPromise}
 			 *   A sync promise which resolves with <code>undefined</code> as soon as all required
-			 *   modules have been loaded
+			 *   modules have been loaded, or is rejected with a corresponding error if module
+			 *   loading fails.
 			 * @throws {Error}
 			 *   If loading fails in sync mode
 			 */
@@ -1278,15 +1282,21 @@ sap.ui.define([
 					aURNs;
 
 				function asyncRequire() {
-					return new SyncPromise(function (resolve) {
-						// Note: currently there is no way to detect failure
-						sap.ui.require(aURNs, function (/*oModule,...*/) {
-							var aModules = arguments;
+					return new SyncPromise(function (resolve, reject) {
+						var aModules = aURNs.map(sap.ui.require);
 
-							Object.keys(mAlias2URN).forEach(function (sAlias, i) {
-								oScope[sAlias] = aModules[i];
-							});
-							resolve();
+						if (aModules.every(Boolean)) {
+							// if all modules have been loaded already, resolve sync
+							// Note: we do not care about edge cases where a module value is falsy
+							resolve(aModules);
+						} else {
+							sap.ui.require(aURNs, function (/*oModule,...*/) {
+								resolve(arguments); // Note: not exactly an Array, but good enough
+							}, reject);
+						}
+					}).then(function (aModules) {
+						Object.keys(mAlias2URN).forEach(function (sAlias, i) {
+							oScope[sAlias] = aModules[i];
 						});
 					});
 				}
@@ -1516,7 +1526,7 @@ sap.ui.define([
 					).then(function () {
 						oIfElement.parentNode.removeChild(oIfElement);
 						debugFinished(oIfElement);
-						iNestingLevel--;
+						iNestingLevel -= 1;
 					});
 				});
 			}
@@ -1604,7 +1614,7 @@ sap.ui.define([
 						return liftChildNodes(oSourceNode, oNewWithControl, oElement);
 					}).then(function () {
 						debugFinished(oElement);
-						iNestingLevel--;
+						iNestingLevel -= 1;
 						oElement.parentNode.removeChild(oElement);
 					});
 				});
@@ -1708,7 +1718,7 @@ sap.ui.define([
 					return liftChildNodes(oElement, oNewWithControl).then(function () {
 						oElement.parentNode.removeChild(oElement);
 						debugFinished(oElement);
-						iNestingLevel--;
+						iNestingLevel -= 1;
 					});
 				});
 			}
@@ -1866,7 +1876,7 @@ sap.ui.define([
 									error("Unexpected return value from visitor for ", oNode);
 								}
 								debugFinished(oNode);
-								iNestingLevel--;
+								iNestingLevel -= 1;
 							});
 					}
 				}

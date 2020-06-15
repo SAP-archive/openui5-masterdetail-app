@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,7 +12,8 @@ sap.ui.define([
 	'sap/ui/base/ManagedObject',
 	'sap/base/util/ObjectPath',
 	"sap/base/security/encodeXML",
-	"sap/ui/thirdparty/jquery"
+	"sap/ui/thirdparty/jquery",
+	"sap/base/util/isEmptyObject"
 ],
 	function(
 		Core,
@@ -22,7 +23,8 @@ sap.ui.define([
 		ManagedObject,
 		ObjectPath,
 		encodeXML,
-		jQuery
+		jQuery,
+		isEmptyObject
 	) {
 	"use strict";
 
@@ -47,7 +49,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.tmpl.Template
 	 * @abstract
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 * @alias sap.ui.core.tmpl.HandlebarsTemplate
 	 * @since 1.15
 	 * @deprecated since 1.56
@@ -382,7 +384,7 @@ sap.ui.define([
 				// add the created children to current control instance either as template
 				// in case of a binding has been found or as aggregation in case of no
 				// binding was found
-				if (!jQuery.isEmptyObject(mChildren)) {
+				if (!isEmptyObject(mChildren)) {
 					mSettings = options.hash;
 					var oAllAggregation = oMetadata.getAllAggregations();
 					for (var sAggregationName in mChildren) {

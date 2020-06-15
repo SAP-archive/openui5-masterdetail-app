@@ -1,16 +1,24 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
 	"sap/ui/core/Control",
-	"sap/f/CardRenderer"
+	"sap/f/CardRenderer",
+	"sap/f/library",
+	"sap/ui/core/InvisibleText",
+	"sap/ui/core/Core"
 ], function (
 	Control,
-	CardRenderer
+	CardRenderer,
+	library,
+	InvisibleText,
+	Core
 ) {
 	"use strict";
+
+	var HeaderPosition = library.cards.HeaderPosition;
 
 	/**
 	 * Constructor for a new <code>Card</code>.
@@ -67,7 +75,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -89,7 +97,13 @@ sap.ui.define([
 				/**
 				 * Defines the height of the card.
 				 */
-				height: { type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: "auto" }
+				height: { type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: "auto" },
+
+				/**
+				 * Defines the position of the Card Header.
+				 * @since 1.65
+				 */
+				headerPosition: { type: "sap.f.cards.HeaderPosition", group: "Appearance", defaultValue: HeaderPosition.Top }
 			},
 			aggregations: {
 
@@ -108,6 +122,26 @@ sap.ui.define([
 	});
 
 	/**
+	 * Initialization hook.
+	 *
+	 *
+	 * @private
+	 */
+	Card.prototype.init = function () {
+		this._oRb  = Core.getLibraryResourceBundle("sap.f");
+		this._ariaText = new InvisibleText({id: this.getId() + "-ariaText"});
+		this._ariaText.setText(this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD"));
+	};
+
+	Card.prototype.exit = function () {
+
+		if (this._ariaText) {
+			this._ariaText.destroy();
+			this._ariaText = null;
+		}
+	};
+
+	/**
 	 * Implements sap.f.ICard interface.
 	 *
 	 * @returns {sap.f.cards.IHeader} The header of the card.
@@ -120,6 +154,17 @@ sap.ui.define([
 	/**
 	 * Implements sap.f.ICard interface.
 	 *
+	 * @returns {sap.f.cards.HeaderPosition} The position of the header of the card.
+	 * @protected
+	 * @since 1.65
+	 */
+	Card.prototype.getCardHeaderPosition = function () {
+		return this.getHeaderPosition();
+	};
+
+	/**
+	 * Implements sap.f.ICard interface.
+	 *
 	 * @returns {sap.ui.core.Control} The content of the card.
 	 * @protected
 	 */
@@ -127,5 +172,14 @@ sap.ui.define([
 		return this.getContent();
 	};
 
+	/**
+	 * Returns the DOM Element that should get the focus.
+	 *
+	 * @return {Element} Returns the DOM Element that should get the focus
+	 * @protected
+	 */
+	Card.prototype.getFocusDomRef = function () {
+		return this.getCardHeader() ? this.getCardHeader().getDomRef() : this.getDomRef() ;
+	};
 	return Card;
 });

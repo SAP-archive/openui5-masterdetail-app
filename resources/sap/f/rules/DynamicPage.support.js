@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define(["sap/ui/support/library"],function(e){"use strict";var t=e.Categories,i=e.Severity,n=e.Audiences;var a={id:"dynamicPageFitContentRule",title:"DynamicPage fitContent property recommendations",minversion:"1.42",audiences:[n.Application],categories:[t.Usage],description:"It is recommended to use DynamicPage fitContent=false, when sap.m.Table is used, "+"or fitContent=true, when sap.ui.table.Table (with visibleRowCountMode=Auto) is used.",resolution:"Set fitContent property according to recommendations.",check:function(e,t,n){var a=sap.ui.require("sap/ui/table/library");n.getElementsByClassName("sap.f.DynamicPage").forEach(function(t){var n=t.getId(),s=t.getAggregation("content");if(s&&s.isA("sap.m.Table")&&t.getFitContent()){e.addIssue({severity:i.Medium,details:"It is recommended to use DynamicPage '"+"' ("+n+") with fitContent=false, when sap.m.Table is used.",context:{id:n}})}if(s&&s.isA("sap.ui.table.Table")&&a&&s.getVisibleRowCountMode()===a.VisibleRowCountMode.Auto&&!t.getFitContent()){e.addIssue({severity:i.Medium,details:"It is recommended to use DynamicPage '"+"' ("+n+") with fitContent=true, when sap.ui.table.Table (with visibleRowCountMode=Auto) is used.",context:{id:n}})}})}};return[a]},true);

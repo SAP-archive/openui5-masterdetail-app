@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -46,7 +46,7 @@ sap.ui.define([
 	 * @extends sap.ui.base.EventProvider
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @public
 	 * @alias sap.ui.core.message.MessageManager
@@ -180,7 +180,7 @@ sap.ui.define([
 
 	/**
 	 * push messages to registered MessageProcessors
-	 * @param {map} mProcessors A Map containing the affected processor ids
+	 * @param {Object<string,sap.ui.core.message.MessageProcessor>} mProcessors A map containing the affected processor IDs
 	 * @private
 	 */
 	MessageManager.prototype._pushMessages = function(mProcessors) {
@@ -195,30 +195,27 @@ sap.ui.define([
 	};
 
 	/**
-	 * sort messages by type 'Error', 'Warning', 'Success', 'Information'
+	 * Sort messages by type as specified in {@link sap.ui.core.message.Message#compare}.
 	 *
-	 * @param {map|sap.ui.core.message.Message[]} vMessages Map or array of Messages to be sorted (in order of severity) by their type property
+	 * @param {Object<string,sap.ui.core.message.Message[]>|sap.ui.core.message.Message[]} vMessages
+	 *   Map or array of Messages to be sorted (in order of severity) by their type property
 	 * @private
 	 */
 	MessageManager.prototype._sortMessages = function(vMessages) {
-		var mSortOrder = { 'Error': 0, 'Warning':1, 'Success':2, 'Information':3 };
-
 		if (Array.isArray(vMessages)) {
 			vMessages = { "ignored": vMessages };
 		}
 
 		jQuery.each(vMessages, function(sTarget, aMessages){
 			if (aMessages.length > 0) {
-				aMessages.sort(function(a, b){
-					return mSortOrder[a.type] - mSortOrder[b.type];
-				});
+				aMessages.sort(Message.compare);
 			}
 		});
 	};
 
 	/**
 	 * update MessageModel
-	 * @param {map} mProcessors A Map containing the affected processor ids
+	 * @param {Object<string,sap.ui.core.message.MessageProcessor>} mProcessors A map containing the affected processor IDs
 	 * @private
 	 */
 	MessageManager.prototype._updateMessageModel = function(mProcessors) {
@@ -406,10 +403,10 @@ sap.ui.define([
 			Log.error(this + " : " + oObject.toString() + " is not an instance of sap.ui.base.ManagedObject");
 			return;
 		}
-		oObject.detachValidationSuccess(this._handleSuccess);
-		oObject.detachValidationError(this._handleError);
-		oObject.detachParseError(this._handleError);
-		oObject.detachFormatError(this._handleError);
+		oObject.detachValidationSuccess(this._handleSuccess, this);
+		oObject.detachValidationError(this._handleError, this);
+		oObject.detachParseError(this._handleError, this);
+		oObject.detachFormatError(this._handleError, this);
 	};
 
 	/**
@@ -436,8 +433,8 @@ sap.ui.define([
 
 	/**
 	 * getAffectedProcessors
-	 * @return {map} mProcessors A Map containing the affected processor ids
 	 * @param {sap.ui.core.message.Message|sap.ui.core.message.Message[]} vMessages Array of sap.ui.core.message.Message or single sap.ui.core.message.Message
+	 * @return {Object<string,sap.ui.core.message.MessageProcessor>} mProcessors A map containing the affected processor IDs
 	 * @private
 	 */
 	MessageManager.prototype.getAffectedProcessors = function(vMessages) {

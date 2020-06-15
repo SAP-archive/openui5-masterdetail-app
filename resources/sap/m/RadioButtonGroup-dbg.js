@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -57,7 +57,7 @@ sap.ui.define([
 			 * @implements sap.ui.core.IFormContent
 			 *
 			 * @author SAP SE
-			 * @version 1.64.0
+			 * @version 1.78.1
 			 *
 			 * @constructor
 			 * @public
@@ -176,21 +176,16 @@ sap.ui.define([
 			RadioButtonGroup.prototype.onBeforeRendering = function() {
 				var aButtons = this.getButtons();
 				var iButtonCount = aButtons.length;
-				var aVisibleRBs = aButtons.filter(function (oRadioButton) {
-						oRadioButton._setEditableParent(this.getEditable());
+				var bEditable = this.getEditable();
 
-						return oRadioButton.getVisible();
-					}, this);
+				aButtons.forEach(function (oRadioButton) {
+					oRadioButton._setEditableParent(bEditable);
+				});
 
 				if (this.getSelectedIndex() > iButtonCount) {
 					Log.warning("Invalid index, set to 0");
 					this.setSelectedIndex(0);
 				}
-
-				aVisibleRBs.forEach(function (oRadioButton, iIndex) {
-					oRadioButton._setPosinset(iIndex);
-					oRadioButton._setSetsize(aVisibleRBs.length);
-				}, this);
 			};
 
 			/**

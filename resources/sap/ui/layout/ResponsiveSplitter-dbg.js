@@ -1,6 +1,6 @@
 /*!
 * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
 */
 
@@ -14,8 +14,8 @@ sap.ui.define([
 	"./SplitPane",
 	"sap/ui/core/delegate/ItemNavigation",
 	"sap/ui/core/ResizeHandler",
-	"./ResponsiveSplitterRenderer",
-	"sap/ui/thirdparty/jquery"
+	"sap/ui/core/RenderManager",
+	"./ResponsiveSplitterRenderer"
 ], function(
 	library,
 	Control,
@@ -25,8 +25,8 @@ sap.ui.define([
 	SplitPane,
 	ItemNavigation,
 	ResizeHandler,
-	ResponsiveSplitterRenderer,
-	jQuery
+	RenderManager,
+	ResponsiveSplitterRenderer
 ) {
 	"use strict";
 
@@ -58,7 +58,7 @@ sap.ui.define([
 	 * <h3>Responsive Behavior</h3>
 	 * <ul>
 	 * <li>As soon as views are in the off-canvas mode, the pagination bar at the bottom of the application allows the user to switch between them.</li>
-	 * <li>On touch-enabled devices, the splitters show explicit handles with larger touch areas.</li>
+	 * <li>On touch-enabled devices the bars of the splitter can be moved by touching the grip.</li>
 	 * <li>Double-clicking on a splitter will collapse or expand it back to its original position.</li>
 	 * </ul>
 	 *
@@ -66,7 +66,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -129,13 +129,16 @@ sap.ui.define([
 
 	ResponsiveSplitter.prototype.onBeforeRendering = function () {
 		var oRootContainer = this.getRootPaneContainer();
+
 		if (oRootContainer) {
-			oRootContainer._oSplitter.addEventDelegate({
+			this._oSplitterDelegate = this._oSplitterDelegate || {
 				onAfterRendering: function () {
 					this._setSplitterBarsTooltips(oRootContainer._oSplitter);
 					this._updatePaginatorButtonsTooltips();
 				}
-			}, this);
+			};
+
+			oRootContainer._oSplitter.addEventDelegate(this._oSplitterDelegate, this);
 
 			this._createWidthIntervals();
 			this._createPages();
@@ -156,6 +159,7 @@ sap.ui.define([
 	 */
 	ResponsiveSplitter.prototype.exit = function () {
 		this._detachResizeHandler();
+		this._oSplitterDelegate = null;
 	};
 
 	/**
@@ -227,47 +231,6 @@ sap.ui.define([
 			});
 		}
 	};
-
-	/**
-	 * Handles tab / space / enter of Paginator's button
-	 * @returns {void}
-	 * @private
-	 */
-	ResponsiveSplitter.prototype._handlePaginatorButtonTap = function (oEvent) {
-		var iOldFocusedIndex = this._oItemNavigation.getFocusedIndex();
-		if (jQuery(oEvent.target).hasClass("sapUiResponsiveSplitterPaginatorButton")) {
-			jQuery(oEvent.target).attr("tabindex", 0);
-			var iPageIndex = parseInt(jQuery(oEvent.target).attr("page-index"));
-			this.getAggregation("_pages").forEach(function (page) {
-				page.setVisible(false);
-			});
-
-			if (iPageIndex !== 0) {
-				var aDemandPanes = this._currentInterval.aPages.filter(function(page) { return page.demandPane; });
-
-				iPageIndex = this._currentInterval.aPages.indexOf(aDemandPanes[iPageIndex - 1]);
-			}
-
-			this._activatePage(iPageIndex, parseInt(jQuery(oEvent.target).attr("page-index")));
-		}
-
-		if (jQuery(oEvent.target).hasClass("sapUiResponsiveSplitterPaginatorNavButton")) {
-			if (jQuery(oEvent.target).hasClass("sapUiResponsiveSplitterPaginatorButtonForward")) {
-				this._handlePaginatorForward(oEvent);
-			} else {
-				this._handlePaginatorBack(oEvent);
-			}
-			this._setItemNavigation();
-			this._oItemNavigation.focusItem(iOldFocusedIndex);
-		}
-		this._setItemNavigation();
-	};
-
-	ResponsiveSplitter.prototype.ontap = ResponsiveSplitter.prototype._handlePaginatorButtonTap;
-
-	ResponsiveSplitter.prototype.onsapenter = ResponsiveSplitter.prototype._handlePaginatorButtonTap;
-
-	ResponsiveSplitter.prototype.onsapspace = ResponsiveSplitter.prototype._handlePaginatorButtonTap;
 
 	ResponsiveSplitter.prototype.onsapright = function (oEvent) {
 		this._handleArrowNavigation(6, "Forward", oEvent);
@@ -367,7 +330,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * The WidthIntervals is a sorted array in ascdending order, containing all breakpoints for the splitter
+	 * The WidthIntervals is a sorted array in ascending order, containing all breakpoints for the splitter
 	 * The interval is defined as 2 sequent array elements.
 	 * This array includes Number.MIN_VALUE and Number.MAX_VALUE as -Infinity and +Infinity,
 	 * and covers the whole numeric axis
@@ -402,11 +365,24 @@ sap.ui.define([
 	 * @private
 	 */
 	ResponsiveSplitter.prototype._createPages = function () {
-		var iMaxPageCount = this._getMaxPageCount();
-		this.destroyAggregation("_pages", true);
-		for (var i = 0; i < iMaxPageCount; i++) {
-			var oPage = new ResponsiveSplitterPage();
-			this.addAggregation("_pages", oPage, true);
+		var iMaxPageCount = this._getMaxPageCount(),
+			aPages = this.getAggregation("_pages") || [],
+			i = aPages.length;
+
+		if (i < iMaxPageCount) { // we need to add more pages
+			while (i < iMaxPageCount) {
+				i++;
+				var oPage = new ResponsiveSplitterPage();
+				this.addAggregation("_pages", oPage, true);
+			}
+		} else if (i > iMaxPageCount) { // we need to destroy unneeded pages
+			while (i > iMaxPageCount) {
+				i--;
+				if (aPages[i].getDomRef()) {
+					RenderManager.preserveContent(aPages[i].getDomRef());
+				}
+				aPages[i].destroy();
+			}
 		}
 	};
 
@@ -607,7 +583,7 @@ sap.ui.define([
 	 */
 	ResponsiveSplitter.prototype._clearContent = function () {
 		this._aPaneContainers.forEach(function(oPaneContainer) {
-			oPaneContainer._oSplitter.removeAllAssociatedContentArea();
+			oPaneContainer._oSplitter.removeAllAssociatedContentAreas();
 		});
 
 		this._aPaneContainers = [];
@@ -633,10 +609,10 @@ sap.ui.define([
 			aTargetClassList = oEvent.target.classList,
 			iPageIndex;
 
-		if (aTargetClassList.contains("sapUiResponsiveSplitterPaginatorButton")) {
+		if (aTargetClassList && aTargetClassList.contains("sapUiResponsiveSplitterPaginatorButton")) {
 			iPageIndex = oTarget.getAttribute("page-index");
 			this._activatePage(iPageIndex);
-		} else if (aTargetClassList.contains("sapUiResponsiveSplitterPaginatorNavButton")) {
+		} else if (aTargetClassList && aTargetClassList.contains("sapUiResponsiveSplitterPaginatorNavButton")) {
 			if (aTargetClassList.contains("sapUiResponsiveSplitterPaginatorButtonForward")) {
 				this._handlePaginatorForward(oEvent);
 			} else {

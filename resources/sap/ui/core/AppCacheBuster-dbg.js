@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -495,7 +495,8 @@ sap.ui.define([
 				var mIndex = oSession.index;
 
 				// modify the incoming url if found in the appCacheBuster file
-				if (mIndex && sUrl) {
+				// AND: ignore URLs starting with a hash from being normalized and converted
+				if (mIndex && sUrl && !/^#/.test(sUrl)) {
 
 					// normalize the URL
 					// local resources are registered with "./" => we remove the leading "./"!

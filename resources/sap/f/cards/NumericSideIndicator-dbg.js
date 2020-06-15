@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -20,12 +20,12 @@ sap.ui.define([
 		 * @param {object} [mSettings] Initial settings for the new control
 		 *
 		 * @class
-		 * A control used by <code>sap.f.cards.NumericHeader</code> to hold a set of side indicator attributes.
+		 * Holds a set of side indicator attributes used in the {@link sap.f.cards.NumericHeader} control.
 		 *
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.64.0
+		 * @version 1.78.1
 		 *
 		 * @constructor
 		 * @public
@@ -35,6 +35,7 @@ sap.ui.define([
 		 */
 		var NumericSideIndicator = Control.extend("sap.f.cards.NumericSideIndicator", {
 			metadata: {
+				library: "sap.f",
 				properties: {
 
 					/**

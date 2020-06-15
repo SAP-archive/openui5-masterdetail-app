@@ -1,32 +1,30 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
+	"sap/m/library",
 	"sap/f/library",
 	"sap/ui/core/Control",
 	"sap/m/Text",
 	"sap/f/Avatar",
 	"sap/ui/Device",
-	'sap/f/cards/Data',
-	'sap/ui/model/json/JSONModel',
 	"sap/f/cards/HeaderRenderer",
-	"sap/f/cards/ActionEnablement"
+	"sap/ui/core/Core"
 ], function (
+	mLibrary,
 	library,
 	Control,
 	Text,
 	Avatar,
 	Device,
-	Data,
-	JSONModel,
 	HeaderRenderer,
-	ActionEnablement
+	Core
 ) {
 	"use strict";
 
-	var AvatarShape = library.AvatarShape;
+	var AvatarShape = mLibrary.AvatarShape;
 
 	/**
 	 * Constructor for a new <code>Header</code>.
@@ -35,21 +33,21 @@ sap.ui.define([
 	 * @param {object} [mSettings] Initial settings for the new control
 	 *
 	 * @class
-	 * A control used to group a set of card attributes in a header.
+	 * Displays general information in the header of the {@link sap.f.Card}.
 	 *
-	 * <h3>Overview</h3>
-	 * The <code>Header</code> displays general information about the card.
-	 * You can configure the title, subtitle, status text and icon, using properties.
+	 * You can configure the title, subtitle, status text and icon, using the provided properties.
 	 *
-	 * <h3>Usage</h3>
-	 * You should always set a title.
-	 * To show a KPI or any numeric information, use {@link sap.f.cards.NumericHeader NumericHeader} instead.
+	 * <b>Notes:</b>
+	 * <ul>
+	 * <li>You should always set a title.</li>
+	 * <li>To show a KPI or any numeric information, use {@link sap.f.cards.NumericHeader} instead.</li>
+	 * <ul>
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.f.cards.IHeader
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -59,6 +57,7 @@ sap.ui.define([
 	 */
 	var Header = Control.extend("sap.f.cards.Header", {
 		metadata: {
+			library: "sap.f",
 			interfaces: ["sap.f.cards.IHeader"],
 			properties: {
 
@@ -80,7 +79,7 @@ sap.ui.define([
 				/**
 				 * Defines the shape of the icon.
 				 */
-				iconDisplayShape: { type: "sap.f.AvatarShape", defaultValue: AvatarShape.Circle },
+				iconDisplayShape: { type: "sap.m.AvatarShape", defaultValue: AvatarShape.Circle },
 
 				/**
 				 * Defines the icon source.
@@ -93,6 +92,13 @@ sap.ui.define([
 				iconInitials: { type: "string", defaultValue: "" }
 			},
 			aggregations: {
+
+				/**
+				 * Defines the toolbar.
+				 * @experimental Since 1.75
+				 * @since 1.75
+				 */
+				toolbar: { type: "sap.ui.core.Control", multiple: false },
 
 				/**
 				 * Defines the inner title control.
@@ -116,20 +122,21 @@ sap.ui.define([
 				 */
 				press: {}
 			}
-		},
-		constructor: function (vId, mSettings) {
-			if (typeof vId !== "string") {
-				mSettings = vId;
-			}
-
-			if (mSettings && mSettings.serviceManager) {
-				this._oServiceManager = mSettings.serviceManager;
-				delete mSettings.serviceManager;
-			}
-
-			Control.apply(this, arguments);
 		}
 	});
+
+	/**
+	 * Initialization hook.
+	 * @private
+	 */
+	Header.prototype.init = function () {
+		this._oRb = Core.getLibraryResourceBundle("sap.f");
+		this.data("sap-ui-fastnavgroup", "true", true); // Define group for F6 handling
+	};
+
+	Header.prototype.exit = function () {
+		this._oRb = null;
+	};
 
 	/**
 	 * Lazily creates a title and returns it.
@@ -187,6 +194,8 @@ sap.ui.define([
 		this._getAvatar().setDisplayShape(this.getIconDisplayShape());
 		this._getAvatar().setSrc(this.getIconSrc());
 		this._getAvatar().setInitials(this.getIconInitials());
+
+		this._setAccessibilityAttributes();
 	};
 
 	/**
@@ -198,16 +207,17 @@ sap.ui.define([
 	Header.prototype._getHeaderAccessibility = function () {
 		var sTitleId = this._getTitle() ? this._getTitle().getId() : "",
 			sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
+			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
 			sAvatarId = this._getAvatar() ? this._getAvatar().getId() : "";
 
-		return sTitleId + " " + sSubtitleId + " " + sAvatarId;
+		return sTitleId + " " + sSubtitleId + " " + sStatusTextId + " " + sAvatarId;
 	};
 
 	/**
 	 * Called after the control is rendered.
 	 */
 	Header.prototype.onAfterRendering = function() {
-		//TODO performance will be afected, but text should clamp on IE also - TBD
+		//TODO performance will be affected, but text should clamp on IE also - TBD
 		if (Device.browser.msie) {
 			if (this.getTitle()) {
 				this._getTitle().clampText();
@@ -221,71 +231,64 @@ sap.ui.define([
 	/**
 	 * Fires the <code>sap.f.cards.Header</code> press event.
 	 */
-	Header.prototype.ontap = function () {
+	Header.prototype.ontap = function (oEvent) {
+		var srcControl = oEvent.srcControl;
+		if (srcControl && srcControl.getId().indexOf('overflowButton') > -1) { // better way?
+			return;
+		}
+
 		this.firePress();
 	};
 
 	/**
-	 * Creates an instance of Header with the given options.
+	 * Fires the <code>sap.f.cards.Header</code> press event.
+	 */
+	Header.prototype.onsapselect = function () {
+		this.firePress();
+	};
+
+	/**
+	 * Sets accessibility to the header to the header.
 	 *
 	 * @private
-	 * @static
-	 * @param {Object} mConfiguration A map containing the header configuration options
-	 * @param {Object} oServiceManager A service manager instance to handle services
-	 * @return {sap.f.cards.Header} The created Header
 	 */
-	Header.create = function(mConfiguration, oServiceManager) {
-		var mSettings = {
-			title: mConfiguration.title,
-			subtitle: mConfiguration.subTitle
-		};
-
-		if (mConfiguration.icon) {
-			mSettings.iconSrc = mConfiguration.icon.src;
-			mSettings.iconDisplayShape = mConfiguration.icon.shape;
-			mSettings.iconInitials = mConfiguration.icon.text;
+	Header.prototype._setAccessibilityAttributes = function () {
+		if (this.hasListeners("press")) {
+			this._sAriaRole = 'button';
+			this._sAriaHeadingLevel = undefined;
+			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_INTERACTIVE_CARD_HEADER");
+		} else {
+			this._sAriaRole = 'heading';
+			this._sAriaHeadingLevel = '3';
+			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER");
 		}
-
-		if (mConfiguration.status) {
-			mSettings.statusText = mConfiguration.status.text;
-		}
-
-		if (oServiceManager) {
-			mSettings.serviceManager = oServiceManager;
-		}
-
-		var oHeader = new Header(mSettings);
-
-		return oHeader;
 	};
 
-	Header._handleData = function (oHeader, oData) {
-		var oModel = new JSONModel();
-
-		var oRequest = oData.request;
-		if (oData.json && !oRequest) {
-			oModel.setData(oData.json);
-		}
-
-		if (oRequest) {
-			Data.fetch(oRequest).then(function (data) {
-				oModel.setData(data);
-				oModel.refresh();
-				oHeader.fireEvent("_updated");
-			}).catch(function (oError) {
-				// TODO: Handle errors. Maybe add error message
-			});
-		}
-
-		oHeader.setModel(oModel)
-			.bindElement({
-				path: oData.path || "/"
-			});
-
-		// TODO Check if model is destroyed when header is destroyed
+	Header.prototype.isLoading = function () {
+		return false;
 	};
 
-	ActionEnablement.enrich(Header);
+	Header.prototype.attachPress = function () {
+		var aMyArgs = Array.prototype.slice.apply(arguments);
+		aMyArgs.unshift("press");
+
+		Control.prototype.attachEvent.apply(this, aMyArgs);
+
+		this.invalidate();
+
+		return this;
+	};
+
+	Header.prototype.detachPress = function() {
+		var aMyArgs = Array.prototype.slice.apply(arguments);
+		aMyArgs.unshift("press");
+
+		Control.prototype.detachEvent.apply(this, aMyArgs);
+
+		this.invalidate();
+
+		return this;
+	};
 
 	return Header;
 });

@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -18,7 +18,7 @@ sap.ui.define(['sap/f/semantic/SemanticButton'], function(SemanticButton) {
 	* @extends sap.f.semantic.SemanticButton
 	*
 	* @author SAP SE
-	* @version 1.64.0
+	* @version 1.78.1
 	*
 	* @constructor
 	* @public
@@ -29,6 +29,7 @@ sap.ui.define(['sap/f/semantic/SemanticButton'], function(SemanticButton) {
 	var MainAction = SemanticButton.extend("sap.f.semantic.MainAction", /** @lends sap.f.semantic.MainAction.prototype */ {
 		metadata: {
 			library: "sap.f",
+			"abstract": true,
 			properties: {
 
 				/**

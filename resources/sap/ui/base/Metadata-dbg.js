@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -19,15 +19,15 @@ sap.ui.define([
 	/**
 	 * Creates a new metadata object from the given static infos.
 	 *
-	 * Note: throughout this class documentation, the described subclass of Object
+	 * <b>Note:</b> Throughout this class documentation, the described subclass of Object
 	 * is referenced as <i>the described class</i>.
 	 *
-	 * @param {string} sClassName fully qualified name of the described class
-	 * @param {object} oClassInfo info to construct the class and its metadata from
+	 * @param {string} sClassName Fully qualified name of the described class
+	 * @param {object} oClassInfo Info to construct the class and its metadata from
 	 *
 	 * @class Metadata for a class.
 	 * @author Frank Weigel
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 * @since 0.8.6
 	 * @public
 	 * @alias sap.ui.base.Metadata

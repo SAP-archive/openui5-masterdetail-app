@@ -1,6 +1,6 @@
 /*
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -41,11 +41,11 @@ sap.ui
 			 * @param {object} [mSettings] optional map/JSON-object with initial property values, aggregated objects etc. for the new object
 			 * @param {object} [oScope] scope object for resolving string based type and formatter references in bindings
 			 *
-			 * @class Class to mock http requests made to a remote server
+			 * @class Class to mock http requests made to a remote server.
 			 * @extends sap.ui.base.ManagedObject
 			 * @abstract
 			 * @author SAP SE
-			 * @version 1.64.0
+			 * @version 1.78.1
 			 * @public
 			 * @alias sap.ui.core.util.MockServer
 			 */
@@ -624,9 +624,7 @@ sap.ui
 					}
 
 					var aExp1Parts = rExp1.exec(sODataQueryValue);
-					// remove brackets around values
 					if (aExp1Parts === null) {
-						sODataQueryValue = sODataQueryValue.replace(/[\(\)]/g, "");
 						return this._getOdataQueryFilter(aDataSet, this._trim(sODataQueryValue));
 					}
 					var sExpression = aExp1Parts[1];
@@ -711,6 +709,10 @@ sap.ui
 						aODataFilterValues = rStringFilterExpr.exec(sODataQueryValue);
 						sValue = that._trim(aODataFilterValues[iValueIndex + 2]);
 						sPath = that._trim(aODataFilterValues[iPathIndex + 2]);
+					}
+					// remove brackets around value (if value is present)
+					if (/^\(.+\)$/.test(sValue)) {
+						sValue = sValue.replace(/^\(|\)$/g, "");
 					}
 					//TODO do the check using the property type and not value
 					// remove number suffixes from EDM types decimal, Int64, Single
@@ -3611,7 +3613,7 @@ sap.ui
 			/**
 			 * Cleans up the resources associated with this object and all its aggregated children.
 			 *
-			 * After an object has been destroyed, it can no longer be used in!
+			 * After an object has been destroyed, it can no longer be used!
 			 *
 			 * Applications should call this method if they don't need the object any longer.
 			 *

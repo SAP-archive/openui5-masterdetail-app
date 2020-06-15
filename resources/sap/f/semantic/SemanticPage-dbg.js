@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -44,7 +44,7 @@ sap.ui.define([
 	* @param {object} [mSettings] Initial settings for the new control
 	*
 	* @class
-	* An enhanced {@link sap.f.DynamicPage}, that contains controls with semantic-specific meaning.
+	* Provides enhanced functionality by internally aggregating {@link sap.f.DynamicPage} and contains controls with semantic-specific meaning.
 	*
 	* <h3>Overview</h3>
 	*
@@ -71,7 +71,7 @@ sap.ui.define([
 	* 	<li><code>printAction</code></li>
 	* 	<li>Any <code>customShareActions</code></li></ul></li>
 	* <li>The navigation semantic actions - <code>fullScreenAction</code>, <code>exitFullScreenAction</code>,
-	* and <code>closeAction</li></code></ul>
+	* and <code>closeAction</code></li></ul>
 	*
 	* The actions in the <code>SemanticPage</code> footer are positioned either on its left or right area and have the following predefined order:
 	*
@@ -97,7 +97,7 @@ sap.ui.define([
 	* @extends sap.ui.core.Control
 	*
 	* @author SAP SE
-	* @version 1.64.0
+	* @version 1.78.1
 	*
 	* @constructor
 	* @public
@@ -194,7 +194,19 @@ sap.ui.define([
 				*
 				* @since 1.58
 				*/
-				titleAreaShrinkRatio : {type: "sap.f.DynamicPageTitleShrinkRatio", group: "Appearance", defaultValue: "1:1.6:1.6"}
+				titleAreaShrinkRatio : {type: "sap.f.DynamicPageTitleShrinkRatio", group: "Appearance", defaultValue: "1:1.6:1.6"},
+
+				/**
+				 * Optimizes <code>SemanticPage</code> responsiveness on small screens and behavior
+				 * when expanding/collapsing the <code>SemanticPageHeader</code>.
+				 *
+				 * <b>Note:</b> It is recommended to use this property when displaying content
+				 * of adaptive controls that stretch to fill the available space. Such controls may be
+				 * {@link sap.ui.table.Table} and {@link sap.ui.table.AnalyticalTable} depending on their settings.
+				 *
+				 * @since 1.73
+				 */
+				fitContent: {type: "boolean", group: "Behavior", defaultValue: false}
 
 			},
 			defaultAggregation : "content",
@@ -420,9 +432,14 @@ sap.ui.define([
 				* The <code>titleCustomTextActions</code> are placed in the <code>TextActions</code> area of the
 				* <code>SemanticPage</code> title, right before the semantic text action.
 				*
-				* <b>Note:</b> If the <code>titleSnappedOnMobile</code> aggregation is set, its
+				* <b>Notes:</b>
+				* <ul>
+				* <li>If the <code>titleSnappedOnMobile</code> aggregation is set, its
 				* content overrides this aggregation when the control is viewed on a phone mobile
-				* device and the <code>SemanticPage</code> header is in its collapsed (snapped) state.
+				* device and the <code>SemanticPage</code> header is in its collapsed (snapped) state.</li>
+				* <li>Buttons that are part of this aggregation will always have their <code>type</code>
+				* property set to <code>Transparent</code> by design.</li>
+				* </ul>
 				*/
 				titleCustomTextActions: {type: "sap.m.Button", multiple: true},
 
@@ -677,6 +694,11 @@ sap.ui.define([
 		return this.setProperty("titleAreaShrinkRatio", oDynamicPageTitle.getAreaShrinkRatio(), true);
 	};
 
+	SemanticPage.prototype.setFitContent = function (bFitContent) {
+		this._getPage().setFitContent(bFitContent);
+		return this.setProperty("fitContent", bFitContent, true);
+	};
+
 	SemanticPage.prototype.addStyleClass = function (sClass, bSuppressRerendering) {
 		var oDynamicPage = this.getAggregation("_dynamicPage");
 
@@ -771,9 +793,11 @@ sap.ui.define([
 	*/
 	["getContent", "setContent", "destroyContent"]
 		.forEach(function (sMethod) {
+			var bChainable = /^(set|destroy)/.test(sMethod);
 			SemanticPage.prototype[sMethod] = function (oControl) {
 				var oDynamicPage = this._getPage();
-				return oDynamicPage[sMethod].apply(oDynamicPage, arguments);
+				var vResult = oDynamicPage[sMethod].apply(oDynamicPage, arguments);
+				return bChainable ? this : vResult;
 			};
 		}, this);
 
@@ -793,11 +817,14 @@ sap.ui.define([
 		"destroyTitleCustomTextActions",
 		"getTitleCustomTextActions"
 	].forEach(function (sMethod) {
+		var bChainable = /^(add|insert|destroy)/.test(sMethod);
 		SemanticPage.prototype[sMethod] = function () {
 			var oSemanticTitle = this._getSemanticTitle(),
-				sSemanticTitleMethod = sMethod.replace(/TitleCustomTextAction?/, "CustomTextAction");
+				sSemanticTitleMethod = sMethod.replace(/TitleCustomTextAction?/, "CustomTextAction"),
+				vResult;
 
-			return oSemanticTitle[sSemanticTitleMethod].apply(oSemanticTitle, arguments);
+			vResult = oSemanticTitle[sSemanticTitleMethod].apply(oSemanticTitle, arguments);
+			return bChainable ? this : vResult;
 		};
 	}, this);
 
@@ -817,17 +844,20 @@ sap.ui.define([
 		"destroyTitleCustomIconActions",
 		"getTitleCustomIconActions"
 	].forEach(function (sMethod) {
+		var bChainable = /^(add|insert|destroy)/.test(sMethod);
 		SemanticPage.prototype[sMethod] = function () {
 			var oSemanticTitle = this._getSemanticTitle(),
-				sSemanticTitleMethod = sMethod.replace(/TitleCustomIconAction?/, "CustomIconAction");
+				sSemanticTitleMethod = sMethod.replace(/TitleCustomIconAction?/, "CustomIconAction"),
+				vResult;
 
-			return oSemanticTitle[sSemanticTitleMethod].apply(oSemanticTitle, arguments);
+			vResult = oSemanticTitle[sSemanticTitleMethod].apply(oSemanticTitle, arguments);
+			return bChainable ? this : vResult;
 		};
 	}, this);
 
 
 	/**
-	* Proxies the<code>sap.f.semantic.SemanticPage</code> <code>footerCustomActions</code> aggregation methods
+	* Proxies the <code>sap.f.semantic.SemanticPage</code> <code>footerCustomActions</code> aggregation methods
 	* to <code>OverflowToolbar</code>, using the <code>sap.f.semantic.SemanticFooter</code> wrapper class.
 	*
 	* @override
@@ -841,11 +871,14 @@ sap.ui.define([
 		"destroyFooterCustomActions",
 		"getFooterCustomActions"
 	].forEach(function (sMethod) {
+		var bChainable = /^(add|insert|destroy)/.test(sMethod);
 		SemanticPage.prototype[sMethod] = function () {
 			var oSemanticFooter = this._getSemanticFooter(),
-				sSemanticFooterMethod = sMethod.replace(/FooterCustomAction?/, "CustomAction");
+				sSemanticFooterMethod = sMethod.replace(/FooterCustomAction?/, "CustomAction"),
+				vResult;
 
-			return oSemanticFooter[sSemanticFooterMethod].apply(oSemanticFooter, arguments);
+			vResult = oSemanticFooter[sSemanticFooterMethod].apply(oSemanticFooter, arguments);
+			return bChainable ? this : vResult;
 		};
 	}, this);
 
@@ -864,16 +897,14 @@ sap.ui.define([
 		"destroyCustomShareActions",
 		"getCustomShareActions"
 	].forEach(function (sMethod) {
+		var bChainable = /^(add|insert|destroy)/.test(sMethod);
 		SemanticPage.prototype[sMethod] = function () {
 			var oSemanticShareMenu = this._getShareMenu(),
 				sSemanticShareMenuMethod = sMethod.replace(/CustomShareAction?/, "CustomAction"),
-				aCustomActionMethods = ["addCustomAction", "insertCustomAction"];
+				vResult;
 
-				if (aCustomActionMethods.indexOf(sSemanticShareMenuMethod) > -1) {
-					this.addDependent(arguments[0]);
-				}
-
-			return oSemanticShareMenu[sSemanticShareMenuMethod].apply(oSemanticShareMenu, arguments);
+			vResult = oSemanticShareMenu[sSemanticShareMenuMethod].apply(oSemanticShareMenu, arguments);
+			return bChainable ? this : vResult;
 		};
 	}, this);
 
@@ -1067,7 +1098,10 @@ sap.ui.define([
 	SemanticPage.prototype._getShareMenu = function() {
 		if (!this._oShareMenu) {
 			this._oShareMenu = new SemanticShareMenu(this._getActionSheet(), this);
+			// Ensure bindings on top level control propagate properly
+			this.addDependent(this._oShareMenu._oContainer);
 		}
+
 		return this._oShareMenu;
 	};
 

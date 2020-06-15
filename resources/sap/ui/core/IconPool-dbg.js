@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -313,6 +313,7 @@ sap.ui.define([
 				'step': 0xe0fe,
 				'sonography': 0xe0ff,
 				'soccor': 0xe100,
+				'soccer': 0xe100,
 				'physical-activity': 0xe101,
 				'pharmacy': 0xe102,
 				'official-service': 0xe103,
@@ -707,7 +708,8 @@ sap.ui.define([
 				'collapse-all': 0xe284,
 				'combine': 0xe285,
 				'split': 0xe286,
-				'megamenu': 0xe287
+				'megamenu': 0xe287,
+				"feedback": 0xe288
 			}
 		};
 
@@ -789,7 +791,7 @@ sap.ui.define([
 		 * @param {string|string[]} iconInfo.content is the special hexadecimal code without the prefix, for example "e000" or several of them
 		 * @param {boolean} [iconInfo.overWrite=false] indicates if already registered icons should be overwritten when the same name and collection are given. The built in icons can never be overwritten.
 		 * @param {boolean} [iconInfo.suppressMirroring=false] indicates whether this icon should NOT be mirrored in RTL (right to left) mode.
-		 * @param {jQuery.sap.util.ResourceBundle} [iconInfo.resourceBundle] ResourceBundle to be used for translation. Key format: "Icon.<iconName>".
+		 * @param {module:sap/base/i18n/ResourceBundle} [iconInfo.resourceBundle] ResourceBundle to be used for translation. Key format: "Icon.<iconName>".
 		 *
 		 * @return {object} the info object of the registered icon which has the name, collection, uri, fontFamily, content and suppressMirroring properties.
 		 * @static

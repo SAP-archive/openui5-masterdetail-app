@@ -1,6 +1,6 @@
 /*
  * ! OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -62,7 +62,7 @@ sap.ui.define([
 	 * @extends sap.m.QuickViewBase
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @constructor
 	 * @public
@@ -262,6 +262,14 @@ sap.ui.define([
 			this._clearContainerHeight();
 			this._initPages();
 
+			var oPage = this._oNavContainer.getCurrentPage();
+			if (oPage) {
+				var oHeader = oPage.getCustomHeader();
+				if (oHeader) {
+					this._oPopover.addAriaDescribedBy(oHeader.getId());
+				}
+			}
+
 			// add a close button on phone devices when there are no pages
 			var aPages = this.getAggregation("pages");
 			if (!aPages && Device.system.phone) {
@@ -440,6 +448,17 @@ sap.ui.define([
 		return this;
 	};
 
+	/**
+	 * Closes the QuickView.
+	 * @returns {sap.m.QuickView} Pointer to the control instance for chaining
+	 * @public
+	 */
+	QuickView.prototype.close = function() {
+		this._oPopover.close();
+
+		return this;
+	};
+
 	QuickView.prototype.getDomRef = function (sSuffix) {
 		return this._oPopover && this._oPopover.getAggregation("_popup").getDomRef(sSuffix);
 	};
@@ -460,13 +479,17 @@ sap.ui.define([
 		"removeAggregation", "removeAllAggregation", "destroyAggregation"].forEach(function (sFuncName) {
 			QuickView.prototype["_" + sFuncName + "Old"] = QuickView.prototype[sFuncName];
 			QuickView.prototype[sFuncName] = function () {
-				var newArgs,
-					result;
+				var newArgs = [],
+					result,
+					i;
 
-				if (["removeAggregation", "removeAllAggregation", "destroyAggregation"].indexOf(sFuncName) !== -1) {
-					newArgs = [arguments[0], true];
-				} else {
-					newArgs = [arguments[0], arguments[1], true];
+				for (i = 0; i < arguments.length; i++) {
+					newArgs.push(arguments[i]);
+				}
+
+				// suppress invalidation
+				if (["setModel", "bindAggregation"].indexOf(sFuncName) === -1) {
+					newArgs.push(true);
 				}
 
 				result = QuickView.prototype["_" + sFuncName + "Old"].apply(this, newArgs);
@@ -475,7 +498,7 @@ sap.ui.define([
 				this._bItemsChanged = true;
 
 				if (this._oPopover) {
-					if (arguments[0] != "pages") {
+					if (arguments[0] !== "pages") {
 						this._oPopover[sFuncName].apply(this._oPopover, arguments);
 					}
 

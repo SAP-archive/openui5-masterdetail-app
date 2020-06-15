@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -42,7 +42,7 @@ sap.ui.define([
 		 * The main colors of the sets can be changed in Theme Designer. To change the background of a particular cell, set <code>backgroundColorSet</code> (main color)
 		 * and <code>backgroundColorShade</code> (shade).
 		 *
-		 * <b>Note:</b> Usage of disabled, emphasized or subtle links as titles is not recommended. Dark background designs, for example Accent, are not fully supported with regards to Аccessibility when used with links as titles.
+		 * <b>Note:</b> Usage of disabled, emphasized or subtle links as titles is not recommended. Dark background designs, for example Accent, are not fully supported with regards to Accessibility when used with links as titles.
 		 *
 		 * <h3>Usage</h3>
 		 * <h4>When to use</h4>
@@ -62,7 +62,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.64.0
+		 * @version 1.78.1
 		 *
 		 * @constructor
 		 * @public

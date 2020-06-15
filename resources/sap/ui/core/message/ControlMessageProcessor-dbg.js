@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -29,7 +29,7 @@ sap.ui.define(['sap/ui/core/message/MessageProcessor', "sap/ui/thirdparty/jquery
 	 * @extends sap.ui.core.message.MessageProcessor
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @public
 	 * @alias sap.ui.core.message.ControlMessageProcessor
@@ -51,7 +51,7 @@ sap.ui.define(['sap/ui/core/message/MessageProcessor', "sap/ui/thirdparty/jquery
 
 	/**
 	 * Set Messages to check
-	 * @param {map}
+	 * @param {Object<string,array>}
 	 *         vMessages map of messages: {'target': [array of messages],...}
 	 * @protected
 	 */

@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], function(Matcher, capitalize) {
@@ -9,18 +9,30 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 	/**
 	 * @class
 	 * The I18NText matcher checks if a control property has the same value as a text from an I18N file.
-	 * The matcher does automatically
+	 *
+	 * The matcher automatically:
 	 * <ul>
 	 *     <li>
-	 *         retrieve the text from the assigned 'i18n' model (name can be changed)
+	 *         retrieves the text from the assigned 'i18n' model (name can be changed)
 	 *     </li>
 	 *     <li>
-	 *         check that the I18N key does actually exist in the file
+	 *         checks that the I18N key does actually exist in the file
 	 *     </li>
 	 *     <li>
-	 *         check if asynchronously loaded I18N have actually been loaded
+	 *         checks if asynchronously loaded I18N have actually been loaded
 	 *     </li>
 	 * </ul>
+	 *
+	 * As of version 1.72, it is available as a declarative matcher with the following syntax:
+	 * <code><pre>{
+	 *     i18NText: {
+	 *         propertyName: "string",
+	 *         key: "string",
+	 *         parameters: "any",
+	 *         modelName: "string"
+	 *     }
+	 * }
+	 * </code></pre>
 	 *
 	 * @extends sap.ui.test.matchers.Matcher
 	 * @param {object} [mSettings] optional map/JSON-object with initial settings for the new I18NText
@@ -41,13 +53,13 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 					type : "string"
 				},
 				/**
-				 * The key of the I18N text in the containing {@link jQuery.sap.util.ResourceBundle}.
+				 * The key of the I18N text in the containing {@link module:sap/base/i18n/ResourceBundle}.
 				 */
 				key : {
 					type : "string"
 				},
 				/**
-				 * The parameters for replacing the placeholders of the I18N text. See {@link jQuery.sap.util.ResourceBundle#getText}.
+				 * The parameters for replacing the placeholders of the I18N text. See {@link module:sap/base/i18n/ResourceBundle#getText}.
 				 */
 				parameters : {
 					type : "any"
@@ -76,11 +88,7 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 				aParameters = this.getParameters(),
 				sModelName = this.getModelName(),
 				oModel = oControl.getModel(sModelName),
-				oBundle,
-				fnProperty = oControl["get" + capitalize(sPropertyName, 0)],
-				sPropertyValue,
-				sText,
-				bResult;
+				fnProperty = oControl["get" + capitalize(sPropertyName, 0)];
 
 			// check model existence
 			if (!oModel) {
@@ -95,9 +103,10 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 			}
 
 			// check resource bundle
-			oBundle = oModel.getResourceBundle();
-			if (oBundle instanceof Promise) {
-				if (oModel._oResourceBundle instanceof Object && oModel._oResourceBundle.getText) {
+			var oAppWindow = this._getApplicationWindow();
+			var oBundle = oModel.getResourceBundle();
+			if (oBundle instanceof oAppWindow.Promise) {
+				if (oModel._oResourceBundle instanceof oAppWindow.Object && oModel._oResourceBundle.getText) {
 					// we access the loaded bundle from the internal variable of the resource model
 					// ... instead of using the asynchronous promises which is no option for a synchronous matcher
 					// !!! we have a qunit in place that ensures this internal implementation of the ResourceModel
@@ -113,10 +122,11 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 				this._oLogger.debug("The '" + oControl + "' has no '" + sPropertyName + "' property");
 				return false;
 			}
-			sPropertyValue =  fnProperty.call(oControl);
+
+			var sPropertyValue =  fnProperty.call(oControl);
 
 			// check key
-			sText = oBundle.getText(sKey, aParameters);
+			var sText = oBundle.getText(sKey, aParameters);
 			if (sText === sKey) {
 				var sMessage = "No value for the key '" + sKey + "' in the model '" + sModelName + "' of '" + oControl + "'";
 				this._oLogger.debug(sMessage);
@@ -124,7 +134,7 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 			}
 
 			// compare values
-			bResult = sPropertyValue === sText;
+			var bResult = sPropertyValue === sText;
 			if (!bResult) {
 				this._oLogger.debug("The text '" + sText + "' does not match the value '" + sPropertyValue + "' of the '" + sPropertyName + "' property for '" + oControl + "'");
 			}

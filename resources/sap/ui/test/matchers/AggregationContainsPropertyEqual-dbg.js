@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,9 +12,19 @@ sap.ui.define([
 	"use strict";
 
 	/**
-	 * AggregationContainsPropertyEqual - checks if an aggregation contains at least one item that has a Property set to a certain value.
+	 * @class
+	 * Checks if an aggregation contains at least one item that has a property set to a certain value.
 	 *
-	 * @class AggregationContainsPropertyEqual - checks if an aggregation contains at least one item that has a Property set to a certain value
+	 * As of version 1.72, it is available as a declarative matcher with the following syntax:
+	 * <pre><code>{
+	 *     aggregationContainsPropertyEqual: {
+	 *         aggregationName: "string",
+	 *         propertyName: "string",
+	 *         propertyValue: "string"
+	 *     }
+	 * }
+	 * </code></pre>
+	 *
 	 * @extends sap.ui.test.matchers.Matcher
 	 * @param {object} [mSettings] optional map/JSON-object with initial settings for the new AggregationContainsPropertyEqualMatcher
 	 * @public
@@ -91,4 +101,4 @@ sap.ui.define([
 
 	});
 
-}, /* bExport= */ true);
+});

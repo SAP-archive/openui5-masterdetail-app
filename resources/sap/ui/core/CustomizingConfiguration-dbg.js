@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -9,9 +9,10 @@ sap.ui.define([
 	'./Core',
 	'./Component',
 	'sap/base/Log',
-	'sap/base/util/ObjectPath'
+	'sap/base/util/ObjectPath',
+	"sap/base/util/isEmptyObject"
 ],
-	function(jQuery, Core, Component, Log, ObjectPath) {
+	function(jQuery, Core, Component, Log, ObjectPath, isEmptyObject) {
 	"use strict";
 
 
@@ -73,7 +74,7 @@ sap.ui.define([
 		 * gets removed again.
 		 *
 		 * @author SAP SE
-		 * @version 1.64.0
+		 * @version 1.78.1
 		 * @constructor
 		 * @private
 		 * @since 1.15.1
@@ -245,7 +246,7 @@ sap.ui.define([
 						mSettings = oConfig[sViewName];
 					}
 				});
-				return !jQuery.isEmptyObject(mSettings);
+				return !isEmptyObject(mSettings);
 			}
 
 		};

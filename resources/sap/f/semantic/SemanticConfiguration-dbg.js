@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -32,7 +32,7 @@ sap.ui.define([
 	* @class
 	* Defines the visual properties and placement for each supported semantic type.
 	*
-	* @version 1.64.0
+	* @version 1.78.1
 	* @private
 	* @since 1.46.0
 	* @alias sap.f.semantic.SemanticConfiguration
@@ -483,4 +483,4 @@ sap.ui.define([
 
 	return SemanticConfiguration;
 
-}, /* bExport= */ false);
+});

@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -49,7 +49,7 @@ sap.ui.define([
 	 *
 	 * For more information, see {@link sap.f.FlexibleColumnLayoutSemanticHelper#getCurrentUIState} and {@link sap.f.FlexibleColumnLayoutSemanticHelper#getNextUIState}
 	 *
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 * @param {sap.f.FlexibleColumnLayout} oFlexibleColumnLayout
 	 * The <code>sap.f.FlexibleColumnLayout</code> object whose state will be manipulated.
 	 *
@@ -188,6 +188,8 @@ sap.ui.define([
 	 * 	<b>Note:</b> While <code>isFullScreen</code> can be <code>true</code> for any layout, due to small screen size, <code>isLogicallyFullScreen</code> will only be <code>true</code> for the layout values, listed above.</li>
 	 * 	<li>actionButtonsInfo - an object with fields <code>midColumn, endColumn</code>, each containing an object, telling whether action buttons should be shown in the <code>mid</code> and <code>end</code> columns, and what value of the <code>layout</code> property should be set upon clicking these buttons.
 	 * 	Each of these objects has the following fields: <code>closeColumn, fullScreen, exitFullScreen</code>. If <code>null</code>, then the respective action button should not be shown, otherwise provides the value of <code>layout</code> property for the action button.</li></ul>
+	 *
+	 * <b>Note:</b> This method relies on the internal <code>FlexibleColumnLayout</code> reference to be rendered in the DOM tree. For convenience, use methods {@link sap.f.FlexibleColumnLayout#isDOMReady} and {@link sap.f.FlexibleColumnLayout#whenDOMReady}.
 	 *
 	 * 	Example value:
 	 *
@@ -472,6 +474,85 @@ sap.ui.define([
 			iMaxColumnsCount = this._oFCL._getMaxColumnsCountForWidth( iControlWidth || window.innerWidth);
 
 		return iMaxColumnsCount > 1;
+	};
+
+	/**
+	 * Abstract wrapper for {@link sap.f.FlexibleColumnLayout#isDOMReady}.
+	 * Returns <code>true</code> if criteria are met for the APIs in this helper to be used.
+	 *
+	 * @returns {boolean} true if this helper's API reliability criteria are met
+	 * @since 1.72
+	 * @public
+	 */
+	FlexibleColumnLayoutSemanticHelper.prototype.isReady = function () {
+		return this.isDOMReady();
+	};
+
+	/**
+	 * Returns <code>true</code> if internal <code>FlexibleColumnLayout</code> reference is rendered in the DOM tree.
+	 *
+	 * @returns {boolean} true if the associated <code>FlexibleColumnLayout</code> is rendered
+	 * @since 1.72
+	 * @public
+	 */
+	FlexibleColumnLayoutSemanticHelper.prototype.isDOMReady = function () {
+		return this._oFCL.getDomRef() !== null;
+	};
+
+	/**
+	 * Returns promise which can be used to find out when internal criteria for this helper's
+	 * API reliability are met.
+	 *
+	 * @returns {Promise} A promise that resolves after internal criteria are met
+	 * @since 1.72
+	 * @public
+	 */
+	FlexibleColumnLayoutSemanticHelper.prototype.whenReady = function () {
+		var that = this;
+
+		return new Promise(function (resolve, reject) {
+			that.whenDOMReady()
+				.then(function () {
+					resolve();
+				})
+				.catch(function (arg) {
+					reject(arg);
+				});
+		});
+	};
+
+	/**
+	 * Returns promise which can be used to find out when the internal <code>FlexibleColumnLayout</code> is rendered.
+	 * This is needed because methods in <code>FlexibleColumnLayout</code> rely on the control
+	 * being rendered.
+	 *
+	 * @returns {Promise} A promise that resolves after <code>FlexibleColumnLayout</code> is rendered
+	 * @since 1.72
+	 * @public
+	 */
+	 FlexibleColumnLayoutSemanticHelper.prototype.whenDOMReady = function () {
+		var that = this;
+
+		var oDomReadyPromise = new Promise(function (resolve, reject) {
+			if (!that._oFCL || that._oFCL.bIsDestroyed) {
+				reject('FlexibleColumnLayout reference missing. Please make sure FlexibleColumnLayoutSemanticHelper is properly initialized.');
+			}
+
+
+			if (that._oFCL.getDomRef()) {
+				resolve();
+			} else {
+				var oDelegate = {
+					onAfterRendering: function () {
+						that._oFCL.removeEventDelegate(oDelegate);
+						resolve();
+					}
+				};
+				that._oFCL.addEventDelegate(oDelegate);
+			}
+		});
+
+		return oDomReadyPromise;
 	};
 
 	return FlexibleColumnLayoutSemanticHelper;

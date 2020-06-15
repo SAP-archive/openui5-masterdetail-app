@@ -31,6 +31,17 @@
 	box-sizing: border-box;
 	background: @sapUiObjectHeaderBackground;
 
+	.sapFDynamicPageTitleMain > .sapFDynamicPageTitleMainInner {
+		.sapFDynamicPageTitleMainContent .sapMTB {
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
+		}
+
+		.sapFDynamicPageTitleMainActions {
+			padding-left: 0.5rem;
+		}
+	}
+
 	html.sap-desktop & {
 		&.sapFDynamicPageTitleFocus {
 			outline: 0.0625rem dotted @sapUiContentFocusColor;
@@ -62,7 +73,7 @@
 
 		&> .sapFDynamicPageTitleTopRight {
 			width: 25%;
-			dispaly: flex;
+			display: flex;
 			display: -webkit-flex;
 			align-items: center;
 			-webkit-align-items: center;
@@ -89,6 +100,10 @@
 		-webkit-flex-direction: row;
 		box-sizing: border-box;
 
+		&.sapUiHidden {
+			position: absolute;
+		}
+
 		&> .sapFDynamicPageTitleMainNavigationArea,
 		&> .sapFDynamicPageTitleMainNavigationArea > .sapFDynamicPageTitleMainNavigationAreaInner{
 			display: flex;
@@ -104,7 +119,15 @@
 	}
 }
 
-/* TODO remove after 1.62 version */
+ .sapFDynamicPageTitleMainNavigationAreaInner .sapMIBar.sapMTB .sapMBarChild:first-child {
+	 margin-left: 0.25rem;
+ }
+
+ .sapFDynamicPageTitleMainContent .sapMIBar.sapMTB .sapMBarChild:first-child {
+	margin-left: 0;
+}
+
+/* TODO remove after the end of support for Internet Explorer */
 html[data-sap-ui-browser^="ie"].sap-desktop,
 html[data-sap-ui-browser^="ed"].sap-desktop {
 	.sapFDynamicPageTitleMain {
@@ -113,7 +136,7 @@ html[data-sap-ui-browser^="ed"].sap-desktop {
 }
 
 /* IE and Edge ignores outline-offset. Use an overlay: */
-/* TODO remove after 1.62 version */
+/* TODO remove after the end of support for Internet Explorer */
 html[data-sap-ui-browser^="ie"].sap-desktop,
 html[data-sap-ui-browser^="ed"].sap-desktop {
 	.sapFDynamicPageTitle.sapFDynamicPageTitleFocus {
@@ -174,7 +197,7 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 		-webkit-flex-direction: column;
 		justify-content: space-between;
 		-webkit-justify-content: space-between;
-		min-width: 48px;
+		min-width: 0%;
 
 		.sapFDynamicPageTitleMainHeadingInner,
 		.sapFDynamicPageTitleMainHeadingSnappedExpandContent {
@@ -211,13 +234,13 @@ html[data-sap-ui-browser^="ff"].sap-desktop {
 	}
 
 	.sapFDynamicPageTitleMainContent {
-		min-width: 48px;
+		min-width: 0;
 		padding: 0 0 0.5rem 0.5rem;
 	}
 
 	.sapFDynamicPageTitleMainActions {
 		margin-left: auto;
-		min-width: 48px;
+		min-width: 0;
 
 	.sapFDynamicPageTitleActionsBar .sapMLabel.sapMLabelMaxWidth,
 	.sapFDynamicPageTitleActionsBar .sapMLnk.sapMLnkMaxWidth {

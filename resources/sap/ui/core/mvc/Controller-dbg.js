@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -182,7 +182,7 @@ sap.ui.define([
 							//apply lifecycle hooks even if they don't exist on controller
 							ControllerExtension.overrideMethod(sOverrideMember, oController, oOverrides, oExtension, oControllerMetadata.getOverrideExecution(sOverrideMember));
 						} else {
-							Log.error("Method '" + sExtensionOverride + "' of extension '" + oOrigExtensionInfo.namespace + " does not exist in controller " + oController.getMetadata().getName() + " and cannot be overridden");
+							Log.error("Method '" + sOverrideMember + "' does not exist in controller " + oController.getMetadata().getName() + " and cannot be overridden");
 						}
 					}
 					//handle non member extension overrides
@@ -282,7 +282,7 @@ sap.ui.define([
 					if (!ControllerClass) {
 						sap.ui.require([sControllerName], function (ControllerClass) {
 							resolve(resolveClass(ControllerClass));
-						});
+						}, reject);
 					} else {
 						resolve(ControllerClass);
 					}
@@ -315,7 +315,7 @@ sap.ui.define([
 								oProvider = new ExtensionProvider();
 								mExtensionProvider[sProviderName] = oProvider;
 								resolve(oProvider);
-							});
+							}, reject);
 						}
 					} else {
 						resolve();

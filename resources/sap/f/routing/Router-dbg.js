@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define(['sap/ui/core/routing/Router', './TargetHandler', './Targets'],
@@ -8,16 +8,20 @@ sap.ui.define(['sap/ui/core/routing/Router', './TargetHandler', './Targets'],
 		"use strict";
 
 		/**
-		 * Instantiates a <code>sap.f.routing.Router</code>.
-
+		 * Constructor for a new <code>sap.f.routing.Router</code>.
+		 *
 		 * @class
-		 * See {@link sap.ui.core.routing.Router} for the constructor arguments.
+		 * The <code>sap.f.routing.Router</code> class is intended to be used with
+		 * <code>{@link sap.f.FlexibleColumnLayout}</code> as a root control.
 		 *
-		 * The <code>sap.f.routing.Router</code> is intended to be used with {@link sap.f.FlexibleColumnLayout} as a root control.
+		 * The difference to the <code>{@link sap.ui.core.routing.Router}</code> are the
+		 * <code>viewLevel</code>, <code>transition</code>, and <code>transitionParameters</code>
+		 * properties that you can specify in every Route or Target created by this router.
 		 *
-		 * The difference to the {@link sap.ui.core.routing.Router} are the properties viewLevel, transition and transitionParameters you can specify in every Route or Target created by this router.
+		 * Additionally, the <code>layout</code> property can be specified in every Route,
+		 * in which case it is applied to the root control.
 		 *
-		 * Additionally, the <code>layout</code> property can be specified in every Route, in which case it will be applied to the root control.
+		 * See <code>{@link sap.ui.core.routing.Router}</code> for the constructor arguments.
 		 *
 		 * @extends sap.ui.core.routing.Router
 		 *
@@ -53,9 +57,9 @@ sap.ui.define(['sap/ui/core/routing/Router', './TargetHandler', './Targets'],
 			},
 
 			/**
-			 * Returns the TargetHandler instance.
+			 * Returns the <code>TargetHandler</code> instance.
 			 *
-			 * @return {sap.f.routing.TargetHandler} the TargetHandler instance
+			 * @return {sap.f.routing.TargetHandler} The <code>TargetHandler</code> instance
 			 * @public
 			 */
 			getTargetHandler : function () {

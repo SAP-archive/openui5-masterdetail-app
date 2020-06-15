@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -10,7 +10,7 @@ sap.ui.define([
 	'./FlexItemData',
 	'./library',
 	'sap/ui/core/Control',
-	'sap/ui/core/RenderManager',
+	'sap/ui/core/InvisibleRenderer',
 	'./FlexBoxRenderer',
 	'sap/ui/thirdparty/jquery'
 ],
@@ -19,7 +19,7 @@ function(
 	FlexItemData,
 	library,
 	Control,
-	RenderManager,
+	InvisibleRenderer,
 	FlexBoxRenderer,
 	jQuery
 ) {
@@ -40,15 +40,11 @@ function(
 	// shortcut for sap.m.FlexJustifyContent
 	var FlexJustifyContent = library.FlexJustifyContent;
 
-
-
 	// shortcut for sap.m.FlexRendertype
 	var FlexRendertype = library.FlexRendertype;
 
 	// shortcut for sap.m.FlexDirection
 	var FlexDirection = library.FlexDirection;
-
-
 
 	/**
 	 * Constructor for a new <code>sap.m.FlexBox</code>.
@@ -64,7 +60,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 *
 	 * @public
 	 * @alias sap.m.FlexBox
@@ -173,14 +169,6 @@ function(
 	 * @public
 	 */
 	FlexBox.prototype.init = function() {
-		// Make sure that HBox and VBox have a valid direction
-		if (this instanceof sap.m.HBox && (this.getDirection() !== FlexDirection.Row || this.getDirection() !== FlexDirection.RowReverse)) {
-			this.setDirection('Row');
-		}
-		if (this instanceof sap.m.VBox && (this.getDirection() !== FlexDirection.Column || this.getDirection() !== FlexDirection.ColumnReverse)) {
-			this.setDirection('Column');
-		}
-
 		this._oItemDelegate = {
 			onAfterRendering: this._onAfterItemRendering
 		};
@@ -296,7 +284,7 @@ function(
 		if (oItem.getLayoutData()) {
 			oWrapper = jQuery(document.getElementById(oItem.getLayoutData().getId()));
 		} else {
-			oWrapper = jQuery(document.getElementById(RenderManager.createInvisiblePlaceholderId(oItem))).parent();
+			oWrapper = jQuery(document.getElementById(InvisibleRenderer.createInvisiblePlaceholderId(oItem))).parent();
 		}
 
 		if (oControlEvent.getParameter("newValue")) {

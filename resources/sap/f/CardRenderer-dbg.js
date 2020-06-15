@@ -1,12 +1,17 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides default renderer for control sap.f.Card
-sap.ui.define([], function () {
+sap.ui.define([
+	"sap/f/library"
+], function (
+	library
+) {
 	"use strict";
+	var HeaderPosition = library.cards.HeaderPosition;
 
 	/**
 	 * <code>Card</code> renderer.
@@ -23,36 +28,55 @@ sap.ui.define([], function () {
 	 * @param {sap.ui.core.Control} oCard an object representation of the control that should be rendered
 	 */
 	CardRenderer.render = function (oRm, oCard) {
-		var oHeader = oCard.getCardHeader();
+		var oHeader = oCard.getCardHeader(),
+			sHeight = oCard.getHeight(),
+			bCardHeaderBottom = oHeader && oCard.getCardHeaderPosition() === HeaderPosition.Bottom,
+			sTooltip = oCard.getTooltip_AsString();
+
 		//start
 		oRm.write("<div");
 		oRm.writeElementData(oCard);
 		oRm.addClass("sapFCard");
+		if (!oCard.getCardContent()) {
+			oRm.addClass("sapFCardNoContent");
+		}
+		if (bCardHeaderBottom) {
+			oRm.addClass("sapFCardBottomHeader");
+		}
 		oRm.writeClasses();
+
 		oRm.addStyle("width", oCard.getWidth());
-		oRm.addStyle("height", oCard.getHeight());
+
+		if (sHeight && sHeight !== 'auto') {
+			oRm.addStyle("height", sHeight);
+		}
+
+		if (sTooltip) {
+			oRm.writeAttributeEscaped('title', sTooltip);
+		}
+
 		//Accessibility state
 		oRm.writeAccessibilityState(oCard, {
 			role: "region",
-			roledescription: {value: oRb.getText("ARIA_ROLEDESCRIPTION_CARD"), append: true}
+			labelledby: {value: oCard.getId() + "-ariaText", append: true}
 		});
-		if (oHeader) {
-			var oTitle = oHeader._getTitle();
-			if (oTitle) {
-				oRm.writeAccessibilityState(oCard, {
-					labelledBy: {value: oTitle.getId(), append: true}
-				});
-			}
-
-		}
 		oRm.writeStyles();
 		oRm.write(">");
 
-		//header
-		oRm.renderControl(oHeader);
+		//header at the top
+		if (oHeader && oCard.getCardHeaderPosition() === "Top") {
+			oRm.renderControl(oHeader);
+		}
 
 		//content
 		CardRenderer.renderContentSection(oRm, oCard);
+
+		//header at the bottom
+		if (bCardHeaderBottom) {
+			oRm.renderControl(oHeader);
+		}
+
+		oRm.renderControl(oCard._ariaText);
 
 		//end
 		oRm.write("</div>");

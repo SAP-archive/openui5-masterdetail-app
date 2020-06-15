@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -36,7 +36,7 @@ sap.ui.define([
 	 * @public
 	 * @class
 	 * @author SAP SE
-	 * @version 1.64.0
+	 * @version 1.78.1
 	 * @since 1.9.2
 	 * @alias sap.ui.core.ComponentMetadata
 	 * @extends sap.ui.base.ManagedObjectMetadata
@@ -50,6 +50,7 @@ sap.ui.define([
 
 	//chain the prototypes
 	ComponentMetadata.prototype = Object.create(ManagedObjectMetadata.prototype);
+	ComponentMetadata.prototype.constructor = ComponentMetadata;
 
 	ComponentMetadata.preprocessClassInfo = function(oClassInfo) {
 		// if the component is a string we convert this into a "_src" metadata entry
@@ -142,7 +143,7 @@ sap.ui.define([
 	 *
 	 * @param {object} oManifestJson manifest object (will be modified internally!)
 	 * @private
-	 * @sap-restricted sap.ui.core.Component
+	 * @ui5-restricted sap.ui.core.Component
 	 */
 	ComponentMetadata.prototype._applyManifest = function(oManifestJson) {
 		// Make sure to not create the manifest object twice!

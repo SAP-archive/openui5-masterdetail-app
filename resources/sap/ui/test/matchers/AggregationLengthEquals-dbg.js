@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2019 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,9 +12,18 @@ sap.ui.define([
 	"use strict";
 
 	/**
-	 * AggregationLengthEquals - checks if an aggregation contains a specified number of entries.
+	 * @class
+	 * Checks if an aggregation contains a specified number of entries.
 	 *
-	 * @class AggregationLengthEquals - checks if an aggregation contains a specified number of entries.
+	 * As of version 1.72, it is available as a declarative matcher with the following syntax:
+	 * <code><pre>{
+	 *     aggregationLengthEquals: {
+	 *         name: "string",
+	 *         length: "integer"
+	 *     }
+	 * }
+	 * </code></pre>
+	 *
 	 * @param {object} [mSettings] optional map/JSON-object with initial settings for the new AggregationLengthEqualsMatcher
 	 * @extends sap.ui.test.matchers.Matcher
 	 * @public
@@ -71,4 +80,4 @@ sap.ui.define([
 
 	});
 
-}, /* bExport= */ true);
+});
