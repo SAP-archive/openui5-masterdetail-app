@@ -25,7 +25,7 @@ jobs:
       with:
         node-version: "14.x"
 
-    - run: npm ci
+    - run: npm install
     - run: npm run build
 
     - name: GitHub Pages action
