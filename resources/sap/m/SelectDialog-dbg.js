@@ -14,14 +14,12 @@ sap.ui.define([
 	'./TitleAlignmentMixin',
 	'sap/ui/core/Control',
 	'sap/ui/Device',
-	'sap/ui/base/ManagedObject',
 	'sap/m/Toolbar',
 	'sap/m/Label',
 	'sap/m/BusyIndicator',
 	'sap/m/Bar',
 	'sap/m/Title',
 	'sap/ui/core/theming/Parameters',
-	'./SelectDialogRenderer',
 	"sap/base/Log"
 ],
 function(
@@ -33,14 +31,12 @@ function(
 	TitleAlignmentMixin,
 	Control,
 	Device,
-	ManagedObject,
 	Toolbar,
 	Label,
 	BusyIndicator,
 	Bar,
 	Title,
 	Parameters,
-	SelectDialogRenderer,
 	Log
 	) {
 	"use strict";
@@ -118,7 +114,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -305,7 +301,12 @@ function(
 			 */
 			cancel : {}
 		}
-	}});
+	},
+	renderer: {
+		apiVersion: 2,
+		render: function () {}
+	}
+});
 
 
 	/* =========================================================== */

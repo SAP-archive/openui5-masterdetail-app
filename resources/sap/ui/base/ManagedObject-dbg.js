@@ -27,7 +27,7 @@ sap.ui.define([
 	"sap/base/util/deepClone",
 	"sap/base/util/deepEqual",
 	"sap/base/util/uid",
-	"sap/ui/thirdparty/jquery",
+	"sap/base/util/extend",
 	"sap/base/util/isEmptyObject"
 ], function(
 	BindingParser,
@@ -51,7 +51,7 @@ sap.ui.define([
 	deepClone,
 	deepEqual,
 	uid,
-	jQuery,
+	extend,
 	isEmptyObject
 ) {
 
@@ -266,7 +266,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.base.EventProvider
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @public
 	 * @alias sap.ui.base.ManagedObject
 	 */
@@ -2790,6 +2790,7 @@ sap.ui.define([
 	 * @public
 	 */
 	ManagedObject.prototype.destroy = function(bSuppressInvalidate) {
+		var sName;
 		// ignore repeated calls
 		if (this.bIsDestroyed) {
 			return;
@@ -2837,17 +2838,17 @@ sap.ui.define([
 		delete this.oParent;
 
 		// Data Binding
-		jQuery.each(this.mBindingInfos, function(sName, oBindingInfo) {
-			if (oBindingInfo.factory) {
-				that.unbindAggregation(sName, true);
+		for (sName in this.mBindingInfos) {
+			if (this.mBindingInfos[sName].factory) {
+				this.unbindAggregation(sName, true);
 			} else {
-				that.unbindProperty(sName, true);
+				this.unbindProperty(sName, true);
 			}
-		});
+		}
 
-		jQuery.each(this.mObjectBindingInfos, function(sName, oBoundObject) {
-			that.unbindObject(sName, /* _bSkipUpdateBindingContext */ true);
-		});
+		for (sName in this.mObjectBindingInfos) {
+			this.unbindObject(sName, /* _bSkipUpdateBindingContext */ true);
+		}
 
 		// reset suppress invalidate flag
 		if (bSuppressInvalidate) {
@@ -3483,7 +3484,9 @@ sap.ui.define([
 		// because the formatter gets the context of the element we have to set the context via proxy to ensure compatibility
 		// for formatter function which is now called by the property binding
 		// proxy formatter here because "this" is the correct cloned object
-		oBinding.setFormatter(jQuery.proxy(oBindingInfo.formatter, this));
+		if (oBindingInfo.formatter) {
+			oBinding.setFormatter(oBindingInfo.formatter.bind(this));
+		}
 
 		// Set additional information on the binding info
 		oBindingInfo.binding = oBinding;
@@ -4704,8 +4707,6 @@ sap.ui.define([
 
 	ManagedObject._oEmptyPropagatedProperties = {oModels:{}, oBindingContexts:{}, aPropagationListeners:[]};
 
-	var fnObjectAssign = Object.assign || jQuery.extend; // Object.assign is ~30% faster across modern browsers in 2018, but not supported in IE
-
 	function _hasAsRealChild(oParent, oChild) {
 		return !oChild.aAPIParentInfos || oChild.aAPIParentInfos[0].parent === oParent;
 	}
@@ -4724,7 +4725,7 @@ sap.ui.define([
 			bUpdateListener = vName === false, //update only propagation listeners
 			sName = bUpdateAll ? undefined : vName,
 			sAggregationName, oAggregation, i,
-			mAllAggregations = fnObjectAssign({}, this.mAggregations, this.mForwardedAggregations);
+			mAllAggregations = Object.assign({}, this.mAggregations, this.mForwardedAggregations);
 
 		for (sAggregationName in mAllAggregations) {
 			if (this.mSkipPropagation[sAggregationName]) {
@@ -4782,10 +4783,10 @@ sap.ui.define([
 			bNoOwnElementContexts = isEmptyObject(this.mElementBindingContexts);
 
 		function merge(empty,o1,o2,o3) {
-			// jQuery.extend ignores 'undefined' values but not 'null' values.
+			// extend ignores 'undefined' values but not 'null' values.
 			// So 'null' values get propagated and block a parent propagation.
 			// 'undefined' values are ignored and therefore not propagated.
-			return empty ? o1 : jQuery.extend({}, o1, o2, o3);
+			return empty ? o1 : extend({}, o1, o2, o3);
 		}
 
 		function concat(empty,a1,a2) {
@@ -4962,7 +4963,7 @@ sap.ui.define([
 
 		if (bCloneChildren) {
 			// Clone aggregations
-			var mAggregationsToClone = fnObjectAssign({}, this.mAggregations, this.mForwardedAggregations);
+			var mAggregationsToClone = Object.assign({}, this.mAggregations, this.mForwardedAggregations);
 			for (sName in mAggregationsToClone) {
 				var oAggregation = mAggregationsToClone[sName];
 				//do not clone aggregation if aggregation is bound and bindings are cloned; aggregation is filled on update
@@ -5028,7 +5029,7 @@ sap.ui.define([
 		function cloneBinding(oSource, sName, oClone, sTargetName) {
 			var oBindingInfo = oSource.mBindingInfos[sName];
 			oBindingInfo = oBindingInfo || oSource.getBindingInfo(sName); // fallback for forwarded bindings
-			var oCloneBindingInfo = jQuery.extend({}, oBindingInfo);
+			var oCloneBindingInfo = Object.assign({}, oBindingInfo);
 
 			// clone the template if it is not sharable
 			if (!oBindingInfo.templateShareable && oBindingInfo.template && oBindingInfo.template.clone) {
@@ -5062,7 +5063,7 @@ sap.ui.define([
 		 * Maybe we have to call updateBindingContext() here?
 		 */
 		for (sName in this.mObjectBindingInfos) {
-			oClone.mObjectBindingInfos[sName] = jQuery.extend({}, this.mObjectBindingInfos[sName]);
+			oClone.mObjectBindingInfos[sName] = Object.assign({}, this.mObjectBindingInfos[sName]);
 		}
 
 		// Clone events
@@ -5118,25 +5119,27 @@ sap.ui.define([
 	 * @private
 	 */
 	ManagedObject._handleLocalizationChange = function(iPhase) {
-		var i;
+		var oModel, sName, oBindingInfo, i;
 
 		if ( iPhase === 1 ) {
 
 			/*
 			 * phase 1: update the models
 			 */
-			jQuery.each(this.oModels, function(sName, oModel) {
+			for (sName in this.oModels) {
+				oModel = this.oModels[sName];
 				if ( oModel && oModel._handleLocalizationChange ) {
 					oModel._handleLocalizationChange();
 				}
-			});
+			}
 
 		} else if ( iPhase === 2 ) {
 
 			/*
 			 * phase 2: update bindings and types
 			 */
-			jQuery.each(this.mBindingInfos, function(sName, oBindingInfo) {
+			for (sName in this.mBindingInfos) {
+				oBindingInfo = this.mBindingInfos[sName];
 				var aParts = oBindingInfo.parts;
 				if (aParts) {
 					// property or composite binding: visit all parts
@@ -5150,7 +5153,7 @@ sap.ui.define([
 					}
 				} // else: don't update list bindings
 				// Note: the template for a list binding will be visited by the core!
-			});
+			}
 
 		}
 	};

@@ -23,7 +23,7 @@ sap.ui.define(['sap/m/PlanningCalendarRow', 'sap/m/Button', 'sap/ui/core/date/Un
 	 * The <code>sap.f.PlanningCalendarInCardRow</code> allows you to modify appointments at row level.
 	 *
 	 * @extends sap.ui.core.Element
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @private

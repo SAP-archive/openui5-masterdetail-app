@@ -9,10 +9,10 @@ sap.ui.define([
 	'sap/ui/core/Locale',
 	'sap/ui/core/LocaleData',
 	"sap/base/Log",
-	"sap/ui/thirdparty/jquery",
+	"sap/base/util/extend",
 	"sap/base/util/isEmptyObject"
 ],
-	function(Locale, LocaleData, Log, jQuery, isEmptyObject) {
+	function(Locale, LocaleData, Log, extend, isEmptyObject) {
 	"use strict";
 
 	/**
@@ -70,7 +70,7 @@ sap.ui.define([
 		}
 		oFormat.oLocale = oLocale;
 		oFormat.oLocaleData = LocaleData.getInstance(oLocale);
-		oFormat.oOriginalFormatOptions = jQuery.extend({}, this.oDefaultListFormat, oFormatOptions);
+		oFormat.oOriginalFormatOptions = extend({}, this.oDefaultListFormat, oFormatOptions);
 
 		return oFormat;
 

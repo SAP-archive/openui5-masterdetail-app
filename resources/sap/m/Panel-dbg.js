@@ -66,7 +66,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -223,7 +223,7 @@ sap.ui.define([
 			return this;
 		}
 
-		this.setProperty("expanded", bExpanded, true);
+		this.setProperty("expanded", bExpanded);
 
 		if (!this.getExpandable()) {
 			return this;
@@ -273,13 +273,52 @@ sap.ui.define([
 		this._setContentHeight();
 
 		if (this.getExpandable()) {
-			oPanelContent && this._oExpandButton.$().attr("aria-controls", oPanelContent.id);
+			this.getHeaderToolbar() && oPanelContent && this._oExpandButton.$().attr("aria-controls", oPanelContent.id);
 
 			if (!this.getExpanded()) {
 				// hide those parts which are collapsible (w/o animation, otherwise initial loading doesn't look good ...)
 				$this.children(".sapMPanelExpandablePart").css("display", "none");
 			}
 		}
+	};
+
+	/**
+	 * Called when the <code>Panel</code> is clicked/tapped.
+	 *
+	 * @param {jQuery.Event} oEvent - the keyboard event.
+	 * @private
+	 */
+	Panel.prototype.ontap = function (oEvent) {
+		var oDomRef = this.getDomRef(),
+			oWrapperDomRef = oDomRef && oDomRef.querySelector(".sapMPanelWrappingDiv");
+
+		if (!this.getExpandable() || this.getHeaderToolbar() || !oWrapperDomRef) {
+			return;
+		}
+
+		if (oWrapperDomRef.contains(oEvent.target)) {
+			this._bInteractiveExpand = true;
+			this.setExpanded(!this.getExpanded());
+		}
+	};
+
+	/**
+	 * Event handler called when the SPACE key is pressed.
+	 *
+	 * @param {jQuery.Event} oEvent The event object.
+	 * @private
+	 */
+	Panel.prototype.onsapspace = function(oEvent) {
+		this.ontap(oEvent);
+	};
+
+	/**
+	 * Event handler called when the ENTER key is pressed.
+	 *
+	 * @param {jQuery.Event} oEvent The ENTER keyboard key event object
+	 */
+	Panel.prototype.onsapenter = function(oEvent) {
+		this.ontap(oEvent);
 	};
 
 	Panel.prototype.exit = function () {
@@ -291,12 +330,19 @@ sap.ui.define([
 
 	Panel.prototype._createExpandButton = function () {
 		var that = this,
-			sCollapsedIconURI = IconPool.getIconURI("slim-arrow-right"),
+			sIconURI = this.getExpanded() ? IconPool.getIconURI("slim-arrow-down") : IconPool.getIconURI("slim-arrow-right"),
 			sTooltipBundleText = sap.ui.getCore().getLibraryResourceBundle("sap.m").getText("PANEL_ICON"),
 			oButton;
 
-		oButton = new Button(that.getId() + "-CollapsedImg", {
-			icon: sCollapsedIconURI,
+		if (!this.getHeaderToolbar()) {
+			return IconPool.createControlByURI({
+				src: sIconURI,
+				tooltip: sTooltipBundleText
+			});
+		}
+
+		oButton = new Button({
+			icon: sIconURI,
 			tooltip: sTooltipBundleText,
 			type: ButtonType.Transparent,
 			press: function () {
@@ -317,7 +363,15 @@ sap.ui.define([
 	Panel.prototype._toggleButtonIcon = function (bIsExpanded) {
 		var sIconURI = bIsExpanded ? IconPool.getIconURI("slim-arrow-down") : IconPool.getIconURI("slim-arrow-right");
 
-		this._oExpandButton && this._oExpandButton.setIcon(sIconURI);
+		if (!this._oExpandButton) {
+			return;
+		}
+
+		if (this.getHeaderToolbar()) {
+			this._oExpandButton.setIcon(sIconURI);
+		} else {
+			this._oExpandButton.setSrc(sIconURI);
+		}
 	};
 
 	Panel.prototype._setContentHeight = function () {
@@ -347,7 +401,7 @@ sap.ui.define([
 	Panel.prototype._updateButtonAriaLabelledBy = function () {
 		var sLabelId, aAriaLabels, bFormRole;
 
-		if (!this._oExpandButton) {
+		if (!this._oExpandButton || !this.getHeaderToolbar()) {
 			return;
 		}
 

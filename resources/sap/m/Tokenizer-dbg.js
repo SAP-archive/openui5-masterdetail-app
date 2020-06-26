@@ -59,7 +59,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -540,22 +540,11 @@ sap.ui.define([
 	 * @private
 	 */
 	Tokenizer.prototype.onAfterRendering = function() {
-		var aTokens = this.getTokens(),
-			iTokensSize = aTokens.length;
-
 		this.scrollToEnd();
 
 		this._oIndicator = this.$().find(".sapMTokenizerIndicator");
 
-		// update ARIA information of Tokens depending on size and position in Tokenizer
-		for (var i = 0; i < iTokensSize; i++) {
-			var oTokenDomRef = aTokens[i].getDomRef();
-
-			if (oTokenDomRef) {
-				oTokenDomRef.setAttribute("aria-posinset", i + 1);
-				oTokenDomRef.setAttribute("aria-setsize", iTokensSize);
-			}
-		}
+		this._updateTokensAriaSetAttributes();
 
 		if (this._getAdjustable()) {
 			// refresh the expanded/collapsed mode based on whether a indicator should be shown
@@ -980,6 +969,47 @@ sap.ui.define([
 		}
 	};
 
+	Tokenizer.prototype.ontap = function (oEvent) {
+		var bShiftKey = oEvent.shiftKey,
+			bCtrlKey = (oEvent.ctrlKey || oEvent.metaKey),
+			oTargetToken = oEvent.getMark("tokenTap"),
+			bDeleteToken = oEvent.getMark("tokenDeletePress"),
+			aTokens = this._getVisibleTokens(),
+			oFocusedToken, iFocusIndex, iIndex, iMinIndex, iMaxIndex;
+
+		if (bDeleteToken || !oTargetToken || (!bShiftKey && bCtrlKey)) { // Ctrl
+			this._oSelectionOrigin = null;
+			return;
+		}
+
+		if (!bShiftKey) { // Simple click/tap
+			// simple select, neither ctrl nor shift key was pressed, deselects other tokens
+			this._oSelectionOrigin = oTargetToken;
+			this._changeAllTokensSelection(false, oTargetToken);
+		}
+
+		// Shift
+		oFocusedToken = oTargetToken;
+		if (this._oSelectionOrigin) {
+			oFocusedToken = this._oSelectionOrigin;
+		} else {
+			this._oSelectionOrigin = oFocusedToken;
+		}
+
+		iFocusIndex = this.indexOfToken(oFocusedToken);
+		iIndex = this.indexOfToken(oTargetToken);
+		iMinIndex = Math.min(iFocusIndex, iIndex);
+		iMaxIndex = Math.max(iFocusIndex, iIndex);
+
+		aTokens.forEach(function (oToken, i) {
+			if (i >= iMinIndex && i <= iMaxIndex) {
+				oToken.setSelected(true);
+			} else if (!bCtrlKey) {
+				oToken.setSelected(false);
+			}
+		});
+	};
+
 	/**
 	 * Called when the user presses the left arrow key, focuses previous token.
 	 * @param {jQuery.Event} oEvent The event triggered by the user
@@ -1018,7 +1048,6 @@ sap.ui.define([
 			currentToken = aTokens[index];
 			targetToken.setSelected(true);
 			currentToken.setSelected(true);
-
 		}
 
 		this._deactivateScrollToEnd();
@@ -1367,11 +1396,20 @@ sap.ui.define([
 				}
 			}.bind(this)
 		});
+
+		oToken.getAggregation("deleteIcon").attachPress(function () {
+			if (this.getEnabled()) {
+				this.handleTokenDeletion(oToken);
+			}
+		}.bind(this));
+
 		return this;
 	};
 
 	Tokenizer.prototype.removeToken = function(oToken) {
 		oToken = this.removeAggregation("tokens", oToken);
+
+		this._updateTokensAriaSetAttributes();
 
 		!this.getTokens().length && this.setFirstTokenTruncated(false);
 
@@ -1504,15 +1542,7 @@ sap.ui.define([
 			bSelect = true;
 		}
 
-		var tokens = this._getVisibleTokens(),
-			length = tokens.length,
-			i;
-
-		for (i = 0; i < length; i++) {
-			tokens[i].setSelected(bSelect);
-		}
-
-		this._doSelect();
+		this._changeAllTokensSelection(bSelect);
 
 		return this;
 	};
@@ -1520,21 +1550,19 @@ sap.ui.define([
 	/**
 	 * Function selects/deselects all tokens and fires the correct "select" or "deselect" events.
 	 * @param {boolean} bSelect Whether the tokens should be selected
-	 * @param {sap.m.Token} skipToken  [optional] this token will be skipped when changing the selection
+	 * @param {sap.m.Token} oTokenToSkip  [optional] this token will be skipped when changing the selection
 	 * @private
 	 */
-	Tokenizer.prototype._changeAllTokensSelection = function(bSelect, skipToken) {
-		var tokens = this._getVisibleTokens(),
-			length = tokens.length,
-			token,
-			i;
+	Tokenizer.prototype._changeAllTokensSelection = function (bSelect, oTokenToSkip) {
+		var aTokens = this._getVisibleTokens();
 
-		for (i = 0; i < length; i++) {
-			token = tokens[i];
-			if (token !== skipToken) {
-				token._changeSelection(bSelect);
-			}
-		}
+		aTokens
+			.filter(function (oToken) {
+				return oToken !== oTokenToSkip;
+			})
+			.forEach(function (oToken) {
+				oToken.setSelected(bSelect);
+			});
 
 		this._doSelect();
 
@@ -1547,117 +1575,11 @@ sap.ui.define([
 	 * @public
 	 * @returns {sap.m.Token[]} Array of selected tokens or empty array
 	 */
-	Tokenizer.prototype.getSelectedTokens = function() {
-		var aSelectedTokens = [],
-			tokens = this._getVisibleTokens(),
-			i,
-			token,
-			length = tokens.length;
-
-		for (i = 0; i < length; i++) {
-			token = tokens[i];
-			if (token.getSelected()) {
-				aSelectedTokens.push(token);
-			}
-		}
-		return aSelectedTokens;
-	};
-
-	/**
-	 * Function is called when token's delete icon was pressed function destroys token from Tokenizer's aggregation.
-	 *
-	 * @private
-	 * @param {sap.m.Token} token  The deleted token
-	 */
-	Tokenizer.prototype._onTokenDelete = function(token) {
-		if (token && this.getEditable() && this.getEnabled()) {
-
-			var eventResult = this.fireTokenUpdate({
-				addedTokens : [],
-				removedTokens : [token],
-				type : Tokenizer.TokenUpdateType.Removed
+	Tokenizer.prototype.getSelectedTokens = function () {
+		return this._getVisibleTokens()
+			.filter(function (oToken) {
+				return oToken.getSelected();
 			});
-
-			if (!eventResult) {
-				return;
-			}
-
-			delete this._oTokensWidthMap[token.getId()];
-			token.destroy();
-
-			this.fireTokenChange({
-				addedTokens : [],
-				removedTokens : [token],
-				type : Tokenizer.TokenChangeType.TokensChanged
-			});
-		}
-	};
-
-	Tokenizer.prototype._onTokenSelect = function(oTokenSource, ctrlKey, shiftKey) {
-		var aTokens = this._getVisibleTokens(),
-			oToken,
-			i;
-
-		if (shiftKey) {
-			var oFocusedToken = this._getFocusedToken();
-			if (!oFocusedToken) {
-				this._oSelectionOrigin = null;
-				return;
-			}
-
-			if (this._oSelectionOrigin) {
-				oFocusedToken = this._oSelectionOrigin;
-			} else {
-				this._oSelectionOrigin = oFocusedToken;
-			}
-
-			var iFocusIndex = this.indexOfToken(oFocusedToken),
-				iIndex = this.indexOfToken(oTokenSource),
-				iMinIndex = Math.min(iFocusIndex, iIndex),
-				iMaxIndex = Math.max(iFocusIndex, iIndex);
-
-			for (i = 0; i < aTokens.length; i++) {
-				oToken = aTokens[i];
-				if (i >= iMinIndex && i <= iMaxIndex) {
-					oToken._changeSelection(true);
-				} else if (!ctrlKey) {
-					oToken._changeSelection(false);
-				}
-			}
-
-			return;
-		}
-
-		this._oSelectionOrigin = null;
-
-		// ctrl key was pressed, do nothing, the token handled it
-		if (ctrlKey) {
-			return;
-		}
-
-		// simple select, neither ctrl nor shift key was pressed, deselects other tokens
-		this._oSelectionOrigin = oTokenSource;
-
-		for (i = 0; i < aTokens.length; i++) {
-			oToken = aTokens[i];
-
-			if (oToken !== oTokenSource) {
-				oToken._changeSelection(false);
-			}
-		}
-	};
-
-	Tokenizer.prototype._getFocusedToken = function() {
-		var oFocusedToken = sap.ui.getCore().byId(document.activeElement.id);
-
-		// if the focus is not on a Token in this Tokenizer do nothing
-		if (!oFocusedToken ||
-			!(oFocusedToken instanceof sap.m.Token) ||
-			this.indexOfToken(oFocusedToken) === -1) {
-			return null;
-		}
-
-		return oFocusedToken;
 	};
 
 	/**
@@ -1667,10 +1589,11 @@ sap.ui.define([
 	 * @private
 	 */
 	Tokenizer.prototype.onsaphome = function(oEvent) {
-		var aVisibleTokens = this._getVisibleTokens();
+		var aAvailableTokens = this.getTokens().filter(function (oToken) {
+			return oToken.getDomRef() && !oToken.getDomRef().classList.contains("sapMHiddenToken");
+		});
 
-		(aVisibleTokens.length > 0) && aVisibleTokens[0].focus();
-
+		aAvailableTokens.length && aAvailableTokens[0].focus();
 		this.scrollToStart();
 
 		oEvent.preventDefault();
@@ -1787,6 +1710,26 @@ sap.ui.define([
 			}
 
 			oInvisibleText.setText(sTokenizerAria);
+		}
+	};
+
+	/**
+	 * Sets accessibility attributes aria-setsize and aria-posinset to the tokens.
+	 *
+	 * @private
+	 */
+	Tokenizer.prototype._updateTokensAriaSetAttributes = function () {
+		var aTokens = this.getTokens(),
+			iTokensSize = aTokens.length;
+
+		// update ARIA information of Tokens depending on size and position in Tokenizer
+		for (var i = 0; i < iTokensSize; i++) {
+			var oTokenDomRef = aTokens[i].getDomRef();
+
+			if (oTokenDomRef) {
+				oTokenDomRef.setAttribute("aria-posinset", i + 1);
+				oTokenDomRef.setAttribute("aria-setsize", iTokensSize);
+			}
 		}
 	};
 

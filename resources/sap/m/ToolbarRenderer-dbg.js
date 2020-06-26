@@ -51,6 +51,7 @@ sap.ui.define(['./BarInPageEnabler'],
 		if (oToolbar.getActive()) {
 			oRm.class("sapMTBActive");
 			oRm.attr("tabindex", "0");
+			oRm.attr("aria-haspopup", oToolbar.getAriaHasPopup());
 		} else {
 			oRm.class("sapMTBInactive");
 		}

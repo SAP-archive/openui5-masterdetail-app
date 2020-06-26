@@ -20,7 +20,7 @@ sap.ui.define(['sap/ui/base/ManagedObject', './ExportCell'],
 	 * @extends sap.ui.base.ManagedObject
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @since 1.22.0
 	 *
 	 * @public

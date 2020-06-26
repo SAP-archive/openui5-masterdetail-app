@@ -56,7 +56,7 @@ sap.ui.define([
 	 *
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @param {object} [oFormatOptions] Formatting options. For a list of all available options, see {@link sap.ui.core.format.NumberFormat.getUnitInstance NumberFormat}.

@@ -63,7 +63,7 @@ sap.ui.define([
 	 * If used inside the calendar the properties and aggregation are directly taken from the parent
 	 * (To not duplicate and sync DateRanges and so on...)
 	 * @extends sap.ui.core.Control
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -1241,7 +1241,7 @@ sap.ui.define([
 			return;
 		}
 
-		var aWeekHeaders = this.getDomRef().querySelectorAll(".sapUiCalWH:not([style='visibility: hidden;'])"),
+		var aWeekHeaders = this.getDomRef().querySelectorAll(".sapUiCalWH:not(.sapUiCalDummy)"),
 			oLocaleData = this._getLocaleData(),
 			iStartDay = this._getFirstWeekDay(),
 			aDayNames = oLocaleData.getDaysStandAlone("abbreviated", this.getPrimaryCalendarType()),
@@ -2366,7 +2366,7 @@ sap.ui.define([
 		if (!this._bNamesLengthChecked) {
 			// only once - cannot change by rerendering - only by theme change
 			var oWeekDay,
-				aWeekHeaders = this.getDomRef().querySelectorAll(".sapUiCalWH:not([style='visibility: hidden;'])"),
+				aWeekHeaders = this.getDomRef().querySelectorAll(".sapUiCalWH:not(.sapUiCalDummy)"),
 				bTooLong = this._isMonthNameLong(aWeekHeaders),
 				oLocaleData, iStartDay, aDayNames, i;
 

@@ -385,6 +385,7 @@ sap.ui.define(['sap/ui/core/Renderer', 'sap/ui/core/IconPool', 'sap/m/library', 
 
 			oRm.accessibilityState(oSelect, {
 				role: this.getAriaRole(oSelect),
+				roledescription: oSelect._sAriaRoleDescription,
 				disabled: !oSelect.getEnabled(),
 				readonly: bIconOnly ? undefined : oSelect.getEnabled() && !oSelect.getEditable(),
 				expanded: oSelect.isOpen(),

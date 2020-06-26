@@ -3,7 +3,7 @@
  * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
-sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], function(Matcher, capitalize) {
+sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], function (Matcher, capitalize) {
 	"use strict";
 
 	/**
@@ -43,33 +43,33 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 	 */
 	return Matcher.extend("sap.ui.test.matchers.I18NText", /** @lends sap.ui.test.matchers.I18NText.prototype */ {
 
-		metadata : {
-			publicMethods : [ "isMatching" ],
-			properties : {
+		metadata: {
+			publicMethods: ["isMatching"],
+			properties: {
 				/**
 				 * The name of the control property to match the I18N text with.
 				 */
-				propertyName : {
-					type : "string"
+				propertyName: {
+					type: "string"
 				},
 				/**
 				 * The key of the I18N text in the containing {@link module:sap/base/i18n/ResourceBundle}.
 				 */
-				key : {
-					type : "string"
+				key: {
+					type: "string"
 				},
 				/**
 				 * The parameters for replacing the placeholders of the I18N text. See {@link module:sap/base/i18n/ResourceBundle#getText}.
 				 */
-				parameters : {
-					type : "any"
+				parameters: {
+					type: "any"
 				},
 				/**
 				 * The name of the {@link sap.ui.model.resource.ResourceModel} assigned to the control.
 				 */
-				modelName : {
-					type : "string",
-					defaultValue : "i18n"
+				modelName: {
+					type: "string",
+					defaultValue: "i18n"
 				}
 			}
 		},
@@ -81,7 +81,7 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 		 * @return {boolean} true if the property has a strictly matching value.
 		 * @public
 		 */
-		isMatching : function (oControl) {
+		isMatching: function (oControl) {
 
 			var sKey = this.getKey(),
 				sPropertyName = this.getPropertyName(),
@@ -123,11 +123,11 @@ sap.ui.define(['sap/ui/test/matchers/Matcher', "sap/base/strings/capitalize"], f
 				return false;
 			}
 
-			var sPropertyValue =  fnProperty.call(oControl);
+			var sPropertyValue = fnProperty.call(oControl);
 
 			// check key
-			var sText = oBundle.getText(sKey, aParameters);
-			if (sText === sKey) {
+			var sText = oBundle.getText(sKey, aParameters, true);
+			if (!sText) {
 				var sMessage = "No value for the key '" + sKey + "' in the model '" + sModelName + "' of '" + oControl + "'";
 				this._oLogger.debug(sMessage);
 				return false;

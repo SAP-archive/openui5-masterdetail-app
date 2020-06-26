@@ -14,7 +14,7 @@ sap.ui.define(['sap/ui/core/Core', 'sap/ui/base/Object', "./ColorPickerDisplayMo
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.ui.unified",
-		version: "1.78.1",
+		version: "1.79.0",
 		dependencies : ["sap.ui.core"],
 		designtime: "sap/ui/unified/designtime/library.designtime",
 		types: [
@@ -84,7 +84,7 @@ sap.ui.define(['sap/ui/core/Core', 'sap/ui/base/Object', "./ColorPickerDisplayMo
 	 * @namespace
 	 * @alias sap.ui.unified
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @public
 	 */
 	var thisLib = sap.ui.unified;

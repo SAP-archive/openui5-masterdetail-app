@@ -95,7 +95,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @private
@@ -473,6 +473,7 @@ function(
 	 * @private
 	 */
 	PlanningCalendarHeader.prototype._convertViewSwitchToSelect = function () {
+		this._oViewSwitch._bForcedSelectMode = true;
 		this._oViewSwitch._toSelectMode();
 	};
 
@@ -481,6 +482,7 @@ function(
 	 * @private
 	 */
 	PlanningCalendarHeader.prototype._convertViewSwitchToSegmentedButton = function () {
+		this._oViewSwitch._bForcedSelectMode = false;
 		this._oViewSwitch._toNormalMode();
 	};
 

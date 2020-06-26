@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @class Table Personalization Controller
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @alias sap.m.TablePersoController
 	 */
 	var TablePersoController = ManagedObject.extend("sap.m.TablePersoController", /** @lends sap.m.TablePersoController */
@@ -49,8 +49,8 @@ sap.ui.define([
 
 		metadata: {
 			properties: {
-				"contentWidth": {type: "sap.ui.core.CSSSize"},
-				"contentHeight": {type: "sap.ui.core.CSSSize", defaultValue: "20rem", since: "1.22"},
+				"contentWidth": {type: "sap.ui.core.CSSSize", defaultValue:"25rem"}, //TODO: put in TPD itself
+				"contentHeight": {type: "sap.ui.core.CSSSize", defaultValue: "28rem", since: "1.22"},
 				/**
 				 * Available options for the text direction are LTR and RTL. By default the control inherits the text direction from its parent control.
 				 */

@@ -94,7 +94,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @public
@@ -160,6 +160,7 @@ sap.ui.define([
 				}
 			},
 			aggregations : {
+
 				/**
 				 * Main content controls.
 				 */
@@ -510,6 +511,7 @@ sap.ui.define([
 				sMainContentId = sControlId + "-" + MC_GRID_CELL_SELECTOR;
 
 			if (!this._oSCScroller && !this._oMCScroller) {
+				var ScrollEnablement = sap.ui.requireSync("sap/ui/core/delegate/ScrollEnablement");
 				this._oSCScroller = new ScrollEnablement(this, null, {
 					scrollContainerId: sSideContentId,
 					horizontal: false,

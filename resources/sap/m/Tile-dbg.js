@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -109,6 +109,11 @@ sap.ui.define([
 			return;
 		}
 		var o = this.getDomRef();
+
+		if (!o) {
+			return;
+		}
+
 		if ("webkitTransform" in o.style) {
 			this.$().css('-webkit-transform','translate3d(' + iX + 'px,' + iY + 'px,0)');
 		} else if ("transform" in o.style) {
@@ -118,6 +123,7 @@ sap.ui.define([
 		} else if ("MozTransform" in o.style) {
 			this.$().css('-moz-transform','translate3d(' + iX + 'px,' + iY + 'px,0)');
 		}
+
 		if (this._invisible) {
 			this.$().css("visibility","");
 			delete this._invisible;

@@ -11,7 +11,7 @@ sap.ui.define([
 	'sap/base/util/uid',
 	'sap/base/Log'
 ],
-	function(Object, MessageProcessor, uid, Log) {
+	function(BaseObject, MessageProcessor, uid, Log) {
 	"use strict";
 
 	var mMessageType2Severity = {
@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.base.Object
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @param {object} [mParameters] a map which contains the following parameter properties:
 	 * @param {string} [mParameters.id] The message id: will be generated if no id is set
@@ -46,21 +46,24 @@ sap.ui.define([
 	 * @param {sap.ui.core.MessageType} [mParameters.type=sap.ui.core.MessageType.None] The message type
 	 * @param {string} [mParameters.code] The message code
 	 * @param {boolean} [mParameters.technical=false] If the message is set as technical message
-	 * @param {object} [mParameters.technicalDetails] An object containg technical details for a message
+	 * @param {object} [mParameters.technicalDetails] An object containing technical details for a message
 	 * @param {sap.ui.core.message.MessageProcessor} [mParameters.processor]
-	 * @param {string} [mParameters.target] The message target: The syntax is MessageProcessor dependent. Read the documentation of the respective MessageProcessor.
+	 * @param {string|string[]} [mParameters.target] The single message target or (since 1.79) an
+	 *   array of message targets in case the message has multiple targets. The syntax is
+	 *   MessageProcessor dependent. Read the documentation of the respective MessageProcessor.
 	 * @param {boolean} [mParameters.persistent=false] Sets message persistent: If persistent is set <code>true</code> the message lifecycle is controlled by the application
 	 * @param {int} [mParameters.date=Date.now()] Sets message date which can be used to remove old messages. Number of milliseconds elapsed since 1 January 1970 00:00:00 UTC
-	 * @param {string} [mParameters.fullTarget=""] Defines more detailed information about the message target. This property is currently only used by the ODataMessageParser.
-	 *
+	 * @param {string|string[]} [mParameters.fullTarget=""] Defines more detailed information about
+	 *   the message target or (since 1.79) the message targets in case the message has multiple
+	 *   targets. This property is currently only used by the ODataMessageParser.
 	 *
 	 * @public
 	 * @alias sap.ui.core.message.Message
 	 */
-	var Message = Object.extend("sap.ui.core.message.Message", /** @lends sap.ui.core.message.Message.prototype */ {
+	var Message = BaseObject.extend("sap.ui.core.message.Message", /** @lends sap.ui.core.message.Message.prototype */ {
 
 		constructor : function (mParameters) {
-			Object.apply(this, arguments);
+			BaseObject.apply(this, arguments);
 			mParameters = mParameters || {};
 
 			this.id = mParameters.id ? mParameters.id : uid();
@@ -70,7 +73,18 @@ sap.ui.define([
 			this.additionalText = mParameters.additionalText;
 			this.setType(mParameters.type || sap.ui.core.MessageType.None);
 			this.code = mParameters.code;
-			this.target = mParameters.target;
+			this.aTargets = [];
+			if (mParameters.target !== undefined) {
+				this.aTargets = Array.isArray(mParameters.target)
+					? mParameters.target.slice()
+					: [mParameters.target];
+			}
+			Object.defineProperty(this, "target", {
+				get : this.getTarget,
+				set : this.setTarget,
+				enumerable : true
+				// configurable : false
+			});
 			this.processor = mParameters.processor;
 			this.persistent = mParameters.persistent || false;
 			this.technical = mParameters.technical || false;
@@ -79,7 +93,19 @@ sap.ui.define([
 			this.validation = !!mParameters.validation;
 			this.date = mParameters.date || Date.now();
 			this.controlIds = [];
-			this.fullTarget = mParameters.fullTarget || "";
+			if (Array.isArray(mParameters.fullTarget)) {
+				this.aFullTargets = mParameters.fullTarget.length
+					? mParameters.fullTarget.slice()
+					: [""];
+			} else {
+				this.aFullTargets = [mParameters.fullTarget || ""];
+			}
+			Object.defineProperty(this, "fullTarget", {
+				get : function () { return this.aFullTargets[0]; },
+				set : function (sFullTarget) { this.aFullTargets[0] = sFullTarget; },
+				enumerable : true
+				// configurable : false
+			});
 		}
 	});
 
@@ -260,24 +286,55 @@ sap.ui.define([
 	};
 
 	/**
-	 * Set message target: The syntax is MessageProcessor dependent. See the documentation of the
-	 * respective MessageProcessor.
+	 * Sets the message target; in case the message has multiple targets, sets the first target of
+	 * the message.
+	 * The syntax is MessageProcessor dependent. See the documentation of the respective
+	 * MessageProcessor.
 	 *
-	 * @param {string} sTarget The Message target
+	 * @param {string} sTarget The message target
+	 *
+	 * @deprecated As a message may have multiple targets, use {@link #setTargets} instead
 	 * @public
 	 */
 	Message.prototype.setTarget = function(sTarget) {
-		this.target = sTarget;
+		this.aTargets[0] = sTarget;
 	};
 
 	/**
-	 * Returns the message target
+	 * Returns the message target or the first target if the message has multiple targets.
 	 *
-	 * @returns {string} target
+	 * @returns {string} The message target
+	 *
+	 * @deprecated As a message may have multiple targets, use {@link #getTargets} instead
 	 * @public
 	 */
 	Message.prototype.getTarget = function() {
-		return this.target;
+		return this.aTargets[0];
+	};
+
+	/**
+	 * Sets the targets of this message.
+	 *
+	 * @param {string[]} aNewTargets
+	 *   The new targets of this message; use an empty array if the message shall have no targets
+	 *
+	 * @public
+	 * @since 1.79
+	 */
+	Message.prototype.setTargets = function(aNewTargets) {
+		this.aTargets = aNewTargets.slice();
+	};
+
+	/**
+	 * Returns the targets of this message.
+	 *
+	 * @returns {string[]} The message targets; empty array if the message has no targets
+	 *
+	 * @public
+	 * @since 1.79
+	 */
+	Message.prototype.getTargets = function() {
+		return this.aTargets.slice();
 	};
 
 	/**

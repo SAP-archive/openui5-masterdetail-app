@@ -653,7 +653,10 @@ sap.ui.define([
 		}
 
 		if (bDependsOnOperation && !sResolvedChildPath.includes("/$Parameter/")
-				|| this.getRootBinding().isSuspended()) {
+				|| this.getRootBinding().isSuspended()
+				|| this.mParameters && this.mParameters.$$aggregation) {
+			// With $$aggregation, no auto-$expand/$select is needed, but the child may still use
+			// the parent's cache
 			// Note: Operation bindings do not support auto-$expand/$select yet
 			return SyncPromise.resolve(sResolvedChildPath);
 		}
@@ -1082,6 +1085,22 @@ sap.ui.define([
 	};
 
 	/**
+	 * Resumes this binding and all dependent bindings, fires a change or refresh event afterwards.
+	 *
+	 * @param {boolean} bCheckUpdate
+	 *   Parameter is ignored; dependent property bindings of a list binding never call checkUpdate
+	 * @param {boolean} [bParentHasChanges]
+	 *   Whether there are changes on the parent binding that become active after resuming. If
+	 *   <code>true</code>, this binding is allowed to reuse the parent cache, otherwise this
+	 *   binding has to create its own cache
+	 *
+	 * @abstract
+	 * @function
+	 * @name sap.ui.model.odata.v4.ODataParentBinding#resumeInternal
+	 * @private
+	 */
+
+	/**
 	 * Resolves and clears the refresh promise created by {@link #createRefreshPromise} with the
 	 * given result if there is one.
 	 *
@@ -1126,7 +1145,7 @@ sap.ui.define([
 		if (this.oOperation) {
 			throw new Error("Cannot resume an operation binding: " + this);
 		}
-		if (this.bRelative && (!this.oContext || this.oContext.fetchValue)) {
+		if (!this.isRoot()) {
 			throw new Error("Cannot resume a relative binding: " + this);
 		}
 		if (!this.bSuspended) {
@@ -1139,7 +1158,7 @@ sap.ui.define([
 			// dependent bindings are only removed in a *new task* in ManagedObject#updateBindings
 			// => must only resume in prerendering task
 			this.oModel.addPrerenderingTask(doResume);
-		 } else {
+		} else {
 			this.createReadGroupLock(this.getGroupId(), true);
 			doResume();
 		}
@@ -1223,7 +1242,7 @@ sap.ui.define([
 		if (this.oOperation) {
 			throw new Error("Cannot suspend an operation binding: " + this);
 		}
-		if (this.bRelative && (!this.oContext || this.oContext.fetchValue)) {
+		if (!this.isRoot()) {
 			throw new Error("Cannot suspend a relative binding: " + this);
 		}
 		if (this.bSuspended) {
@@ -1239,12 +1258,30 @@ sap.ui.define([
 		});
 		this.oResumePromise.$resolve = fnResolve;
 		this.removeReadGroupLock();
+		this.suspendInternal();
+	};
+
+	/**
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataBinding#suspendInternal
+	 */
+	ODataParentBinding.prototype.suspendInternal = function () {
+		// Only if the cache is currently being determined or has not sent a request yet, we have to
+		// fire a change event to trigger a request while resuming.
+		this.sResumeChangeReason
+			= this.oCache === undefined || this.oCache && !this.oCache.bSentRequest
+				? ChangeReason.Change
+				: undefined;
+
+		this.getDependentBindings().forEach(function (oBinding) {
+			oBinding.suspendInternal();
+		});
 	};
 
 	/**
 	 * Updates the aggregated query options of this binding with the values from the given
-	 * query options except the values for "$select" and "$expand" as these are computed by
-	 * auto-$expand/$select and are only changed in {@link #fetchIfChildCanUseCache}.
+	 * query options. "$select" and "$expand" are only updated if the aggregated query options are
+	 * still initial because these have been computed in {@link #fetchIfChildCanUseCache} otherwise.
 	 * Note: If the aggregated query options contain a key which is not contained in the given
 	 * query options, it is deleted from the aggregated query options.
 	 *
@@ -1260,13 +1297,15 @@ sap.ui.define([
 		if (this.mAggregatedQueryOptions) {
 			aAllKeys = aAllKeys.concat(Object.keys(this.mAggregatedQueryOptions));
 			aAllKeys.forEach(function (sName) {
-				if (sName === "$select" || sName === "$expand") {
-					return;
-				}
-				if (mNewQueryOptions[sName] === undefined) {
-					delete that.mAggregatedQueryOptions[sName];
-				} else {
-					that.mAggregatedQueryOptions[sName] = mNewQueryOptions[sName];
+				// if the aggregated query options are not initial any more, $select and $expand
+				// have already been merged
+				if (that.bAggregatedQueryOptionsInitial
+						|| sName !== "$select" && sName !== "$expand") {
+					if (mNewQueryOptions[sName] === undefined) {
+						delete that.mAggregatedQueryOptions[sName];
+					} else {
+						that.mAggregatedQueryOptions[sName] = mNewQueryOptions[sName];
+					}
 				}
 			});
 		}

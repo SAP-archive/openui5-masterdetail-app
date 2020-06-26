@@ -125,7 +125,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.Toolbar,sap.m.IBar
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -143,7 +143,8 @@ sap.ui.define([
 				 *
 				 * <b>Note:</b> When this property is set to <code>true</code>, the <code>OverflowToolbar</code>
 				 * makes its layout recalculations asynchronously. This way it is not blocking the thread
-				 * immediately after re-rendering or resizing.
+				 * immediately after re-rendering or resizing. However, it may lead to flickering, when there is
+				 * a change in the width of the content of the <code>OverflowToolbar</code>.
 				 *
 				 * @since 1.67
 				 */
@@ -1307,6 +1308,14 @@ sap.ui.define([
 		// the cached controls' sizes will be updated, as they might not be accurate
 		if (sParameterName === "visible") {
 			this._bContentVisibilityChanged = true;
+
+			// If a flexible control becomes visible (after it was invisible), we should notify DynamicPageTitle
+			// to reset the flex-basis of its content area
+			if (oSourceControl.isA("sap.m.IOverflowToolbarFlexibleContent") && oSourceControl.getVisible()) {
+				this.fireEvent("_contentSizeChange", {
+					contentSize: null
+				});
+			}
 		}
 
 		// Trigger a recalculation

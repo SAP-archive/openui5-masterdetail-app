@@ -15,7 +15,8 @@ sap.ui.define([
 	'sap/ui/core/library',
 	'sap/ui/core/Popup',
 	'sap/ui/core/LabelEnablement',
-	"./MenuButtonRenderer"
+	"./MenuButtonRenderer",
+	"sap/ui/events/KeyCodes"
 ], function(
 	library,
 	Control,
@@ -26,7 +27,8 @@ sap.ui.define([
 	coreLibrary,
 	Popup,
 	LabelEnablement,
-	MenuButtonRenderer
+	MenuButtonRenderer,
+	KeyCodes
 ) {
 		"use strict";
 
@@ -56,7 +58,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @public
@@ -388,14 +390,16 @@ sap.ui.define([
 					minus2_left: "-2 0"
 				};
 
-			if (this._bPopupOpen) {
-				this.getMenu().close();
-				return;
-			}
-
 			if (!oMenu) {
 				return;
 			}
+
+			if (this._bPopupOpen) {
+				this.getMenu().close();
+				this._bPopupOpen = false;
+				return;
+			}
+
 
 			if (!oMenu.getTitle()) {
 				oMenu.setTitle(this.getText());
@@ -451,6 +455,10 @@ sap.ui.define([
 			}
 
 			oMenu.openBy.apply(oMenu, aParam);
+
+			if (this.getMenu()) {
+				this._bPopupOpen = true;
+			}
 
 			this._writeAriaAttributes();
 
@@ -706,6 +714,13 @@ sap.ui.define([
 
 		MenuButton.prototype.ontouchstart = function() {
 			this._bPopupOpen = this.getMenu() && this.getMenu()._getMenu() && this.getMenu()._getMenu().getPopup().isOpen();
+		};
+
+		MenuButton.prototype.onkeydown = function(oEvent) {
+			if ((oEvent.keyCode === KeyCodes.ENTER || oEvent.keyCode === KeyCodes.TAB) && this._bPopupOpen) {
+				this.getMenu().close();
+				this._bPopupOpen = false;
+			}
 		};
 
 		MenuButton.prototype.openMenuByKeyboard = function() {

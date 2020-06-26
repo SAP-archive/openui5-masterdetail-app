@@ -72,7 +72,7 @@ sap.ui.define([
 	* @extends sap.ui.core.Control
 	* @implements sap.ui.core.IFormContent
 	* @author SAP SE
-	* @version 1.78.1
+	* @version 1.79.0
 	*
 	* @constructor
 	* @public
@@ -95,9 +95,9 @@ sap.ui.define([
 			value : {type : "string", group : "Data", defaultValue : null, bindable : "bindable"},
 
 			/**
-			 * Defines the CSS width of the input. If not set, width is 100%.
+			 * Defines the CSS width of the input. 100% by default.
 			 */
-			width : {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : null},
+			width : {type : "sap.ui.core.CSSSize", group : "Appearance", defaultValue : "100%" },
 
 			/**
 			 * Boolean property to enable the control (default is true).
@@ -302,11 +302,6 @@ sap.ui.define([
 		return this;
 	};
 
-	// returns correct the width that applied by design
-	SearchField.prototype.getWidth = function() {
-		return this.getProperty("width") || "100%";
-	};
-
 	SearchField.prototype._hasPlaceholder = (function () {
 		return "placeholder" in document.createElement("input");
 	}());
@@ -325,6 +320,9 @@ sap.ui.define([
 	};
 
 	SearchField.prototype.onAfterRendering = function() {
+
+		this._lastValue = this.getValue();
+		this._setToolTips();
 
 		// DOM element for the embedded HTML input:
 		var inputElement = this.getInputElement();
@@ -455,7 +453,6 @@ sap.ui.define([
 			this._bSuggestionSuppressed = true; // never open suggestions after reset
 
 			var bEmpty = !this.getValue();
-			this.clear({ clearButton: true });
 
 			// When a user presses "x":
 			// - always focus input on desktop
@@ -469,6 +466,8 @@ sap.ui.define([
 				) && (active !== oInputElement)) {
 				oInputElement.focus();
 			}
+
+			this.clear({ clearButton: true });
 		} else if (oSrc.id == this.getId() + "-search" && bValidTouchStartTarget) {
 
 			closeSuggestions(this);
@@ -778,11 +777,6 @@ sap.ui.define([
 		this.setProperty("value", value, true);
 		this._setToolTips();
 		return this;
-	};
-
-	SearchField.prototype.setValue = function(value) {
-		this._lastValue = value;
-		return this._updateValue(value);
 	};
 
 	SearchField.prototype._unregisterEventListeners = function () {

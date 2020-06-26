@@ -78,13 +78,21 @@
 	margin-right: 2rem;
 }
 
+.sapFCard .sapFCardFilterBar {
+	padding: 0.5rem @_sap_f_Card_ContentPadding;
+	background: @sapUiTileBackground;
+	border-bottom: @_sap_f_Card_HeaderBorderBottom;
+	box-shadow: @_sap_f_card_HeaderBoxShadow;
+	z-index: 1;
+}
+
 .sapFCard .sapFCardHeader {
 	position: relative;
 	flex-shrink: 0;
 	background: @sapUiTileBackground;
 	border-bottom: @_sap_f_Card_HeaderBorderBottom;
 	box-shadow: @_sap_f_card_HeaderBoxShadow;
-	z-index: 1;
+	z-index: 2;
 	padding: @_sap_f_Card_ContentPadding;
 	display: flex;
 	outline: none;
@@ -167,6 +175,10 @@
 	.sapFCardHeaderToolbar {
 		margin: -0.25rem 0 -0.25rem 0.5rem;
 	}
+}
+
+.sapFCard .sapUiLocalBusyIndicator  {
+	z-index: 10; // busy layer should be over the header and sub-headers BCP 2080150813
 }
 
 .sapFCard.sapFCardBottomHeader .sapFCardHeader {
@@ -424,4 +436,8 @@ html[data-sap-ui-browser^="ie"] .sapFCardHeader:focus::before {
 	.sapMListTbl {
 		border: none;
 	}
+}
+
+.sapFCard .ac-adaptiveCard {
+	outline: none;
 }

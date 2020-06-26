@@ -29,7 +29,7 @@ sap.ui.define([
 	 * @extends sap.m.ColumnPopoverItem
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @since 1.66

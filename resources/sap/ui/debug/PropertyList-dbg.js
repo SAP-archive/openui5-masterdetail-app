@@ -38,7 +38,7 @@ sap.ui.define('sap/ui/debug/PropertyList', [
 	 *
 	 * @extends sap.ui.base.EventProvider
 	 * @author Martin Schaus
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @param {sap.ui.core.Core}
 	 *            oCore the core instance to use for analysis

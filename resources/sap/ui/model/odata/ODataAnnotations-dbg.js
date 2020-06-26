@@ -28,7 +28,7 @@ sap.ui.define([
 	 *
 	 * @author SAP SE
 	 * @version
-	 * 1.78.1
+	 * 1.79.0
 	 *
 	 * @public
 	 * @deprecated As of version 1.66, please use {@link sap.ui.model.odata.v2.ODataAnnotations} instead.

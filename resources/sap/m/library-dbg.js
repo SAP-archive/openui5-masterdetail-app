@@ -55,7 +55,7 @@ sap.ui.define([
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.m",
-		version: "1.78.1",
+		version: "1.79.0",
 		dependencies : ["sap.ui.core"],
 		designtime: "sap/m/designtime/library.designtime",
 		types: [
@@ -365,6 +365,7 @@ sap.ui.define([
 			"sap.m.SelectionDetailsItem",
 			"sap.m.SelectionDetailsItemLine",
 			"sap.m.SinglePlanningCalendarDayView",
+			"sap.m.SinglePlanningCalendarMonthView",
 			"sap.m.SinglePlanningCalendarWeekView",
 			"sap.m.SinglePlanningCalendarWorkWeekView",
 			"sap.m.SinglePlanningCalendarView",
@@ -540,7 +541,7 @@ sap.ui.define([
 	 * @namespace
 	 * @alias sap.m
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @public
 	 */
 	var thisLib = sap.m;

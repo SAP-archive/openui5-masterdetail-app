@@ -50,7 +50,7 @@ function(
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -450,7 +450,7 @@ function(
 			canOverflow: true,
 			listenForEvents: ["select"],
 			autoCloseEvents: ["select"],
-			noInvalidationProps: ["enabled", "selectedKey"],
+			propsUnrelatedToSize: ["enabled", "selectedKey"],
 			invalidationEvents: ["_containerWidthChanged"],
 			onBeforeEnterOverflow: this._onBeforeEnterOverflow,
 			onAfterExitOverflow: this._onAfterExitOverflow
@@ -463,7 +463,11 @@ function(
 	};
 
 	SegmentedButton.prototype._onAfterExitOverflow = function(oControl) {
-		oControl._toNormalMode();
+		if (oControl._bForcedSelectMode) {
+			oControl._toSelectMode();
+		} else {
+			oControl._toNormalMode();
+		}
 	};
 
 	/**

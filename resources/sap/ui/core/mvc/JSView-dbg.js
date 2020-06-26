@@ -6,15 +6,15 @@
 
 // Provides control sap.ui.core.mvc.JSView.
 sap.ui.define([
-	'sap/ui/thirdparty/jquery',
 	'./View',
 	'./JSViewRenderer',
+	'sap/base/util/extend',
 	'sap/base/util/merge',
 	'sap/ui/base/ManagedObject',
 	'sap/ui/core/library',
 	'sap/base/Log'
 ],
-	function(jQuery, View, JSViewRenderer, merge, ManagedObject, library, Log) {
+	function(View, JSViewRenderer, merge, extend, ManagedObject, library, Log) {
 	"use strict";
 
 
@@ -27,7 +27,7 @@ sap.ui.define([
 	 * @class
 	 * A View defined/constructed by JavaScript code.
 	 * @extends sap.ui.core.mvc.View
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.JSView
@@ -216,10 +216,10 @@ sap.ui.define([
 		// extend 'this' with view from registry which should now or then be available
 		if (mSettings.async) {
 			return Promise.resolve(oPromise).then(function() {
-				jQuery.extend(this, mRegistry[mSettings.viewName]);
+				extend(this, mRegistry[mSettings.viewName]);
 			}.bind(this));
 		}
-		jQuery.extend(this, mRegistry[mSettings.viewName]);
+		extend(this, mRegistry[mSettings.viewName]);
 	};
 
 	JSView.prototype.onControllerConnected = function(oController) {

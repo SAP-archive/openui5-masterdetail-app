@@ -5,7 +5,7 @@
  */
 
 // Provides the basic UI5 support functionality
-sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/base/util/UriParameters", "sap/ui/thirdparty/jquery", "sap/base/Log", "sap/base/security/encodeURL"],
+sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/base/util/UriParameters", "sap/ui/thirdparty/jquery", "sap/base/Log", "sap/base/util/deepExtend", "sap/base/security/encodeURL"],
 	function(
 		EventProvider,
 		Plugin,
@@ -13,6 +13,7 @@ sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/ba
 		UriParameters,
 		jQuery,
 		Log,
+		deepExtend,
 		encodeURL
 	) {
 	"use strict";
@@ -26,7 +27,7 @@ sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/ba
 	 * @class This class provides the support tool functionality of UI5. This class is internal and all its functions must not be used by an application.
 	 *
 	 * @extends sap.ui.base.EventProvider
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @private
 	 * @alias sap.ui.core.support.Support
 	 */
@@ -306,7 +307,7 @@ sap.ui.define(['sap/ui/base/EventProvider', './Plugin', 'sap/ui/Device', "sap/ba
 				//Attention mParams comes from an other window
 				//-> (mParams instanceof Object == false)!
 				mParamsLocal = {};
-				jQuery.extend(true, mParamsLocal, mParams);
+				deepExtend(mParamsLocal, mParams);
 			}
 			var oData = {"eventId": sEventId, "params": mParamsLocal};
 			var sData = "SAPUI5SupportTool*" + JSON.stringify(oData);

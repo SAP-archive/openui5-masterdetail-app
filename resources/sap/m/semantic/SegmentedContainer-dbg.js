@@ -20,7 +20,7 @@ sap.ui.define(['sap/m/semantic/Segment', 'sap/ui/base/Metadata', "sap/base/Log"]
 	 * Constructor for an sap.m.semantic.SegmentedContainer.
 	 *
 	 * @class text
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @private
 	 * @since 1.30.0
 	 * @alias sap.m.semantic.SegmentedContainer

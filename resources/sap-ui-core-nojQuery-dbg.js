@@ -5262,12 +5262,9 @@ return Promise$2;
 	var resolveURL = (function(_URL) {
 
 		// feature check: URI support
-		// - can URL be used as a constructor (fails in IE 11)?
-		// - does toString() return the expected URL string (fails in PhantomJS 2.1)?
+		// Can URL be used as a constructor (fails in IE 11)?
 		try {
-			if ( !/localhost/.test(new _URL('index.html', 'http://localhost:8080/')) ) {
-				_URL = null;
-			}
+			new _URL('index.html', 'http://localhost:8080/');
 		} catch (e) {
 			isIE11 = true;
 			_URL = null;
@@ -5281,7 +5278,7 @@ return Promise$2;
 			};
 		}
 
-		// fallback for IE11 and PhantomJS: use a shadow document with <base> and <a>nchor tag
+		// fallback for IE11: use a shadow document with <base> and <a>nchor tag
 		var doc = document.implementation.createHTMLDocument("Dummy doc for resolveURI");
 		var base = doc.createElement('base');
 		base.href = docBase();
@@ -6240,13 +6237,8 @@ return Promise$2;
 		ensureStacktrace(oError);
 		ensureStacktrace(cause);
 		// concat the error stack for better traceability of loading issues
-		// (ignore for PhantomJS since Error.stack is readonly property!)
 		if ( oError.stack && cause.stack ) {
-			try {
-				oError.stack = oError.stack + "\nCaused by: " + cause.stack;
-			} catch (err) {
-				// ignore
-			}
+			oError.stack = oError.stack + "\nCaused by: " + cause.stack;
 		}
 		// @evo-todo
 		// for non Chrome browsers we log the caused by stack manually in the console

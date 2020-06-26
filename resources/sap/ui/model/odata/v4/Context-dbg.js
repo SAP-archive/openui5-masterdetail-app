@@ -96,7 +96,7 @@ sap.ui.define([
 	 * @hideconstructor
 	 * @public
 	 * @since 1.39.0
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 */
 	var Context = BaseContext.extend("sap.ui.model.odata.v4.Context", {
 			constructor : function (oModel, oBinding, sPath, iIndex, oCreatePromise,
@@ -712,8 +712,9 @@ sap.ui.define([
 
 	/**
 	 * Returns whether there are pending changes for bindings dependent on this context, or for
-	 * unresolved bindings which were dependent on this context at the time the pending change
-	 * was created. This includes the context itself being transient (see {@link #isTransient}).
+	 * unresolved bindings (see {@link sap.ui.model.Binding#isResolved}) which were dependent on
+	 * this context at the time the pending change was created. This includes the context itself
+	 * being transient (see {@link #isTransient}).
 	 *
 	 * @returns {boolean}
 	 *   Whether there are pending changes
@@ -967,13 +968,23 @@ sap.ui.define([
 	 *   effects fails. Use it to set fields affected by side effects to read-only before
 	 *   {@link #requestSideEffects} and make them editable again when the promise resolves; in the
 	 *   error handler, you can repeat the loading of side effects.
-	 * @throws {Error}
-	 *   If <code>aPathExpressions</code> contains objects other than
-	 *   "14.5.11 Expression edm:NavigationPropertyPath" or "14.5.13 Expression edm:PropertyPath",
-	 *   or if this context is not supported, or if the root binding of this context's binding is
-	 *   suspended, or if the context is transient, or if the binding of this context is unresolved,
-	 *   or for invalid group IDs
-	 *
+	 * @throws {Error} If
+	 *   <ul>
+	 *    <li> <code>aPathExpressions</code> contains objects other than
+	 *     "14.5.11 Expression edm:NavigationPropertyPath" or "14.5.13 Expression edm:PropertyPath"
+	 *    <li> this context is not supported
+	 *    <li> the root binding of this context's binding is suspended (see {@link #getBinding} and
+	 *    {@link sap.ui.model.odata.v4.ODataContextBinding#getRootBinding},
+	 *    {@link sap.ui.model.odata.v4.ODataListBinding#getRootBinding}, or
+	 *    {@link sap.ui.model.odata.v4.ODataPropertyBinding#getRootBinding}, and
+	 *    {@link sap.ui.model.Binding#isSuspended})
+	 *    <li> this context is transient (see {@link #isTransient})
+	 *    <li> the binding of this context is unresolved (see
+	 *    {@link sap.ui.model.Binding#isResolved})
+	 *    <li> the group ID is invalid
+	 *    <li> a <code>$PropertyPath</code> has been requested which contains a navigation
+	 *    property that was changed on the server and now targets a different entity (since 1.79.0)
+	 *   </ul>
 	 * @public
 	 * @see sap.ui.model.odata.v4.ODataContextBinding#execute
 	 * @see sap.ui.model.odata.v4.ODataContextBinding#getBoundContext
@@ -1016,7 +1027,7 @@ sap.ui.define([
 			throw new Error("Missing edm:(Navigation)PropertyPath expressions");
 		}
 		// Fail fast with a specific error for unresolved bindings
-		if (this.oBinding.isRelative() && !this.oBinding.getContext()) {
+		if (!this.oBinding.isResolved()) {
 			throw new Error("Cannot request side effects of unresolved binding's context: " + this);
 		}
 

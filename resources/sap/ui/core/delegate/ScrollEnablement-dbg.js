@@ -56,7 +56,7 @@ sap.ui.define([
 		 *
 		 * @protected
 		 * @alias sap.ui.core.delegate.ScrollEnablement
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 * @author SAP SE
 		 */
 		var ScrollEnablement = BaseObject.extend("sap.ui.core.delegate.ScrollEnablement", /** @lends sap.ui.core.delegate.ScrollEnablement.prototype */ {
@@ -200,10 +200,10 @@ sap.ui.define([
 				return this;
 			},
 
-			scrollTo : function(x, y, time) {
+			scrollTo : function(x, y, time, fnScrollEndCallback) {
 				this._scrollX = x; // remember for later rendering
 				this._scrollY = y;
-				this._scrollTo(x, y, time);
+				this._scrollTo(x, y, time, fnScrollEndCallback);
 				return this;
 			},
 
@@ -749,14 +749,18 @@ sap.ui.define([
 				}
 			},
 
-			_scrollTo: function(x, y, time) {
+			_scrollTo: function(x, y, time, fnScrollEndCallback) {
 				if (this._$Container.length > 0) {
 					if (time > 0) {
-						this._$Container.finish().animate({ scrollTop: y, scrollLeft: x }, time, jQuery.proxy(this._readActualScrollPosition, this));
+						this._$Container.finish().animate({ scrollTop: y, scrollLeft: x }, time, jQuery.proxy(function() {
+							this._readActualScrollPosition();
+							fnScrollEndCallback && fnScrollEndCallback();
+						}, this));
 					} else {
 						this._$Container.scrollTop(y);
 						this._$Container.scrollLeft(x);
 						this._readActualScrollPosition(); // if container is too large no scrolling is possible
+						fnScrollEndCallback && fnScrollEndCallback();
 					}
 				}
 			}
@@ -773,7 +777,7 @@ sap.ui.define([
 						jQuery.event.special.swipe.scrollSupressionThreshold = 120;
 					}
 
-					jQuery.extend(this, oNativeScrollDelegate);
+					Object.assign(this, oNativeScrollDelegate);
 
 					if (oConfig.nonTouchScrolling === true) {
 						this._bDragScroll = true; // optional drag instead of native scrolling
@@ -792,7 +796,7 @@ sap.ui.define([
 				}
 			};
 			// Copy over members to prototype
-			jQuery.extend(oScrollerInstance, oDelegateMembers);
+			Object.assign(oScrollerInstance, oDelegateMembers);
 		}
 
 	return ScrollEnablement;

@@ -23,7 +23,7 @@ function(
 	 *
 	 * @alias sap.ui.layout.changeHandler.MoveSimpleForm
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @experimental Since 1.34.0
 	 */
 	var MoveSimpleForm = {};

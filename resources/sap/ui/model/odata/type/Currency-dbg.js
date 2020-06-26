@@ -45,7 +45,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.type.Currency
 	 * @public
 	 * @since 1.63.0
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @borrows sap.ui.model.odata.type.UnitMixin#getInterface as #getInterface
 	 * @borrows sap.ui.model.odata.type.UnitMixin#validateValue as #validateValue

@@ -41,7 +41,7 @@ function(
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @private
@@ -427,7 +427,7 @@ function(
 	};
 
 	/**
-	 * Updates the step aria-selected attribute in the DOM structure of the Control.
+	 * Updates the step aria-current attribute in the DOM structure of the Control.
 	 * @param {number} iNewIndex The new index at which the attribute should be set. Zero-based.
 	 * @param {number} iOldIndex The old index at which the attribute was set. Zero-based.
 	 * @private
@@ -435,14 +435,13 @@ function(
 	WizardProgressNavigator.prototype._updateStepAriaLabelAttribute = function (iNewIndex, iOldIndex) {
 		if (iOldIndex !== undefined && this._aCachedSteps[iOldIndex]) {
 			this._aCachedSteps[iOldIndex]
-				.setAttribute(
-					WizardProgressNavigatorRenderer.ATTRIBUTES.ARIA_SELECTED, "false");
+				.removeAttribute(WizardProgressNavigatorRenderer.ATTRIBUTES.ARIA_CURRENT);
 		}
 
 		if (this._aCachedSteps[iNewIndex]) {
 			this._aCachedSteps[iNewIndex]
 				.setAttribute(
-					WizardProgressNavigatorRenderer.ATTRIBUTES.ARIA_SELECTED, "true");
+					WizardProgressNavigatorRenderer.ATTRIBUTES.ARIA_CURRENT, "step");
 		}
 
 	};
@@ -623,7 +622,7 @@ function(
 		this._oActionSheet.removeAllButtons();
 		for (var i = iFromStep; i < iToStep; i++) {
 			sIcon = this.getStepIcons()[i];
-			sTitle = this._aCachedSteps[i].getAttribute("aria-label");
+			sTitle = this._aCachedSteps[i].getAttribute("aria-roledescription");
 
 			this._oActionSheet.addButton(new Button({
 				width: "200px",

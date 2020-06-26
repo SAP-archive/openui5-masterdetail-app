@@ -21,7 +21,7 @@ sap.ui.define(['./InputBase', './MaskEnabler', './MaskInputRenderer'], function(
 	 *
 	 * @author SAP SE
 	 * @extends sap.m.InputBase
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public

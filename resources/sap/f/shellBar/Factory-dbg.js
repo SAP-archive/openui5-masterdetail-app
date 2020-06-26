@@ -6,7 +6,6 @@
 sap.ui.define([
 	"sap/m/Title",
 	"sap/m/Image",
-	"./ContentButton",
 	"sap/m/MenuButton",
 	"sap/m/OverflowToolbar",
 	"sap/m/OverflowToolbarButton",
@@ -22,7 +21,6 @@ sap.ui.define([
 ], function(
 	Title,
 	Image,
-	ContentButton,
 	MenuButton,
 	OverflowToolbar,
 	OverflowToolbarButton,
@@ -76,7 +74,8 @@ sap.ui.define([
 					minWidth: "0px",
 					maxWidth: "100%"
 				})
-			);
+			)
+			._setEnableAccessibilty(false);
 			this._oControls.oOverflowToolbar._getOverflowButton().addStyleClass("sapFShellBarItem sapFShellBarOverflowButton");
 		}
 		return this._oControls.oOverflowToolbar;
@@ -113,22 +112,6 @@ sap.ui.define([
 		}
 		this._oControls.oSecondTitle._sFontSize = Parameters.get("_sap_f_ShellBar_SecondTitle_FontSize");
 		return this._oControls.oSecondTitle;
-	};
-
-	Factory.prototype.getAvatarButton = function () {
-		if (!this._oControls.oAvatarButton) {
-			this._oControls.oAvatarButton = new ContentButton({
-				icon: "none",
-				type: ButtonType.Transparent,
-				tooltip: this._oAcc.getEntityTooltip("PROFILE"),
-				iconDensityAware: false,
-				press: function () {
-					this._oContext.fireEvent("avatarPressed", {avatar: this._oControls.oAvatarButton.getAvatar()});
-				}.bind(this)
-			})
-			.addStyleClass("sapFShellBarProfile");
-		}
-		return this._oControls.oAvatarButton;
 	};
 
 	Factory.prototype.getHomeIcon = function () {

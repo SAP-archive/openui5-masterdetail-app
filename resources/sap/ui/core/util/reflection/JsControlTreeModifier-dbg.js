@@ -13,14 +13,15 @@ sap.ui.define([
 	"sap/ui/util/XMLHelper",
 	"sap/ui/core/Component",
 	"sap/base/util/merge",
-	"sap/ui/core/Fragment" // needed to have sap.ui.xmlfragment
+	"sap/ui/core/Fragment" // also needed to have sap.ui.xmlfragment
 ], function (
 	BaseTreeModifier,
 	XmlTreeModifier,
 	ObjectPath,
 	XMLHelper,
 	Component,
-	merge
+	merge,
+	Fragment
 ) {
 
 
@@ -442,6 +443,22 @@ sap.ui.define([
 				aNewControls = [aNewControls];
 			}
 			return aNewControls;
+		},
+
+		/**
+		 * @inheritDoc
+		 */
+		templateControlFragment: function(sFragmentName, mPreprocessorSettings, oView) {
+			return BaseTreeModifier._templateFragment(
+				sFragmentName,
+				mPreprocessorSettings
+			).then(function(oFragment) {
+				var oController = (oView && oView.getController()) || undefined;
+				return Fragment.load({
+					definition: oFragment,
+					controller: oController
+				});
+			});
 		},
 
 		/**

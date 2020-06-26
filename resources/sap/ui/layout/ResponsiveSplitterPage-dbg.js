@@ -5,8 +5,11 @@
  */
 
 // Provides control sap.ui.layout.ResponsiveSplitterPage
-sap.ui.define(["./library", "sap/ui/core/Control"],
-	function (library, Control) {
+sap.ui.define([
+	"./library",
+	"sap/ui/core/Control",
+	"sap/ui/core/Core"
+], function (library, Control, Core) {
 	"use strict";
 
 	/**
@@ -21,7 +24,7 @@ sap.ui.define(["./library", "sap/ui/core/Control"],
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @private
@@ -38,25 +41,23 @@ sap.ui.define(["./library", "sap/ui/core/Control"],
 				content: {type : "sap.ui.core.Control", multiple : false, singularName : "content"}
 			}
 		},
-		getContent: function () {
-			return sap.ui.getCore().byId(this.getAssociation("content"));
-		},
-		renderer : function(oRm, oControl) {
-			oRm.write("<div");
-			oRm.addClass("sapUiResponsiveSplitterPage");
-			oRm.writeControlData(oControl);
-			oRm.writeClasses();
-			oRm.write(">");
+		renderer: {
+			apiVersion: 2,
+			render: function(oRm, oControl) {
+				oRm.openStart("div", oControl)
+					.class("sapUiResponsiveSplitterPage")
+					.openEnd();
 
-			var content = oControl.getContent();
-			if (content) {
-				oRm.renderControl(content);
+				var oContent = Core.byId(oControl.getAssociation("content"));
+
+				if (oContent) {
+					oRm.renderControl(oContent);
+				}
+
+				oRm.close("div");
 			}
-
-			oRm.write("</div>");
 		}
 	});
 
 	return ResponsiveSplitterPage;
-
 });

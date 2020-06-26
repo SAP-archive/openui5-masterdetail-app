@@ -93,7 +93,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -2787,6 +2787,7 @@ sap.ui.define([
 				//necessary for IE otherwise it comes to an error if onUploadProgress happens before the new item is added to the list
 				if (oProgressLabel) {
 					oProgressLabel.setText(sPercentUploaded);
+					oProgressLabel.rerender(); //Rerender the ProgressLabel during Upload
 					oItem._percentUploaded = iPercentUploaded;
 					// add ARIA attribute for screen reader support
 

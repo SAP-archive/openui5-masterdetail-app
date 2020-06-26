@@ -20,7 +20,7 @@ sap.ui.define(['./Select', 'sap/ui/core/InvisibleText', 'sap/ui/core/Core', './A
 		 * @extends sap.m.Select
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @public

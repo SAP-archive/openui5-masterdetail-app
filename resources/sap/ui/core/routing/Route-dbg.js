@@ -13,9 +13,9 @@ sap.ui.define([
 	'sap/ui/core/Component',
 	"sap/base/Log",
 	"sap/base/assert",
-	"sap/ui/thirdparty/jquery"
+	"sap/base/util/deepExtend"
 ],
-	function(EventProvider, Target, asyncRoute, syncRoute, Component, Log, assert, jQuery) {
+	function(EventProvider, Target, asyncRoute, syncRoute, Component, Log, assert, deepExtend) {
 	"use strict";
 
 		/**
@@ -58,33 +58,33 @@ sap.ui.define([
 		 *   One or multiple name of targets {@link sap.ui.core.routing.Targets}. As soon as the route matches, the
 		 *   target(s) will be displayed. All the deprecated parameters are ignored, if a target is used.
 		 * @param {string} [oConfig.view]
-		 *   @deprecated since 1.28 - use target.viewName. The name of a view that will be created, the first time this
+		 *   <b>Deprecated since 1.28, use <code>target.viewName</code> instead.</b></br> The name of a view that will be created, the first time this
 		 *   route will be matched. To place the view into a Control use the targetAggregation and targetControl.
 		 *   Views will only be created once per Router
 		 * @param {string} [oConfig.viewType]
-		 *   @deprecated since 1.28 - use target.viewType. The type of the view that is going to be created. eg: "XML", "JS"
+		 *   <b>Deprecated since 1.28, use <code>target.viewType</code> instead.</b></br> The type of the view that is going to be created. eg: "XML", "JS"
 		 * @param {string} [oConfig.viewPath]
-		 *   @deprecated since 1.28 - use target.viewPath. A prefix that will be prepended in front of the view eg: view is
+		 *   <b>Deprecated since 1.28, use <code>target.viewPath</code> instead.</b></br> A prefix that will be prepended in front of the view eg: view is
 		 *   set to "myView" and viewPath is set to "myApp" - the created view will be "myApp.myView"
 		 * @param {string} [oConfig.targetParent]
-		 *   @deprecated since 1.28 - use config.rootView (only available in the config). the id of the parent of the
+		 *   <b>Deprecated since 1.28, use <code>config.rootView</code> (only available in the router config) instead.</b></br> The id of the parent of the
 		 *   targetControl - This should be the id view your targetControl is located in. By default, this will be
 		 *   the view created by a component, or if the Route is a subroute the view of the parent route is taken.
 		 *   You only need to specify this, if you are not using a router created by a component on your top level routes
 		 * @param {string} [oConfig.targetControl]
-		 *   @deprecated since 1.28 - use target.controlId. Views will be put into a container Control, this might be a
+		 *   <b>Deprecated since 1.28, use <code>target.controlId</code> instead.</b></br> Views will be put into a container Control, this might be a
 		 *   {@link sap.ui.ux3.Shell} control or a {@link sap.m.NavContainer} if working with mobile, or any other container.
 		 *   The id of this control has to be put in here
 		 * @param {string} [oConfig.targetAggregation]
-		 *   @deprecated since 1.28 - use target.controlAggregation. The name of an aggregation of the targetControl,
+		 *   <b>Deprecated since 1.28, use <code>target.controlAggregation</code> instead.</b></br> The name of an aggregation of the targetControl,
 		 *   that contains views. Eg: a {@link sap.m.NavContainer} has an aggregation "pages", another Example is the
 		 *   {@link sap.ui.ux3.Shell} it has "content".
-		 * @param {boolean} [oConfig.clearTarget]
-		 *   @deprecated since 1.28 - use target.clearControlAggregation. Default is false. Defines a boolean that
+		 * @param {boolean} [oConfig.clearTarget=false]
+		 *   <b>Deprecated since 1.28, use <code>target.clearControlAggregation</code> instead.</b></br> Defines a boolean that
 		 *   can be passed to specify if the aggregation should be cleared before adding the View to it. When using a
 		 *   {@link sap.ui.ux3.Shell} this should be true. For a {@link sap.m.NavContainer} it should be false
 		 * @param {object} [oConfig.subroutes]
-		 *   @deprecated since 1.28 - use targets.parent. one or multiple route configs taking all of these parameters again.
+		 *   <b>Deprecated since 1.28, use <code>targets.parent</code> instead.</b> one or multiple route configs taking all of these parameters again.
 		 *   If a subroute is hit, it will fire the routeMatched event for all its parents. The routePatternMatched event
 		 *   will only be fired for the subroute not the parents. The routing will also display all the targets of the
 		 *   subroutes and its parents.
@@ -116,6 +116,8 @@ sap.ui.define([
 				var that = this,
 					vRoute = oConfig.pattern,
 					aSubRoutes,
+					sRouteName,
+					oSubRouteConfig,
 					RouteStub,
 					async = oRouter._isAsync();
 
@@ -149,7 +151,7 @@ sap.ui.define([
 					//Convert subroutes
 					aSubRoutes = oConfig.subroutes;
 					oConfig.subroutes = {};
-					jQuery.each(aSubRoutes, function(iSubrouteIndex, oSubRoute) {
+					aSubRoutes.forEach(function(oSubRoute) {
 						oConfig.subroutes[oSubRoute.name] = oSubRoute;
 					});
 				}
@@ -167,12 +169,13 @@ sap.ui.define([
 
 				// recursively add the subroutes to this route
 				if (oConfig.subroutes) {
-					jQuery.each(oConfig.subroutes, function(sRouteName, oSubRouteConfig) {
+					for (sRouteName in oConfig.subroutes) {
+						oSubRouteConfig = oConfig.subroutes[sRouteName];
 						if (oSubRouteConfig.name === undefined) {
 							oSubRouteConfig.name = sRouteName;
 						}
 						oRouter.addRoute(oSubRouteConfig, that);
-					});
+					}
 				}
 
 				if (oConfig.pattern === undefined) {
@@ -180,7 +183,7 @@ sap.ui.define([
 					return;
 				}
 
-				jQuery.each(vRoute, function(iIndex, sRoute) {
+				vRoute.forEach(function(sRoute, iIndex) {
 
 					that._aPattern[iIndex] = sRoute;
 
@@ -190,7 +193,7 @@ sap.ui.define([
 
 					that._aRoutes[iIndex].matched.add(function() {
 						var oArguments = {};
-						jQuery.each(arguments, function(iArgumentIndex, sArgument) {
+						Array.from(arguments).forEach(function(sArgument, iArgumentIndex) {
 							oArguments[that._aRoutes[iIndex]._paramsIds[iArgumentIndex]] = sArgument;
 						});
 						that._routeMatched(oArguments, true);
@@ -623,7 +626,7 @@ sap.ui.define([
 			},
 
 			_convertToTargetOptions: function (oOptions) {
-				return jQuery.extend(true,
+				return deepExtend(
 					{},
 					oOptions,
 					{

@@ -53,7 +53,6 @@ sap.ui.define([
 	};
 
 	StaticBinding.prototype.getModel = function() {
-		assert(null, "Static Binding has no model!");
 		return null;
 	};
 

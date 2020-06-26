@@ -88,7 +88,7 @@ sap.ui.define([
 		 * </ul>
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @extends sap.m.ComboBoxBase
@@ -289,20 +289,6 @@ sap.ui.define([
 				// scroll down, the item is partly below the viewport of the list
 				oPickerDomRef.scrollTop = Math.ceil(iItemOffsetTop + iItemHeight - iPickerHeight);
 			}
-		};
-
-		/**
-		 * Prevents highlighting call from the Suggestion Popover.
-		 * TODO: Delete that once the Suggestion Popover's filtering is adopted
-		 *
-		 * @private
-		 */
-		ComboBox.prototype._createSuggestionsPopover = function () {
-			var result = ComboBoxBase.prototype._createSuggestionsPopover.call(this, arguments);
-
-			result._bEnableHighlighting = false;
-
-			return result;
 		};
 
 		function fnSelectTextIfFocused(iStart, iEnd) {
@@ -1135,11 +1121,12 @@ sap.ui.define([
 		 * @private
 		 */
 		ComboBox.prototype.handleInputValidation = function (oEvent, bCompositionEvent) {
-			var oSelectedItem = this.getSelectedItem(),
+			var aVisibleItems, aCommonStartsWithItems, oFirstVisibleItem, bCurrentlySelectedItemVisible,
+				bHasValueAndVisibleItems,
+				oSelectedItem = this.getSelectedItem(),
 				sValue = oEvent.target.value,
 				bEmptyValue = sValue === "",
 				oControl = oEvent.srcControl,
-				aVisibleItems,
 				bToggleOpenState = (this.getPickerType() === "Dropdown");
 
 			if (bEmptyValue && !this.bOpenedByKeyboardOrButton && !this.isPickerDialog()) {
@@ -1151,11 +1138,12 @@ sap.ui.define([
 				});
 			}
 
-			var bItemsVisible = !!aVisibleItems.length;
-			var oFirstVisibleItem = aVisibleItems[0]; // first item that matches the value
-			var bCurrentlySelectedItemVisible = aVisibleItems.some(function (oItem) {
+			oFirstVisibleItem = aVisibleItems[0]; // first item that matches the value
+			bCurrentlySelectedItemVisible = aVisibleItems.some(function (oItem) {
 				return oItem.getKey() === this.getSelectedKey();
 			}, this);
+			aCommonStartsWithItems = this.intersectItems(this._filterStartsWithItems(sValue, 'getText'), aVisibleItems);
+			bHasValueAndVisibleItems = !bEmptyValue && oFirstVisibleItem && oFirstVisibleItem.getEnabled();
 
 			// In some cases, the filtered items may only be shown because of second,
 			// third, etc term matched the typed in by the user value. However, if the ComboBox
@@ -1165,23 +1153,22 @@ sap.ui.define([
 			// - The selectedKey will be cleared so no "hidden" selection is left in the ComboBox
 			// - Further validation is required from application side as the ComboBox allows input
 			//   that does not match any item from the list.
-			if (bItemsVisible && this.getSelectedKey() && !bCurrentlySelectedItemVisible) {
-				this._setPropertyProtected('selectedKey', null, false);
-			}
-
-			if (!bEmptyValue && oFirstVisibleItem && oFirstVisibleItem.getEnabled()) {
-				this.handleTypeAhead(oControl, aVisibleItems, sValue, bCompositionEvent);
-			}
-
-			if (bEmptyValue || !bItemsVisible ||
-				(!oControl._bDoTypeAhead && (this._getSelectedItemText() !== sValue))) {
+			if (oFirstVisibleItem && this.getSelectedKey() && !bCurrentlySelectedItemVisible) {
 				this.setSelection(null);
+			}
 
-				if (oSelectedItem !== this.getSelectedItem()) {
-					this.fireSelectionChange({
-						selectedItem: this.getSelectedItem()
-					});
-				}
+			if (bHasValueAndVisibleItems && oControl && oControl._bDoTypeAhead) {
+				this.handleTypeAhead(oControl, aVisibleItems, sValue, bCompositionEvent);
+			} else if (bHasValueAndVisibleItems && sValue === aCommonStartsWithItems[0].getText()) {
+				this.setSelection(aCommonStartsWithItems[0]);
+			} else {
+				this.setSelection(null);
+			}
+
+			if (oSelectedItem !== this.getSelectedItem()) {
+				this.fireSelectionChange({
+					selectedItem: this.getSelectedItem()
+				});
 			}
 
 			this._sInputValueBeforeOpen = sValue;
@@ -1192,7 +1179,7 @@ sap.ui.define([
 					}.bind(this));
 				}
 
-			if (bItemsVisible) {
+			if (oFirstVisibleItem) {
 				if (bEmptyValue && !this.bOpenedByKeyboardOrButton) {
 					this.close();
 				} else if (bToggleOpenState) {
@@ -1222,38 +1209,23 @@ sap.ui.define([
 			var aCommonStartsWithItems = this.intersectItems(this._filterStartsWithItems(sValue, 'getText'), aItems);
 			var bSearchBoth = this.getFilterSecondaryValues();
 			var bDesktopPlatform = Device.system.desktop;
-			var oSelectedItem = this.getSelectedItem();
+			var aCommonAdditionalTextItems = this.intersectItems(this._filterStartsWithItems(sValue, 'getAdditionalText'), aItems);
 
-			if (oInput._bDoTypeAhead) {
-				var aCommonAdditionalTextItems = this.intersectItems(this._filterStartsWithItems(sValue, 'getAdditionalText'), aItems);
+			if (bSearchBoth && !aCommonStartsWithItems[0] && aCommonAdditionalTextItems[0]) {
 
-				if (bSearchBoth && !aCommonStartsWithItems[0] && aCommonAdditionalTextItems[0]) {
+				!bCompositionEvent && oInput.updateDomValue(aCommonAdditionalTextItems[0].getAdditionalText());
+				this.setSelection(aCommonAdditionalTextItems[0]);
 
-					!bCompositionEvent && oInput.updateDomValue(aCommonAdditionalTextItems[0].getAdditionalText());
-					this.setSelection(aCommonAdditionalTextItems[0]);
-
-				} else if (aCommonStartsWithItems[0]) {
-					!bCompositionEvent && oInput.updateDomValue(aCommonStartsWithItems[0].getText());
-					this.setSelection(aCommonStartsWithItems[0]);
-				}
-			} else {
+			} else if (aCommonStartsWithItems[0]) {
+				!bCompositionEvent && oInput.updateDomValue(aCommonStartsWithItems[0].getText());
 				this.setSelection(aCommonStartsWithItems[0]);
 			}
 
-			if (oSelectedItem !== this.getSelectedItem()) {
-				this.fireSelectionChange({
-					selectedItem: this.getSelectedItem()
-				});
-			}
-
-			if (oInput._bDoTypeAhead) {
-
-				if (bDesktopPlatform) {
-					fnSelectTextIfFocused.call(oInput, sValue.length, oInput.getValue().length);
-				} else {
-					// timeout required for an Android and Windows Phone bug
-					setTimeout(fnSelectTextIfFocused.bind(oInput, sValue.length, oInput.getValue().length), 0);
-				}
+			if (bDesktopPlatform) {
+				fnSelectTextIfFocused.call(oInput, sValue.length, oInput.getValue().length);
+			} else {
+				// timeout required for an Android and Windows Phone bug
+				setTimeout(fnSelectTextIfFocused.bind(oInput, sValue.length, oInput.getValue().length), 0);
 			}
 
 			// always focus input field when typing in it

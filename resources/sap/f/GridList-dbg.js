@@ -15,8 +15,7 @@ sap.ui.define([
 	ListBase,
 	ManagedObjectObserver,
 	GridLayoutDelegate,
-	GridLayoutBase,
-	GridListRenderer
+	GridLayoutBase
 ) {
 	"use strict";
 
@@ -81,7 +80,7 @@ sap.ui.define([
 	 * @see {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Grid_Layout MDN web docs: CSS Grid Layout}
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @extends sap.m.ListBase
 	 * @implements sap.ui.layout.cssgrid.IGridConfigurable

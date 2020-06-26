@@ -62,7 +62,7 @@ sap.ui.define([
 	 *
 	 * The TimesRow works with JavaScript Date objects.
 	 * @extends sap.ui.core.Control
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -733,7 +733,7 @@ sap.ui.define([
 			}
 
 			if ((oTimeStamp == oStartTimeStamp && !oEndDate) || (oTimeStamp >= oStartTimeStamp && oTimeStamp <= oEndTimeStamp)) {
-				oType = {type: oRange.getType(), tooltip: oRange.getTooltip_AsString()};
+				oType = {type: oRange.getType(), tooltip: oRange.getTooltip_AsString(), color: oRange.getColor()};
 				break;
 			}
 		}

@@ -12,7 +12,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 	 * Handles dragging of a control over a given grid container.
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @extends sap.ui.base.Object
 	 *

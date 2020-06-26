@@ -10,8 +10,8 @@ sap.ui.define([
 	'sap/ui/base/ManagedObject',
 	'sap/ui/base/EventProvider',
 	"sap/base/util/array/uniqueSort",
-	"sap/ui/thirdparty/jquery"
-], function(BaseObject, ManagedObject, EventProvider, uniqueSort, jQuery) {
+	'sap/base/util/deepExtend'
+], function(BaseObject, ManagedObject, EventProvider, uniqueSort, deepExtend) {
 	"use strict";
 
 	/**
@@ -470,7 +470,7 @@ sap.ui.define([
 			var iIndex = oTargetConfig.listeners.indexOf(oListener);
 			if (iIndex >= 0) {
 				//return the current configuration
-				var oConfiguration = jQuery.extend(true,{}, oTargetConfig.configurations[iIndex]);
+				var oConfiguration = deepExtend({}, oTargetConfig.configurations[iIndex]);
 				return oConfiguration;
 			}
 		}

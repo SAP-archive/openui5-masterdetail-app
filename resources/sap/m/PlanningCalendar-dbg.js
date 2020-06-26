@@ -195,7 +195,7 @@ sap.ui.define([
 	 * {@link sap.m.PlanningCalendarView PlanningCalendarView}'s properties.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -1569,6 +1569,7 @@ sap.ui.define([
 
 		if (this._oOneMonthsRow && sKey === PlanningCalendarBuiltInView.OneMonth) {
 			this._oOneMonthsRow.setMode(this._iSize);
+			oOldStartDate = this.getStartDate();
 			this._adjustSelectedDate(CalendarDate.fromLocalJSDate(oOldStartDate));
 			if (this._iSize < 2) {
 				this._setRowsStartDate(oOldStartDate);
@@ -1701,13 +1702,11 @@ sap.ui.define([
 
 	/**
 	 * Sets the selection in one month mode to match the focused date for size S and M.
-	 * @param {sap.ui.unified.calendar.CalendarDate} oDate The date to select unless bUseFirstOfMonth is used
-	 * @param {boolean} bUseFirstOfMonth If specified the first month of the given date will be used
+	 * @param {sap.ui.unified.calendar.CalendarDate} oSelectDate The date to select unless bUseFirstOfMonth is used
 	 * @private
 	 */
-	PlanningCalendar.prototype._adjustSelectedDate = function(oDate, bUseFirstOfMonth) {
-		var oSelectDate = bUseFirstOfMonth ? CalendarUtils._getFirstDateOfMonth(oDate) : oDate,
-			oLocaleDate = oSelectDate.toLocalJSDate();
+	PlanningCalendar.prototype._adjustSelectedDate = function(oSelectDate) {
+		var oLocaleDate = oSelectDate.toLocalJSDate();
 
 		if (this._oOneMonthsRow.getMode && this._oOneMonthsRow.getMode() < 2) {
 			this._oOneMonthsRow.removeAllSelectedDates();
@@ -2470,7 +2469,7 @@ sap.ui.define([
 		// the calendar should start from the 1st date of the current month
 		if (sViewKey === PlanningCalendarBuiltInView.OneMonth) {
 			oStartDate = CalendarUtils.getFirstDateOfMonth(CalendarUtils._createUniversalUTCDate(oDate, undefined, true));
-			this._adjustSelectedDate(CalendarDate.fromLocalJSDate(oDate), false);
+			this._adjustSelectedDate(CalendarDate.fromLocalJSDate(oDate));
 
 			oDate = CalendarUtils._createLocalDate(oStartDate, true);
 		}
@@ -2667,6 +2666,7 @@ sap.ui.define([
 		var aRows = this.getRows();
 		var oRow;
 		var i = 0;
+		var oSelectedDate;
 
 		var iOldSize = this._iSize;
 		determineSize.call(this, oEvent.size.width);
@@ -2739,9 +2739,11 @@ sap.ui.define([
 			}
 		}
 
-		if (this._oOneMonthsRow) {
+		if (this._oOneMonthsRow && this.getViewKey() === CalendarIntervalType.OneMonth) {
+			oSelectedDate = (this._getSelectedDates().length && this._getSelectedDates()[0].getStartDate()) ?
+				this._getSelectedDates()[0].getStartDate() : this.getStartDate();
 			this._oOneMonthsRow.setMode(this._iSize);
-			this._adjustSelectedDate(CalendarDate.fromLocalJSDate(this.getStartDate()));
+			this._adjustSelectedDate(CalendarDate.fromLocalJSDate(oSelectedDate));
 		}
 
 		// Call _updateStickyHeader only if the property stickyHeader is set to true

@@ -11,13 +11,12 @@ sap.ui.define([], function() {
 	 * Handles dynamic style changes of items when sap.ui.layout.cssgrid.GridBoxLayout is used.
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @private
 	 * @constructor
 	 */
 	var GridBoxLayoutStyleHelper = {};
-
 	GridBoxLayoutStyleHelper._mInstanceStyles = {};
 
 	/**
@@ -42,9 +41,9 @@ sap.ui.define([], function() {
 		if (!oHelper) {
 			oHelper = document.createElement("style");
 			oHelper.id = "sapUiLayoutCSSGridGridBoxLayoutStyleHelper";
-			oHelper.type = "text/css";
-			document.getElementsByTagName("head")[0].appendChild(oHelper);
+			document.head.appendChild(oHelper);
 		}
+
 		return oHelper;
 	};
 

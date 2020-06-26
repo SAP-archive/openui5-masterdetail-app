@@ -23,7 +23,7 @@ sap.ui.define(['./Control'],
 	 * </code>
 	 *
 	 * @author Daniel Brinkmann
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @class Helper Class for enhancement of a Control with propagation of enabled property.
 	 * @param {boolean} [bDefault=true] the value that should be used as default value for the enhancement of the control.
 	 * @param {boolean} [bLegacy=false] whether the introduced property should use the old name 'Enabled'

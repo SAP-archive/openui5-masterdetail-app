@@ -7,10 +7,7 @@
 sap.ui.define([
 	"sap/m/ListItemBase",
 	"./GridListItemRenderer"
-], function (
-	ListItemBase,
-	GridListItemRenderer
-) {
+], function (ListItemBase) {
 	"use strict";
 
 	/**
@@ -27,7 +24,7 @@ sap.ui.define([
 	 * @extends sap.m.ListItemBase
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @since 1.70
 	 * @constructor
@@ -55,7 +52,7 @@ sap.ui.define([
 	 * @override
 	 */
 	GridListItem.prototype.getContentAnnouncement = function() {
-		return this.getContent().map(function(oContent) {
+		return this.getContent().map(function (oContent) {
 			return ListItemBase.getAccessibilityText(oContent);
 		}).join(" ").trim();
 	};

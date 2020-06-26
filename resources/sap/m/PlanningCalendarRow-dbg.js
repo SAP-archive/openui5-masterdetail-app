@@ -23,7 +23,7 @@ sap.ui.define(['sap/ui/core/Element', 'sap/m/CustomListItem'], function (Element
 	 * The <code>sap.m.PlanningCalendarRow</code> allows you to modify appointments at row level.
 	 *
 	 * @extends sap.ui.core.Element
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public

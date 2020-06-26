@@ -64,7 +64,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -134,12 +134,13 @@ sap.ui.define([
 			enableTabReordering : {type : "boolean", group : "Behavior", defaultValue : false},
 
 			/**
-			 * Specifies whether nesting tabs within one another using drag and drop is possible.
+			 * Specifies the allowed level of tabs nesting within one another using drag and drop.
+			 * Default value is 0 which means nesting via interaction is not allowed. Maximum value is 100.
 			 * This property allows nesting via user interaction only, and does not restrict adding items
 			 * to the <code>items</code> aggregation of {@link sap.m.IconTabFilter sap.m.IconTabFilter}.
-			 * @experimental Since 1.78. This property is experimental. The API may change.
+			 * @since 1.79
 			 */
-			tabNestingViaInteraction: { type: "boolean", group : "Behavior", defaultValue: false},
+			maxNestingLevel: { type: "int", group : "Behavior", defaultValue: 0},
 
 			/**
 			 * Specifies the visual density mode of the tabs.
@@ -369,11 +370,11 @@ sap.ui.define([
 	};
 
 	/**
-	 * Returns the correct DropPosition configuration based on the setTabNestingViaInteraction property.
+	 * Returns the correct DropPosition configuration based on the maxNestingLevel.
 	 * @private
 	 */
 	IconTabHeader.prototype._getDropPosition = function () {
-		return this.getTabNestingViaInteraction() ? DropPosition.OnOrBetween : DropPosition.Between;
+		return this.getMaxNestingLevel() === 0 ? DropPosition.Between : DropPosition.OnOrBetween;
 	};
 
 	/**
@@ -873,13 +874,6 @@ sap.ui.define([
 			// selected item can't fit fully, truncate it's text and put all other items in the overflow
 			oSelectedItemDomRef.style.width = iTabStripWidth - 20 + "px";
 			oSelectedItemDomRef.classList.add("sapMITBFilterTruncated");
-			for (i = 0; i < aItems.length; i++) {
-				oItem = aItems[i];
-				if (oItem) {
-					oItem.classList.add("sapMITBFilterHidden");
-				}
-			}
-			return;
 		}
 
 		var iLastVisible = -1;
@@ -902,6 +896,7 @@ sap.ui.define([
 			oItem.classList.add("sapMITBFilterHidden");
 		}
 
+		this._getOverflow().$().toggleClass("sapMITHOverflowVisible", iLastVisible + 1 !== aItems.length);
 		this.$().toggleClass("sapMITHOverflowList", iLastVisible + 1 !== aItems.length);
 	};
 
@@ -1269,13 +1264,14 @@ sap.ui.define([
 		var oEventDropPosition = oEvent.getParameter("dropPosition"),
 			oDraggedControl = oEvent.getParameter("draggedControl"),
 			oDroppedControl = oEvent.getParameter("droppedControl"),
-			oContext = this;
+			oContext = this,
+			allowedNestingLevel = this.getMaxNestingLevel();
 
 		if (oEventDropPosition === DropPosition.On) {
 			oContext = oDroppedControl._getRealTab();
 		}
 
-		IconTabBarDragAndDropUtil.handleDrop(oContext, oEventDropPosition, oDraggedControl._getRealTab(), oDroppedControl, false);
+		IconTabBarDragAndDropUtil.handleDrop(oContext, oEventDropPosition, oDraggedControl._getRealTab(), oDroppedControl, false, allowedNestingLevel);
 
 		this._setItemsForStrip();
 		this._initItemNavigation();

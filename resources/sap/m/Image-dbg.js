@@ -55,7 +55,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @alias sap.m.Image
@@ -194,7 +194,13 @@ sap.ui.define([
 			/**
 			 * Association to controls / ids which label this control (see WAI-ARIA attribute aria-labelledBy).
 			 */
-			ariaLabelledBy: {type : "sap.ui.core.Control", multiple : true, singularName : "ariaLabelledBy"}
+			ariaLabelledBy: {type : "sap.ui.core.Control", multiple : true, singularName : "ariaLabelledBy"},
+
+			/**
+			 * Association to controls / IDs which are details to this control (see WAI-ARIA attribute aria-details).
+			 * @since 1.79
+			 */
+			ariaDetails: {type : "sap.ui.core.Control", multiple : true, singularName : "ariaDetails"}
 		},
 		events : {
 

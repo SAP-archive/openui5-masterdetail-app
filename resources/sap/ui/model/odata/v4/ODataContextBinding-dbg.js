@@ -106,7 +106,7 @@ sap.ui.define([
 	 * @mixes sap.ui.model.odata.v4.ODataParentBinding
 	 * @public
 	 * @since 1.37.0
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @borrows sap.ui.model.odata.v4.ODataBinding#getRootBinding as #getRootBinding
 	 * @borrows sap.ui.model.odata.v4.ODataBinding#hasPendingChanges as #hasPendingChanges
@@ -169,7 +169,9 @@ sap.ui.define([
 				this.oElementContext = this.bRelative
 					? null
 					: Context.create(this.oModel, this, sPath);
-				if (!this.oOperation && (!this.bRelative || oContext && !oContext.fetchValue)) {
+				if (!this.oOperation
+					&& (!this.bRelative || oContext && !oContext.fetchValue)) { // @see #isRoot
+					// do this before #setContext fires an event!
 					this.createReadGroupLock(this.getGroupId(), true);
 				}
 				this.setContext(oContext);
@@ -248,6 +250,8 @@ sap.ui.define([
 	 *
 	 * @param {sap.ui.model.odata.v4.lib._GroupLock} oGroupLock
 	 *   A lock for the group ID to be used for the request
+	 * @param {map} mParameters
+	 *   The parameter map at the time of the execute
 	 * @returns {Promise}
 	 *   A promise that is resolved without data or a return value context when the operation call
 	 *   succeeded, or rejected with an instance of <code>Error</code> in case of failure. A return
@@ -259,7 +263,7 @@ sap.ui.define([
 	 * @private
 	 * @see #execute for details
 	 */
-	ODataContextBinding.prototype._execute = function (oGroupLock) {
+	ODataContextBinding.prototype._execute = function (oGroupLock, mParameters) {
 		var oMetaModel = this.oModel.getMetaModel(),
 			oOperationMetadata,
 			oPromise,
@@ -293,7 +297,7 @@ sap.ui.define([
 				}
 				oOperationMetadata = aOperationMetadata[0];
 				return that.createCacheAndRequest(oGroupLock, sResolvedPath, oOperationMetadata,
-					fnGetEntity);
+					mParameters, fnGetEntity);
 			}).then(function (oResponseEntity) {
 				var sContextPredicate, oOldValue, sResponsePredicate;
 
@@ -434,6 +438,7 @@ sap.ui.define([
 		this.mParameters = mParameters; // store mParameters at binding after validation
 
 		if (this.isRootBindingSuspended()) {
+			this.sResumeChangeReason = sChangeReason || ChangeReason.Change;
 			return;
 		}
 
@@ -586,6 +591,8 @@ sap.ui.define([
 	 *   "/Entity('0815')/bound.Operation(...)" or "/OperationImport(...)"
 	 * @param {object} oOperationMetadata
 	 *   The operation's metadata
+	 * @param {map} mParameters
+	 *   The parameter map at the time of the execute
 	 * @param {function} [fnGetEntity]
 	 *   An optional function which may be called to access the existing entity data (if already
 	 *   loaded) in case of a bound operation
@@ -598,14 +605,13 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataContextBinding.prototype.createCacheAndRequest = function (oGroupLock, sPath,
-		oOperationMetadata, fnGetEntity) {
+		oOperationMetadata, mParameters, fnGetEntity) {
 		var bAction = oOperationMetadata.$kind === "Action",
 			oCache,
 			vEntity = fnGetEntity,
 			oModel = this.oModel,
 			sMetaPath = oModel.getMetaModel().getMetaPath(sPath) + "/@$ui5.overload/0/$ReturnType",
 			sOriginalResourcePath = sPath.slice(1),
-			mParameters = Object.assign({}, this.oOperation.mParameters),
 			oRequestor = oModel.oRequestor,
 			that = this;
 
@@ -643,6 +649,8 @@ sap.ui.define([
 		if (bAction && fnGetEntity) {
 			vEntity = fnGetEntity();
 		}
+		this.oOperation.mRefreshParameters = mParameters;
+		mParameters = Object.assign({}, mParameters);
 		this.mCacheQueryOptions = this.computeOperationQueryOptions();
 		sPath = oRequestor.getPathAndAddQueryOptions(sPath, oOperationMetadata, mParameters,
 			this.mCacheQueryOptions, vEntity);
@@ -781,10 +789,11 @@ sap.ui.define([
 	 *   control's property bindings use the return value context as binding context.
 	 * @throws {Error} If the binding's root binding is suspended, the given group ID is invalid, if
 	 *   the binding is not a deferred operation binding (see
-	 *   {@link sap.ui.model.odata.v4.ODataContextBinding}), if the binding is not resolved or
-	 *   relative to a transient context (see {@link sap.ui.model.odata.v4.Context#isTransient}), or
-	 *   if deferred operation bindings are nested, or if the OData resource path for a deferred
-	 *   operation binding's context cannot be determined.
+	 *   {@link sap.ui.model.odata.v4.ODataContextBinding}), if the binding is unresolved (see
+	 *   {@link sap.ui.model.Binding#isResolved}) or relative to a transient context (see
+	 *   {@link sap.ui.model.odata.v4.Context#isTransient}), or if deferred operation bindings are
+	 *   nested, or if the OData resource path for a deferred operation binding's context cannot be
+	 *   determined.
 	 *
 	 * @public
 	 * @since 1.37.0
@@ -810,7 +819,8 @@ sap.ui.define([
 			}
 		}
 
-		return this._execute(this.lockGroup(sGroupId, true));
+		return this._execute(this.lockGroup(sGroupId, true),
+			_Helper.clone(this.oOperation.mParameters));
 	};
 
 	/**
@@ -1053,7 +1063,7 @@ sap.ui.define([
 	 */
 	// @override sap.ui.model.Binding#initialize
 	ODataContextBinding.prototype.initialize = function () {
-		if ((!this.bRelative || this.oContext) && !this.getRootBinding().isSuspended()) {
+		if (this.isResolved() && !this.getRootBinding().isSuspended()) {
 			this._fireChange({reason : ChangeReason.Change});
 		}
 	};
@@ -1117,7 +1127,7 @@ sap.ui.define([
 			}
 			if (that.oOperation) {
 				that.oReadGroupLock = undefined;
-				return that._execute(oReadGroupLock);
+				return that._execute(oReadGroupLock, that.oOperation.mRefreshParameters);
 			}
 			if (oCache && !oPromise) { // do not refresh twice
 				// remove all cached Caches before fetching a new one
@@ -1261,30 +1271,27 @@ sap.ui.define([
 	};
 
 	/**
-	 * Resumes this binding and all dependent bindings and fires a change event afterwards.
-	 *
-	 * @param {boolean} bCheckUpdate
-	 *   Whether dependent property bindings shall call <code>checkUpdateInternal</code>
-	 *
-	 * @private
+	 * @override
+	 * @see sap.ui.model.odata.v4.ODataParentBinding#resumeInternal
 	 */
-	ODataContextBinding.prototype.resumeInternal = function (bCheckUpdate) {
-		var sChangeReason = this.sResumeChangeReason;
+	ODataContextBinding.prototype.resumeInternal = function (bCheckUpdate, bParentHasChanges) {
+		var sResumeChangeReason = this.sResumeChangeReason;
 
-		this.sResumeChangeReason = ChangeReason.Change;
+		this.sResumeChangeReason = undefined;
 
 		if (!this.oOperation) {
-			this.mAggregatedQueryOptions = {};
-			this.bAggregatedQueryOptionsInitial = true;
-			this.removeCachesAndMessages("");
-			this.fetchCache(this.oContext);
+			if (bParentHasChanges || sResumeChangeReason) {
+				this.mAggregatedQueryOptions = {};
+				this.bAggregatedQueryOptionsInitial = true;
+				this.removeCachesAndMessages("");
+				this.fetchCache(this.oContext);
+			}
 			this.getDependentBindings().forEach(function (oDependentBinding) {
-				oDependentBinding.resumeInternal(bCheckUpdate);
+				oDependentBinding.resumeInternal(bCheckUpdate, !!sResumeChangeReason);
 			});
-			this._fireChange({reason : sChangeReason});
-		} else if (this.oOperation.bAction === false) {
-			// ignore returned promise, error handling takes place in execute
-			this.execute();
+			if (sResumeChangeReason) {
+				this._fireChange({reason : sResumeChangeReason});
+			}
 		}
 	};
 

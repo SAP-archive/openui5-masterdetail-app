@@ -29,7 +29,7 @@ sap.ui.define([], function () {
 		OPEN_STEP: "data-sap-ui-wpn-step-open",
 		OPEN_STEP_PREV: "data-sap-ui-wpn-step-open-prev",
 		OPEN_STEP_NEXT: "data-sap-ui-wpn-step-open-next",
-		ARIA_SELECTED: "aria-selected",
+		ARIA_CURRENT: "aria-current",
 		ARIA_DISABLED: "aria-disabled"
 	};
 
@@ -49,7 +49,7 @@ sap.ui.define([], function () {
 	};
 
 	WizardProgressNavigatorRenderer.startNavigator = function (oRm, oControl) {
-		var sWizardLabelText = oResourceBundle.getText("WIZARD_LABEL");
+		var sWizardRoleDescriptionText = oResourceBundle.getText("WIZARD_PROGRESS_NAVIGATOR_ARIA_ROLE_DESCRIPTION");
 
 		oRm.openStart("nav", oControl)
 			.class(CLASSES.NAVIGATION)
@@ -57,7 +57,7 @@ sap.ui.define([], function () {
 			.attr(ATTRIBUTES.STEP_COUNT, oControl.getStepCount())
 			.accessibilityState({
 				role: "navigation",
-				label: sWizardLabelText
+				roledescription: sWizardRoleDescriptionText
 			})
 			.openEnd();
 	};
@@ -112,19 +112,26 @@ sap.ui.define([], function () {
 			.attr(ATTRIBUTES.STEP, iStepNumber)
 			.attr("tabindex", "-1")
 			.accessibilityState({
-				role: "listitem"
+				role: "listitem",
+				roledescription: this.writeStepRoleDescription(oRm, sStepTitle, sOptionalLabel, iStepNumber),
+				label: null
 			});
 
 		if (!oCurrentStep || !!parseInt(oCurrentStep.style.zIndex)) {
 			oRm.attr("aria-disabled", "true");
 		}
 
-		this.writeStepTooltip(oRm, sStepTitle, sOptionalLabel, iStepNumber);
+		oRm.attr("aria-posinset", iStepNumber);
+
+		if (!oControl.getVaryingStepCount()) {
+			oRm.attr("aria-setsize", oControl.getStepCount());
+		} else {
+			oRm.attr("aria-setsize", "-1");
+		}
+
 		oRm.openEnd();
 
-		oRm.openStart("div")
-			.class("sapMWizardProgressNavStepContainer");
-
+		oRm.openStart("div").class("sapMWizardProgressNavStepContainer");
 		oRm.openEnd();
 
 		// render step circle
@@ -152,7 +159,7 @@ sap.ui.define([], function () {
 		oRm.close("span");
 	};
 
-	WizardProgressNavigatorRenderer.writeStepTooltip = function (oRm, sStepTitle, sOptionalLabel, iStepNumber) {
+	WizardProgressNavigatorRenderer.writeStepRoleDescription = function (oRm, sStepTitle, sOptionalLabel, iStepNumber) {
 		var sStepText = oResourceBundle.getText("WIZARD_PROG_NAV_STEP_TITLE"),
 			sTitleAttribute;
 
@@ -167,7 +174,7 @@ sap.ui.define([], function () {
 			sTitleAttribute += " (" + sOptionalLabel + ")";
 		}
 
-		oRm.attr("aria-label", sTitleAttribute);
+		return sTitleAttribute;
 	};
 
 	WizardProgressNavigatorRenderer.renderStepTitle = function (oRm, sStepTitle, sOptionalLabel) {
@@ -187,7 +194,7 @@ sap.ui.define([], function () {
 		if (sOptionalLabel) {
 			oRm.openStart("span")
 				.class(CLASSES.STEP_TITLE_OPTIONAL_LABEL)
-				.openEnd(">")
+				.openEnd()
 				.text("(" + sOptionalLabel + ")")
 				.close("span");
 		}

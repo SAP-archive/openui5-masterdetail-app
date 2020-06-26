@@ -9,7 +9,6 @@ sap.ui.define([
 	'sap/ui/thirdparty/jquery',
 	'../base/EventProvider',
 	'./Popup',
-	'./Core',
 	'./BusyIndicatorUtils',
 	'sap/ui/core/library',
 	"sap/ui/performance/trace/FESR",
@@ -22,7 +21,6 @@ sap.ui.define([
 		jQuery,
 		EventProvider,
 		Popup,
-		Core,
 		BusyIndicatorUtils,
 		library,
 		FESR,
@@ -40,11 +38,11 @@ sap.ui.define([
 	 * Provides methods to show or hide a waiting animation covering the whole
 	 * page and blocking user interaction.
 	 * @namespace
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @public
 	 * @alias sap.ui.core.BusyIndicator
 	 */
-	var BusyIndicator = jQuery.extend( new EventProvider(), {
+	var BusyIndicator = Object.assign( new EventProvider(), {
 		oPopup: null,
 		oDomRef: null,
 		bOpenRequested: false,

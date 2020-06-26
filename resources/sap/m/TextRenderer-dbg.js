@@ -56,6 +56,9 @@ sap.ui.define([
 			oRm.openStart("span", oText);
 			oRm.class("sapMText");
 			oRm.class("sapUiSelectable");
+			if (oText.hasMaxLines()) {
+				oRm.class("sapMTextMaxLineWrapper");
+			}
 
 			// set classes for wrapping
 			if (!bWrapping || nMaxLines == 1) {

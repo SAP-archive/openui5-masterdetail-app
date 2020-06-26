@@ -70,7 +70,7 @@ sap.ui.define([
 	 * @implements sap.m.IconTab
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -744,7 +744,7 @@ sap.ui.define([
 				selectionChange: function (oEvent) {
 					var oTarget = oEvent.getParameter("selectedItem");
 					this._oIconTabHeader.setSelectedItem(oTarget._getRealTab());
-					this._oTabFilter._closeOverflow();
+					this._oTabFilter._closePopover();
 				}
 			});
 			this._oSelectList._oIconTabHeader = this.getParent();
@@ -800,6 +800,10 @@ sap.ui.define([
 	 * @private
 	 */
 	IconTabFilter.prototype._expandButtonPress = function () {
+		if (!this.getEnabled()) {
+			return;
+		}
+
 		// prepare the next focus if the select list gets closed if no item was selected
 		this.$().trigger("focus");
 
@@ -917,7 +921,7 @@ sap.ui.define([
 	IconTabFilter.prototype._createPopoverCloseButton = function () {
 		return new Button({
 			text: oResourceBundle.getText("SELECT_CANCEL_BUTTON"),
-			press: this._closeOverflow.bind(this)
+			press: this._closePopover.bind(this)
 		});
 	};
 
@@ -925,7 +929,7 @@ sap.ui.define([
 	 * Closes the popover
 	 * @private
 	 */
-	IconTabFilter.prototype._closeOverflow = function () {
+	IconTabFilter.prototype._closePopover = function () {
 		if (this._oPopover) {
 			this._oPopover.close();
 			this._oPopover.removeAllContent();
@@ -942,7 +946,7 @@ sap.ui.define([
 	* @param {jQuery.Event} oEvent The jQuery drag over event
 	*/
 	IconTabFilter.prototype._handleOnDragOver = function (oEvent) {
-		if (!this._bIsOverflow && !this._getIconTabHeader().getTabNestingViaInteraction()) {
+		if (!this._bIsOverflow && !this._getIconTabHeader().getMaxNestingLevel()) {
 			return;
 		}
 
@@ -954,7 +958,7 @@ sap.ui.define([
 	* @private
 	*/
 	IconTabFilter.prototype._handleOnLongDragOver = function () {
-		if (!this._bIsOverflow && !this._getIconTabHeader().getTabNestingViaInteraction()) {
+		if (!this._bIsOverflow && !this._getIconTabHeader().getMaxNestingLevel()) {
 			return;
 		}
 
@@ -1063,6 +1067,10 @@ sap.ui.define([
 	};
 
 	IconTabFilter.prototype.onsapdown = function (oEvent) {
+		if (!this.getEnabled()) {
+			return;
+		}
+
 		if (this._bIsOverflow ||
 				((this._getNestedLevel() === 1 && this._getRealTab() === this) && this._getRealTab().getItems().length !== 0)) {
 

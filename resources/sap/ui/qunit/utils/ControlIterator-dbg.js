@@ -53,7 +53,7 @@ sap.ui.define(['sap/ui/core/Core', "sap/base/util/ObjectPath", "sap/base/Log", "
 	 * @namespace
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @since 1.48.0
@@ -96,8 +96,8 @@ sap.ui.define(['sap/ui/core/Core', "sap/base/util/ObjectPath", "sap/base/Log", "
 		"sap.ui.core.tmpl.Template",
 		"sap.ui.core.UIComponent",
 		"sap.ui.core.util.Export",
-		"sap.ui.documentation.sdk.controls.BorrowedList",
-		"sap.ui.documentation.sdk.controls.LightTable",
+		"sap.ui.documentation.BorrowedList",
+		"sap.ui.documentation.LightTable",
 		"sap.ui.layout.BlockLayoutRow",
 		"sap.ui.layout.form.ResponsiveGridLayoutPanel", // control not for stand alone usage. Only inside ResponsiveGridLayout
 		"sap.ui.layout.form.ResponsiveLayoutPanel", // control not for stand alone usage. Only inside ResponsiveLayout

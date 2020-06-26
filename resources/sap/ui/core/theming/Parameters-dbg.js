@@ -15,9 +15,10 @@ sap.ui.define([
 	'../Element',
 	'sap/base/util/UriParameters',
 	'sap/base/Log',
+	'sap/base/util/extend',
 	'sap/ui/thirdparty/jquery'
 ],
-	function(URI, Element, UriParameters, Log, jQuery) {
+	function(URI, Element, UriParameters, Log, extend, jQuery) {
 	"use strict";
 
 	var oCfgData = window["sap-ui-config"] || {};
@@ -176,7 +177,7 @@ sap.ui.define([
 			// derive parameter file URL from CSS file URL
 			// $1: name of library (incl. variants)
 			// $2: additional parameters, e.g. for sap-ui-merged, version/sap-ui-dist-version
-			var sUrl = sStyleSheetUrl.replace(/\/(?:css-variables|library)([^\/.]*)\.(?:css|less)($|[?#])/, function($0, $1, $2) {
+			var sUrl = sStyleSheetUrl.replace(/\/(?:css_variables|library)([^\/.]*)\.(?:css|less)($|[?#])/, function($0, $1, $2) {
 				return "/library-parameters.json" + ($2 ? $2 : "");
 			});
 
@@ -418,7 +419,7 @@ sap.ui.define([
 			if (arguments.length === 0) {
 				loadPendingLibraryParameters();
 				var oParams = getParameters();
-				return jQuery.extend({}, oParams["default"]);
+				return Object.assign({}, oParams["default"]);
 			}
 
 			if (!vName) {
@@ -489,7 +490,7 @@ sap.ui.define([
 				var sLibname = sId.substr(13); // length of sap-ui-theme-
 				if (mLibraryParameters[sLibname]) {
 					// if parameters are already provided for this lib, use them (e.g. from LessSupport)
-					jQuery.extend(mParameters["default"], mLibraryParameters[sLibname]);
+					extend(mParameters["default"], mLibraryParameters[sLibname]);
 				} else {
 					// otherwise use inline-parameters or library-parameters.json
 					loadParameters(sId);

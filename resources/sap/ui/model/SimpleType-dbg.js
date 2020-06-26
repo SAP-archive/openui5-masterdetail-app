@@ -44,7 +44,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.model.Type
 	 * @public
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 */
 	var SimpleType = Type.extend("sap.ui.model.SimpleType", /** @lends sap.ui.model.SimpleType.prototype */ {
 

@@ -62,7 +62,7 @@ function(
 	 * @implements sap.ui.core.IFormContent
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -885,7 +885,7 @@ function(
 			}, this);
 	};
 
-	InputBase.prototype._dettachValueStateLinkPress = function() {
+	InputBase.prototype._detachValueStateLinkPress = function() {
 		this._aValueStateLinks().forEach(
 			function(oLink) {
 				oLink.detachPress(this.fnCloseValueStateOnClick, this);
@@ -947,7 +947,7 @@ function(
 		// the value state message should be closed with timeout because it's opened that way
 		setTimeout(function() {
 			if (this._oValueStateMessage) {
-				this._dettachValueStateLinkPress();
+				this._detachValueStateLinkPress();
 				this._oValueStateMessage.close();
 			}
 		}.bind(this), 0);
@@ -1025,6 +1025,7 @@ function(
 			// in IE we should wait until the scroll ends
 			setTimeout(function () {
 				if (!this.bIsDestroyed) {
+					this._detachValueStateLinkPress();
 					this._attachValueStateLinkPress();
 					this._oValueStateMessage.open();
 				}

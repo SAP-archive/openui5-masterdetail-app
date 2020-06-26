@@ -59,7 +59,7 @@ sap.ui.define([
 	 * @implements sap.ui.core.IContextMenu
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 * @since 1.21.0
 	 *
 	 * @constructor
@@ -916,10 +916,11 @@ sap.ui.define([
 		}
 
 		var oSubMenu = oItem.getSubmenu();
-
 		if (!oSubMenu) {
 			// This is a normal item -> Close all menus and fire event.
-			this.getRootMenu().close();
+			// Call Menu.prototype.close with argument value equal to "true"
+			// in order not to ignore the opener DOM reference
+			this.getRootMenu().close(true);
 		} else {
 			if (!Device.system.desktop && this.oOpenedSubMenu === oSubMenu) {
 				this.closeSubmenu();

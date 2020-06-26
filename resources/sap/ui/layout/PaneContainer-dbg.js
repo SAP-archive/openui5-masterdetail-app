@@ -4,7 +4,6 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-// Provides control sap.ui.layout.PaneContainer.
 sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap/ui/core/library'],
 	function(library, Element, AssociativeSplitter, coreLibrary) {
 	"use strict";
@@ -25,7 +24,7 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -70,9 +69,8 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 	 */
 	PaneContainer.prototype.setOrientation = function(sOrientation) {
 		this._oSplitter.setOrientation(sOrientation);
-		return this.setProperty("orientation", sOrientation, true);
+		return this.setProperty("orientation", sOrientation);
 	};
-
 
 	PaneContainer.prototype._getPanesInInterval = function (iFrom) {
 		return this.getPanes().filter(function(oPane) {
@@ -147,5 +145,4 @@ sap.ui.define(['./library', 'sap/ui/core/Element', './AssociativeSplitter', 'sap
 	};
 
 	return PaneContainer;
-
 });

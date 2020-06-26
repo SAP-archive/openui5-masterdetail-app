@@ -644,7 +644,7 @@ sap.ui.define([
 	 * @hideconstructor
 	 * @public
 	 * @since 1.37.0
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 */
 	var ODataMetaModel = MetaModel.extend("sap.ui.model.odata.v4.ODataMetaModel", {
 		/*
@@ -1209,7 +1209,7 @@ sap.ui.define([
 					return log.apply(this, arguments);
 				}
 
-				vBindingParameterType = vResult && vResult.$Type;
+				vBindingParameterType = vResult && vResult.$Type || vBindingParameterType;
 				if (that.bSupportReferences && !(sQualifiedName in mScope)) {
 					// unknown qualified name: maybe schema is referenced and can be included?
 					sSchema = schema(sQualifiedName);
@@ -1423,6 +1423,7 @@ sap.ui.define([
 						// annotation(s) via external targeting
 						// Note: inline annotations can only be reached via pure "JSON" drill-down,
 						//       e.g. ".../$ReferentialConstraint/...@..."
+						vBindingParameterType = vResult.$Type || vBindingParameterType;
 						vResult = mScope.$Annotations[sTarget] || {};
 						bODataMode = false; // switch to pure "JSON" drill-down
 					} else if (sSegment === "$" && i + 1 < aSegments.length) {
@@ -1678,6 +1679,15 @@ sap.ui.define([
 					}
 				}
 			});
+
+			if (bNoEditUrl) {
+				return SyncPromise.resolve({
+					editUrl : undefined,
+					entityPath : sEntityPath,
+					propertyPath : sPropertyPath
+				});
+			}
+
 			// aEditUrl may still contain key predicate requests, run them and wait for the promises
 			return SyncPromise.all(aEditUrl.map(function (vSegment) {
 				if (typeof vSegment === "string") {
@@ -1688,9 +1698,6 @@ sap.ui.define([
 					var sPredicate;
 
 					if (!oEntity) {
-						if (bNoEditUrl) {
-							return undefined;
-						}
 						error("No instance to calculate key predicate at " + vSegment.path);
 					}
 					if (_Helper.hasPrivateAnnotation(oEntity, "transient")) {
@@ -1930,7 +1937,7 @@ sap.ui.define([
 	 *   If this flag is set, only the completely reduced path is returned (a single path)
 	 * @param {boolean} [bNoReduceBeforeCollection]
 	 *   If this flag is set, there is no reduction in the part of the path before a
-	 *   collection-valued (navigation) property
+	 *   collection-valued (navigation) property (see {@link #getReducedPath})
 	 * @returns {string|string[]}
 	 *   The completely reduced absolute path if bSinglePath is set; otherwise a list of all
 	 *   absolute paths in case multiple reductions are possible incl. the path itself; no path will
@@ -2245,6 +2252,11 @@ sap.ui.define([
 	 * "/Employees(42)/name.space.AcIncreaseSalaryByFactor(...)/$Parameter/_it/Name" is reduced to
 	 * "/Employees(42)/Name" if "_it" is the binding parameter.
 	 *
+	 * The function does not reduce a path to a collection-valued navigation property. This would
+	 * possibly add a late property to an existing list binding (causing one request for each
+	 * row), or it would possibly try to merge two list bindings with conflicting parameters.
+	 * However the property itself and subsequent properties are possible partners to be reduced.
+	 *
 	 * The metadata for <code>sPath</code> must be available synchronously.
 	 *
 	 * @param {string} sPath
@@ -2258,7 +2270,8 @@ sap.ui.define([
 	 * @private
 	 */
 	ODataMetaModel.prototype.getReducedPath = function (sPath, sBasePath) {
-		return this.getAllPathReductions(sPath, sBasePath, true, true);
+		return this.getAllPathReductions(sPath, sBasePath, /*bSinglePath*/true,
+			/*bNoReduceBeforeCollection*/true);
 	};
 
 	/**

@@ -129,7 +129,7 @@ function(
 	 *
 	 * @extends sap.m.InputBase
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -495,9 +495,6 @@ function(
 		InputBase.prototype.init.call(this);
 		this._fnFilter = SuggestionsPopover._DEFAULTFILTER;
 
-		// Show suggestions in a dialog on phones:
-		this._bUseDialog = Device.system.phone;
-
 		// Show suggestions in a full screen dialog on phones:
 		this._bFullScreen = Device.system.phone;
 
@@ -758,7 +755,7 @@ function(
 			return;
 		}
 
-		if (!(this._bUseDialog && this instanceof sap.m.MultiInput)) {
+		if (!(this.isMobileDevice() && this instanceof sap.m.MultiInput)) {
 			this._closeSuggestionPopup();
 		}
 
@@ -974,7 +971,7 @@ function(
 			return;
 		}
 
-		if (!(this._bUseDialog && this instanceof sap.m.MultiInput && this._isMultiLineMode)) {
+		if (!(this.isMobileDevice() && this instanceof sap.m.MultiInput && this._isMultiLineMode)) {
 			this._closeSuggestionPopup();
 		}
 
@@ -1105,7 +1102,7 @@ function(
 			this._fireValueHelpRequestForValueHelpOnly();
 		}
 
-		if (this._bUseDialog
+		if (this.isMobileDevice()
 			 && this.getEditable()
 			 && this.getEnabled()
 			 && this.getShowSuggestion()
@@ -1341,7 +1338,7 @@ function(
 			this._oSuggPopover._deregisterResize();
 		}
 
-		if (this._bUseDialog && this._oSuggPopover && this._oSuggPopover._oPopover) {
+		if (this.isMobileDevice() && this._oSuggPopover && this._oSuggPopover._oPopover) {
 			this.$().off("click");
 		}
 	};
@@ -1419,7 +1416,7 @@ function(
 					this._sPrevSuggValue = sValue;
 				}
 			}.bind(this), 300);
-		} else if (this._bUseDialog) {
+		} else if (this.isMobileDevice()) {
 			if (this._oSuggPopover._oList instanceof Table) {
 				// CSN# 1421140/2014: hide the table for empty/initial results to not show the table columns
 				this._oSuggPopover._oList.addStyleClass("sapMInputSuggestionTableHidden");
@@ -1541,7 +1538,7 @@ function(
 
 			// No need to fire suggest event when suggestion feature isn't enabled or runs on the phone.
 			// Because suggest event should only be fired by the input in dialog when runs on the phone.
-			if (this.getShowSuggestion() && !this._bUseDialog) {
+			if (this.getShowSuggestion() && !this.isMobileDevice()) {
 				oSuggestionsPopover = this._getSuggestionsPopover();
 				oList = oSuggestionsPopover._oList;
 				this._triggerSuggest(sValue);
@@ -1741,7 +1738,7 @@ function(
 			}
 
 			// when the input has no value, close the Popup when not runs on the phone because the opened dialog on phone shouldn't be closed.
-			if (!this._bUseDialog) {
+			if (!this.isMobileDevice()) {
 				if (oPopup.isOpen()) {
 					this._sCloseTimer = setTimeout(function () {
 						this._oSuggPopover._iPopupListSelectedIndex = -1;
@@ -1758,7 +1755,6 @@ function(
 			}
 
 			this.$("SuggDescr").text(""); // clear suggestion text
-			this.$("inner").removeAttr("aria-haspopup");
 			this.$("inner").removeAttr("aria-activedescendant");
 		};
 
@@ -1771,7 +1767,7 @@ function(
 		Input.prototype._openSuggestionPopup = function (bOpenCondition) {
 			var oPopup = this._oSuggPopover._oPopover;
 
-			if (!this._bUseDialog) {
+			if (!this.isMobileDevice()) {
 				if (this._sCloseTimer) {
 					clearTimeout(this._sCloseTimer);
 					this._sCloseTimer = null;
@@ -1779,12 +1775,10 @@ function(
 				if (!oPopup.isOpen() && !this._sOpenTimer && bOpenCondition !== false) {
 					this._sOpenTimer = setTimeout(function () {
 						this._sOpenTimer = null;
-						this._openSuggestionsPopover();
+						this._oSuggPopover && this._openSuggestionsPopover();
 					}.bind(this), 0);
 				}
 			}
-
-			this.$("inner").attr("aria-haspopup", "true");
 		};
 
 		/**
@@ -1802,7 +1796,7 @@ function(
 
 			if (this._hasTabularSuggestions()) {
 				// show list on phone (is hidden when search string is empty)
-				if (this._bUseDialog && this._oSuggPopover._oList) {
+				if (this.isMobileDevice() && this._oSuggPopover._oList) {
 					this._oSuggPopover._oList.removeStyleClass("sapMInputSuggestionTableHidden");
 				}
 
@@ -1880,7 +1874,7 @@ function(
 			if (!bShowSuggestion ||
 				!this._bShouldRefreshListItems ||
 				!this.getDomRef() ||
-				(!this._bUseDialog && !this.$().hasClass("sapMInputFocused"))) {
+				(!this.isMobileDevice() && !this.$().hasClass("sapMInputFocused"))) {
 
 				return null;
 			}
@@ -2098,11 +2092,10 @@ function(
 
 				// Ensure the valueStateMessage is opened after the suggestion popup is closed.
 				// Only do this for desktop (not required for mobile) when the focus is on the input.
-				if (!this._bUseDialog && this.$().hasClass("sapMInputFocused")) {
+				if (!this.isMobileDevice() && this.$().hasClass("sapMInputFocused")) {
 					this.openValueStateMessage();
 				}
 				this.$("SuggDescr").text(""); // initialize suggestion ARIA text
-				this.$("inner").removeAttr("aria-haspopup");
 				this.$("inner").removeAttr("aria-activedescendant");
 
 				this._sPrevSuggValue = null;
@@ -2155,7 +2148,7 @@ function(
 
 		// Close the ValueStateMessage when the suggestion popup is being opened.
 		// Only do this in case a popup is used.
-		if (!this._bUseDialog && this._isSuggestionsPopoverOpen()) {
+		if (!this.isMobileDevice() && this._isSuggestionsPopoverOpen()) {
 			this.closeValueStateMessage();
 		}
 
@@ -2260,7 +2253,8 @@ function(
 					this._oSuggPopover._bSuggestionItemTapped = true;
 					var oSelectedListItem = oEvent.getParameter("listItem");
 					this.setSelectionRow(oSelectedListItem, true);
-				}.bind(this)
+				}.bind(this),
+				sticky: [library.Sticky.ColumnHeaders]
 			});
 
 			this._oSuggestionTable.addEventDelegate({
@@ -2279,7 +2273,7 @@ function(
 			});
 
 			// initially hide the table on phone
-			if (this._bUseDialog) {
+			if (this.isMobileDevice()) {
 				this._oSuggestionTable.addStyleClass("sapMInputSuggestionTableHidden");
 			}
 
@@ -2357,7 +2351,7 @@ function(
 	 * @protected
 	 */
 	Input.prototype.updateInputField = function(sNewValue) {
-		if (this._isSuggestionsPopoverOpen() && this._bUseDialog) {
+		if (this._isSuggestionsPopoverOpen() && this.isMobileDevice()) {
 			this._oSuggPopover._oPopupInput.setValue(sNewValue);
 			this._oSuggPopover._oPopupInput._doSelect();
 		} else {
@@ -2659,7 +2653,7 @@ function(
 		if (!this._oSuggPopover) {
 			var oSuggPopover = this._oSuggPopover = new SuggestionsPopover(this);
 
-			if (this._bUseDialog) {
+			if (this.isMobileDevice()) {
 				var oInput = this._createPopupInput();
 				oSuggPopover._oPopupInput = this._modifyPopupInput(oInput);
 			}
@@ -2715,7 +2709,7 @@ function(
 			this._updateSuggestionsPopoverValueState();
 		}, this);
 
-		if (this._bUseDialog) {
+		if (this.isMobileDevice()) {
 			oPopover
 				.attachBeforeClose(function () {
 					// call _getInputValue to apply the maxLength to the typed value
@@ -2724,7 +2718,7 @@ function(
 							.getValue()));
 					this.onChange();
 
-					if (this instanceof sap.m.MultiInput && this._bUseDialog) {
+					if (this instanceof sap.m.MultiInput && this.isMobileDevice()) {
 						this._onDialogClose();
 					}
 
@@ -2855,6 +2849,16 @@ function(
 	};
 
 	/**
+	 * Indicates whether the control should use <code>sap.m.Dialog</code> or not.
+	 *
+	 * @returns {Boolean} Boolean.
+	 * @protected
+	 */
+	Input.prototype.isMobileDevice = function () {
+		return Device.system.phone;
+	};
+
+	/**
 	 * Opens the suggestions popover
 	 *
 	 * @private
@@ -2873,7 +2877,7 @@ function(
 	Input.prototype._updateSuggestionsPopoverValueState = function() {
 		var oSuggPopover = this._oSuggPopover,
 			sValueState = this.getValueState(),
-			bNewValueState = this.getValueState() !== this._oSuggPopover._getValueStateHeader().getValueState(),
+			bNewValueState = this.getValueState() !== oSuggPopover._getValueStateHeader().getValueState(),
 			oNewFormattedValueStateText = this.getFormattedValueStateText(),
 			sValueStateText = this.getValueStateText();
 
@@ -2890,7 +2894,7 @@ function(
 
 		oSuggPopover.updateValueState(sValueState, (oNewFormattedValueStateText || sValueStateText), this.getShowValueStateMessage());
 
-		if (this._bUseDialog) {
+		if (this.isMobileDevice()) {
 			oSuggPopover._oPopupInput.setValueState(sValueState);
 		}
 	};

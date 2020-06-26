@@ -77,7 +77,7 @@ sap.ui.define([
 		 * @extends sap.ui.core.Control
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @private
@@ -511,8 +511,10 @@ sap.ui.define([
 					};
 					// get only the visible appointments
 				}).filter(function(app) {
-					return CalendarUtils._isBetween(app.start, oFirstVisibleDay, oLastVisibleDay, true)
-						|| CalendarUtils._isBetween(app.end, oFirstVisibleDay, oLastVisibleDay, true);
+					return CalendarUtils._isBetween(app.start, oFirstVisibleDay, oLastVisibleDay, true) // app starts in the current view port
+						|| CalendarUtils._isBetween(app.end, oFirstVisibleDay, oLastVisibleDay, true) // app ends in the current view port
+						|| (CalendarUtils._isBetween(oFirstVisibleDay, app.start, oLastVisibleDay, true) // app starts before the view port...
+							&& CalendarUtils._isBetween(oLastVisibleDay, oFirstVisibleDay, app.end,true)); // ...and ends after the view port
 					// sort by start date
 				}).sort(function compare(a, b) {
 					return a.start.valueOf() - b.start.valueOf();

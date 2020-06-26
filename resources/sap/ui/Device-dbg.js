@@ -11,7 +11,7 @@
  * This API is independent from any other part of the UI5 framework. This allows it to be loaded beforehand, if it is needed, to create the UI5 bootstrap
  * dynamically depending on the capabilities of the browser or device.
  *
- * @version 1.78.1
+ * @version 1.79.0
  * @namespace
  * @name sap.ui.Device
  * @public
@@ -32,7 +32,7 @@ if (typeof window.sap.ui !== "object") {
 
 	//Skip initialization if API is already available
 	if (typeof window.sap.ui.Device === "object" || typeof window.sap.ui.Device === "function") {
-		var apiVersion = "1.78.1";
+		var apiVersion = "1.79.0";
 		window.sap.ui.Device._checkAPIVersion(apiVersion);
 		return;
 	}
@@ -105,7 +105,7 @@ if (typeof window.sap.ui !== "object") {
 
 	//Only used internal to make clear when Device API is loaded in wrong version
 	Device._checkAPIVersion = function(sVersion) {
-		var v = "1.78.1";
+		var v = "1.79.0";
 		if (v != sVersion) {
 			oLogger.log(WARNING, "Device API version differs: " + v + " <-> " + sVersion);
 		}
@@ -596,13 +596,6 @@ if (typeof window.sap.ui !== "object") {
 	 * @public
 	 */
 	/**
-	 * If this flag is set to <code>true</code>, the Phantom JS browser is used.
-	 *
-	 * @name sap.ui.Device.browser.phantomJS
-	 * @type boolean
-	 * @private
-	 */
-	/**
 	 * The version of the used Webkit engine, if available.
 	 *
 	 * @see sap.ui.Device.browser.webkit
@@ -781,11 +774,11 @@ if (typeof window.sap.ui !== "object") {
 					webkitVersion: webkitVersion
 				};
 			} else { // Safari might have an issue with sUserAgent.match(...); thus changing
-				var oExp = /(Version|PhantomJS)\/(\d+\.\d+).*Safari/;
+				var oExp = /Version\/(\d+\.\d+).*Safari/;
 				var bStandalone = oNavigator.standalone;
 				if (oExp.test(sUserAgent)) {
 					var aParts = oExp.exec(sUserAgent);
-					var fVersion = parseFloat(aParts[2]);
+					var fVersion = parseFloat(aParts[1]);
 					oResult =  {
 						name: BROWSER.SAFARI,
 						versionStr: "" + fVersion,
@@ -794,8 +787,7 @@ if (typeof window.sap.ui !== "object") {
 						version: fVersion,
 						mobile: oExpMobile.test(sUserAgent),
 						webkit: true,
-						webkitVersion: webkitVersion,
-						phantomJS: aParts[1] === "PhantomJS"
+						webkitVersion: webkitVersion
 					};
 				} else if (/iPhone|iPad|iPod/.test(sUserAgent) && !(/CriOS/.test(sUserAgent)) && !(/FxiOS/.test(sUserAgent)) && (bStandalone === true || bStandalone === false)) {
 					//WebView or Standalone mode on iOS
@@ -969,14 +961,6 @@ if (typeof window.sap.ui !== "object") {
 	|| (navigator.maxTouchPoints > 0)
 	|| (window.DocumentTouch && document instanceof window.DocumentTouch)
 	|| (window.TouchEvent && Device.browser.firefox));
-
-	// FIXME: PhantomJS doesn't support touch events but exposes itself as touch
-	//        enabled browser. Therefore we manually override that in jQuery.support!
-	//        This has been tested with PhantomJS 1.9.7 and 2.0.0!
-	if (Device.browser.phantomJS) {
-		oLogger.log(ERROR, "PhantomJS is not supported! UI5 might break on PhantomJS in future releases. Please use Chrome Headless instead.");
-		Device.support.touch = false;
-	}
 
 	Device.support.pointer = !!window.PointerEvent;
 

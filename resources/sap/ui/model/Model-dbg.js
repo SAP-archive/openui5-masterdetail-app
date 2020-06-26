@@ -46,7 +46,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.message.MessageProcessor
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @alias sap.ui.model.Model
@@ -989,23 +989,20 @@ sap.ui.define([
 	 * @protected
 	 */
 	Model.prototype.getMessagesByPath = function (sPath, bPrefixMatch) {
-		var aMessages,
+		var oMessageSet = new Set(),
 			that = this;
 
 		if (!bPrefixMatch) {
 			return this.mMessages[sPath] || [];
 		}
 
-		aMessages = [];
 		Object.keys(this.mMessages).forEach(function (sMessagePath) {
-			var aMatchingMessages = that.filterMatchingMessages(sMessagePath, sPath);
-
-			if (aMatchingMessages.length) {
-				aMessages = aMessages.concat(aMatchingMessages);
-			}
+			that.filterMatchingMessages(sMessagePath, sPath).forEach(function (oMessage) {
+				oMessageSet.add(oMessage);
+			});
 		});
 
-		return aMessages;
+		return Array.from(oMessageSet);
 	};
 
 	/**

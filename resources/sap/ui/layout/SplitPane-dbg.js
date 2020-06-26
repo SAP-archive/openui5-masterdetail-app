@@ -4,7 +4,6 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-// Provides control sap.ui.layout.SplitPane.
 sap.ui.define(['./library', 'sap/ui/core/Element'],
 	function(library, Element) {
 	"use strict";
@@ -27,7 +26,7 @@ sap.ui.define(['./library', 'sap/ui/core/Element'],
 	 * @extends sap.ui.core.Element
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -90,5 +89,4 @@ sap.ui.define(['./library', 'sap/ui/core/Element'],
 	};
 
 	return SplitPane;
-
 });

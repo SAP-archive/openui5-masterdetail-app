@@ -52,7 +52,7 @@ sap.ui.define([
 	 * be closed.
 	 *
 	 * @extends sap.m.List
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -882,7 +882,7 @@ sap.ui.define([
 		// When the list is filtered so that the focused list item disappears from the DOM
 		// then focus can't be reapplied inside the list and if the FacetFilterList is inside a popover
 		// then the popover closes unexpectedly.
-		if (oPrevActiveElement.getAttribute("id") !== document.activeElement.getAttribute("id")) {
+		if (oPrevActiveElement && oPrevActiveElement.getAttribute("id") !== document.activeElement.getAttribute("id")) {
 			this.focus();
 		}
 

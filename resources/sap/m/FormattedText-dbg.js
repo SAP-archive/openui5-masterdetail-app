@@ -38,7 +38,7 @@ function(
 		 * @class
 		 * The FormattedText control allows the usage of a limited set of tags for inline display of formatted text in HTML format.
 		 * @extends sap.ui.core.Control
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @public
@@ -298,6 +298,10 @@ function(
 
 		FormattedText.prototype.onAfterRendering = function () {
 			this.$().find('a[target="_blank"]').on("click", openExternalLink);
+		};
+
+		FormattedText.prototype.onBeforeRendering = function () {
+			this.$().find('a[target="_blank"]').off("click", openExternalLink);
 		};
 
 		FormattedText.prototype._getDisplayHtml = function (){

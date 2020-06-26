@@ -35,7 +35,7 @@ sap.ui.define([
 	 * @extends sap.ui.model.SimpleType
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @public
 	 * @param {object} [oFormatOptions] Formatting options. For a list of all available options, see {@link sap.ui.core.format.NumberFormat#constructor NumberFormat}.
@@ -85,14 +85,14 @@ sap.ui.define([
 				iResult = this.oOutputFormat.parse(String(vValue));
 				if (isNaN(iResult)) {
 					oBundle = sap.ui.getCore().getLibraryResourceBundle();
-					throw new ParseException(oBundle.getText("Integer.Invalid"));
+					throw new ParseException(oBundle.getText("EnterInt"));
 				}
 				break;
 			case "float":
 				iResult = Math.floor(vValue);
 				if (iResult != vValue) {
 					oBundle = sap.ui.getCore().getLibraryResourceBundle();
-					throw new ParseException(oBundle.getText("Integer.Invalid"));
+					throw new ParseException(oBundle.getText("EnterInt"));
 				}
 				break;
 			case "int":

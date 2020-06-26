@@ -35,7 +35,7 @@ sap.ui.define([
 		 * @extends sap.m.InputBase
 		 *
 		 * @author SAP SE
-		 * @version 1.78.1
+		 * @version 1.79.0
 		 *
 		 * @constructor
 		 * @public
@@ -155,7 +155,7 @@ sap.ui.define([
 			}
 
 			// mark the event for components that needs to know if the event was handled
-			oEvent.setMarked();
+			this._bCheckDomValue &&  oEvent.setMarked();
 
 			var sValue = this.getValue(),
 				iValueLength = sValue.length;

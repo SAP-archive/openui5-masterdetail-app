@@ -72,7 +72,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -263,11 +263,15 @@ sap.ui.define([
 	 */
 	MessageStripRenderer.getAccessibilityState = function () {
 		var mAccessibilityState = MSUtils.getAccessibilityState.call(this),
-			oLink = this.getLink();
+			oLink = this.getLink(),
+			oResourceBundle = Core.getLibraryResourceBundle("sap.m");
+
 
 		if (!oLink) {
 			mAccessibilityState.labelledby = this.getId();
 		}
+
+		mAccessibilityState.roledescription = oResourceBundle.getText("MESSAGE_STRIP_ARIA_ROLE_DESCRIPTION");
 		return mAccessibilityState;
 	};
 
@@ -314,14 +318,14 @@ sap.ui.define([
 		if (!this._oInvisibleText) {
 			this._oInvisibleText = new InvisibleText({
 				text: sText
-			});
+			}).toStatic();
 		} else {
 			this._oInvisibleText.setText(sText);
 		}
 
 		if (oCloseButton) {
 			oCloseButton.removeAllAriaLabelledBy();
-			oCloseButton.addAriaLabelledBy(this._oInvisibleText.toStatic().getId());
+			oCloseButton.addAriaLabelledBy(this._oInvisibleText.getId());
 		}
 	};
 

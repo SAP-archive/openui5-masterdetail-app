@@ -22,7 +22,7 @@ sap.ui.define(['./ViewSettingsItem', 'sap/ui/base/ManagedObject', './library'],
 	 * @extends sap.m.ViewSettingsItem
 	 *
 	 * @author SAP SE
-	 * @version 1.78.1
+	 * @version 1.79.0
 	 *
 	 * @constructor
 	 * @public
@@ -48,6 +48,12 @@ sap.ui.define(['./ViewSettingsItem', 'sap/ui/base/ManagedObject', './library'],
 			customControl : {type : "sap.ui.core.Control", multiple : false}
 		}
 	}});
+
+	ViewSettingsCustomItem.prototype.init = function () {
+		this.attachEvent("modelContextChange", function() {
+			this._control && this._control.setModel(this.getModel());
+		}.bind(this));
+	};
 
 	/**
 	 * Destroys the control.
