@@ -1,24 +1,22 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	'sap/ui/core/Control',
-	'sap/m/NumericContent',
-	'sap/m/Text',
-	"sap/f/cards/NumericSideIndicator",
+	"sap/ui/core/Control",
+	"sap/m/NumericContent",
+	"sap/m/Text",
 	"sap/f/cards/NumericHeaderRenderer",
 	"sap/ui/core/Core"
 ], function (
-		Control,
-		NumericContent,
-		Text,
-		NumericSideIndicator,
-		NumericHeaderRenderer,
-		Core
-	) {
-		"use strict";
+	Control,
+	NumericContent,
+	Text,
+	NumericHeaderRenderer,
+	Core
+) {
+	"use strict";
 
 	/**
 	 * Constructor for a new <code>NumericHeader</code>.
@@ -43,7 +41,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -153,7 +151,8 @@ sap.ui.define([
 				 */
 				press: {}
 			}
-		}
+		},
+		renderer: NumericHeaderRenderer
 	});
 
 	/**
@@ -392,7 +391,7 @@ sap.ui.define([
 	 */
 	NumericHeader.prototype.ontap = function (oEvent) {
 		var srcControl = oEvent.srcControl;
-		if (srcControl && srcControl.getId().indexOf('overflowButton') > -1) { // better way?
+		if (srcControl && srcControl.getId().indexOf("overflowButton") > -1) { // better way?
 			return;
 		}
 
@@ -413,15 +412,15 @@ sap.ui.define([
 	 * @returns {string} IDs of controls
 	 */
 	NumericHeader.prototype._getHeaderAccessibility = function () {
-		var sTitleId = this._getTitle() ? this._getTitle().getId() : "",
-			sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
+		var sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
 			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
 			sUnitOfMeasureId = this._getUnitOfMeasurement() ? this._getUnitOfMeasurement().getId() : "",
 			sSideIndicatorsId = this.getSideIndicators() ? this._getSideIndicatorIds() : "",
 			sDetailsId = this._getDetails() ? this._getDetails().getId() : "",
-			sMainIndicatorId = this._getMainIndicator() ? this._getMainIndicator().getId() : "";
+			sMainIndicatorId = this._getMainIndicator() ? this._getMainIndicator().getId() : "",
+			sIds = sSubtitleId + " " + sStatusTextId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsId + " " + sDetailsId;
 
-			return sTitleId + " " + sSubtitleId + " " + sStatusTextId + " " + sUnitOfMeasureId + " " + sMainIndicatorId + sSideIndicatorsId + " " + sDetailsId;
+			return sIds.trim();
 	};
 
 	/**
@@ -431,12 +430,12 @@ sap.ui.define([
 	 */
 	NumericHeader.prototype._setAccessibilityAttributes = function () {
 		if (this.hasListeners("press")) {
-			this._sAriaRole = 'button';
+			this._sAriaRole = "button";
 			this._sAriaHeadingLevel = undefined;
 			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_INTERACTIVE_CARD_HEADER");
 		} else {
-			this._sAriaRole = 'heading';
-			this._sAriaHeadingLevel = '3';
+			this._sAriaRole = "heading";
+			this._sAriaHeadingLevel = "3";
 			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER");
 		}
 	};
@@ -480,6 +479,25 @@ sap.ui.define([
 		this.invalidate();
 
 		return this;
+	};
+
+	/**
+	 * Returns if the control is inside a sap.f.GridContainer
+	 *
+	 * @private
+	 */
+	NumericHeader.prototype._isInsideGridContainer = function() {
+		var oParent = this.getParent();
+		if (!oParent) {
+			return false;
+		}
+
+		oParent = oParent.getParent();
+		if (!oParent) {
+			return false;
+		}
+
+		return oParent.isA("sap.f.GridContainer");
 	};
 
 	return NumericHeader;

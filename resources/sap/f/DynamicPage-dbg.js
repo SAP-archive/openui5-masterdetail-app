@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -16,11 +16,14 @@ sap.ui.define([
 	"sap/ui/core/Configuration",
 	"sap/ui/core/delegate/ScrollEnablement",
 	"sap/ui/Device",
+	"sap/ui/base/ManagedObject",
 	"sap/f/DynamicPageTitle",
 	"sap/f/DynamicPageHeader",
 	"./DynamicPageRenderer",
 	"sap/base/Log",
 	"sap/ui/dom/getScrollbarSize",
+	"sap/ui/core/theming/Parameters",
+	'sap/ui/dom/units/Rem',
 	"sap/ui/core/library"
 ], function(
 	library,
@@ -33,11 +36,14 @@ sap.ui.define([
 	Configuration,
 	ScrollEnablement,
 	Device,
+	ManagedObject,
 	DynamicPageTitle,
 	DynamicPageHeader,
 	DynamicPageRenderer,
 	Log,
 	getScrollbarSize,
+	Parameters,
+	DomUnitsRem,
 	coreLibrary
 ) {
 	"use strict";
@@ -108,7 +114,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -167,12 +173,19 @@ sap.ui.define([
 				backgroundDesign : {type: "sap.m.PageBackgroundDesign", group: "Appearance", defaultValue: PageBackgroundDesign.Standard},
 
 				/**
-				 * Optimizes <code>DynamicPage</code> responsiveness on small screens and behavior
-				 * when expanding/collapsing the <code>DynamicPageHeader</code>.
+				 * Forces the content container of the <code>DynamicPage</code> to make room for
+				 * stretchable controls in the <code>content</code> aggregation to fill exactly
+				 * the visible space between the header and the footer.
 				 *
-				 * <b>Note:</b> It is recommended to use this property when displaying content
-				 * of adaptive controls that stretch to fill the available space. Such controls may be
-				 * {@link sap.ui.table.Table} and {@link sap.ui.table.AnalyticalTable} depending on their settings.
+				 * <b>Notes:</b>
+				 * <ul>
+				 * <li>Enable this property only if the control of the <code>content</code> aggregation is configured
+				 * to automatically stretch to fill the available height, which means that the content would appear
+				 * squashed in height when this property is disabled. Such stretchable controls may be
+				 * {@link sap.ui.table.Table} and {@link sap.ui.table.AnalyticalTable} depending on their settings.</li>
+				 * <li>It is not recommended to enable this property for controls that do not stretch in
+				 * height (and appear properly when this property is disabled).</li>
+				 * </ul>
 				 */
 				fitContent: {type: "boolean", group: "Behavior", defaultValue: false}
 			},
@@ -340,6 +353,8 @@ sap.ui.define([
 	// Class which is added to the DynamicPage if we have additional navigation (e.g. IconTabBar)
 	DynamicPage.NAVIGATION_CLASS_NAME = "sapFDynamicPageNavigation";
 
+	DynamicPage.ARIA_ROLE_DESCRIPTION = "DYNAMIC_PAGE_ROLE_DESCRIPTION";
+
 	/**
 	 * LIFECYCLE METHODS
 	 */
@@ -363,6 +378,9 @@ sap.ui.define([
 				this._bStickySubheaderInTitleArea = false; // reset the flag as the stickySubHeader is freshly rerendered with the iconTabBar
 				this._adjustStickyContent();
 			}};
+
+		this._setAriaRoleDescription(Core.getLibraryResourceBundle("sap.f").getText(DynamicPage.ARIA_ROLE_DESCRIPTION));
+		this._iHeaderContentPaddingBottom = DomUnitsRem.toPx(Parameters.get("_sap_f_DynamicPageHeader_PaddingBottom"));
 	};
 
 	DynamicPage.prototype.onBeforeRendering = function () {
@@ -448,13 +466,11 @@ sap.ui.define([
 	};
 
 	DynamicPage.prototype.setHeader = function (oHeader) {
-		var oOldHeader;
+		var oOldHeader = this.getHeader();
 
 		if (oHeader === oOldHeader) {
-			return;
+			return this;
 		}
-
-		oOldHeader = this.getHeader();
 
 		if (oOldHeader) {
 			if (this._oStickyHeaderObserver) {
@@ -594,13 +610,14 @@ sap.ui.define([
 	 */
 	DynamicPage.prototype._toggleFooter = function (bShow) {
 		var oFooter = this.getFooter(),
-			bUseAnimations;
+			bUseAnimations, sAnimationMode;
 
 		if (!exists(this.$()) || !exists(oFooter) || !exists(this.$footerWrapper)) {
 			return;
 		}
 
-		bUseAnimations = Core.getConfiguration().getAnimationMode() !== Configuration.AnimationMode.none;
+		sAnimationMode = Core.getConfiguration().getAnimationMode();
+		bUseAnimations = sAnimationMode !== Configuration.AnimationMode.none && sAnimationMode !== Configuration.AnimationMode.minimal;
 		this._toggleFooterSpacer(bShow);
 
 		if (bUseAnimations) {
@@ -978,6 +995,28 @@ sap.ui.define([
 	};
 
 	/**
+	 * Sets the value for aria-roledescription attribute
+	 * @param {string} sAriaRoleDescription
+	 * @return {sap.f.DynamicPage} this for chaining
+	 * @private
+	 */
+	DynamicPage.prototype._setAriaRoleDescription = function (sAriaRoleDescription) {
+		this._sAriaRoleDescription = sAriaRoleDescription;
+
+		return this;
+	};
+
+	/**
+	 * Returns the aria-roledescription value
+	 * if not overwritten the default "Dynamic Page" string is returned
+	 * @return {string} aria-roledescription
+	 * @private
+	 */
+	DynamicPage.prototype._getAriaRoleDescription = function () {
+		return this._sAriaRoleDescription;
+	};
+
+	/**
 	 * Sets the appropriate scroll position of the <code>ScrollBar</code> and <code>DynamicPage</code> content wrapper,
 	 * based on the used device.
 	 * @param {Number} iNewScrollPosition
@@ -1040,7 +1079,7 @@ sap.ui.define([
 			iScrollPosition;
 
 		iScrollPosition = this._getScrollPosition();
-		bIsInSnappingHeight = iScrollPosition <= Math.ceil(this._getHeaderHeight()) && !this._bPinned && !this.getPreserveHeaderStateOnScroll();
+		bIsInSnappingHeight = iScrollPosition < Math.ceil(this._getHeaderHeight() - this._iHeaderContentPaddingBottom) && !this._bPinned && !this.getPreserveHeaderStateOnScroll();
 
 		// If the scroll position is 0, the sticky content should be always in the DOM of content provider.
 		// If the scroll position is <= header height and at all we can use the snapping height (bIsInSnappingHeight)
@@ -1083,7 +1122,7 @@ sap.ui.define([
 		var iMaxScrollPosition = this._getMaxScrollPosition(),
 			iThreshold = this._bMSBrowser ? 1 : 0;
 
-		if (this._bHeaderInTitleArea) { // when snapping with scroll, the header will be in the content area
+		if (this._bHeaderInTitleArea  && iMaxScrollPosition > 0) { // when snapping with scroll, the header will be in the content area
 			iMaxScrollPosition += this._getHeaderHeight();
 			iMaxScrollPosition -= iThreshold;
 		}
@@ -1096,7 +1135,9 @@ sap.ui.define([
 	 * @private
 	 */
 	DynamicPage.prototype._getSnappingHeight = function () {
-			return Math.ceil(this._getHeaderHeight() || this._getTitleHeight());
+		var iSnappingHeight = Math.ceil(this._getHeaderHeight() || this._getTitleHeight()) - this._iHeaderContentPaddingBottom;
+
+		return iSnappingHeight > 0 ? iSnappingHeight : 0;
 	};
 
 	/**
@@ -1248,7 +1289,12 @@ sap.ui.define([
 			bScrollBarNeeded,
 			bNeedUpdate;
 
-		if (!Device.system.desktop || !exists(this.$wrapper) || (this._getHeight(this) === 0)) {
+		if (!exists(this.$wrapper) || (this._getHeight(this) === 0)) {
+			return;
+		}
+
+		if (!Device.system.desktop) {
+			setTimeout(this._updateFitContainer.bind(this), 0);
 			return;
 		}
 
@@ -1315,6 +1361,14 @@ sap.ui.define([
 	DynamicPage.prototype._updateARIAStates = function (bExpanded) {
 		this._updateHeaderARIAState(bExpanded);
 		this._updateTitleARIAState(bExpanded);
+	};
+
+	DynamicPage.prototype._applyContextualSettings = function (oContextualSettings) {
+		var iCurrentWidth = oContextualSettings.contextualWidth;
+
+		this._updateMedia(iCurrentWidth);
+
+		return ManagedObject.prototype._applyContextualSettings.call(this, oContextualSettings);
 	};
 
 	/**
@@ -1437,8 +1491,14 @@ sap.ui.define([
 	 * Updates the visibility of the <code>pinButton</code> and the header scroll state.
 	 * @private
 	 */
-	DynamicPage.prototype._updateHeaderVisualState = function (iPageControlHeight) {
+	DynamicPage.prototype._updateHeaderVisualState = function (bHeightChange, iPageControlHeight) {
 		var oDynamicPageHeader = this.getHeader();
+
+		// If there is a change in the height of the DynanmicPage, we need to update the
+		// "_preserveHeaderStateOnScroll" function status
+		if (bHeightChange && this.getPreserveHeaderStateOnScroll()) {
+			this._overridePreserveHeaderStateOnScroll();
+		}
 
 		if (!this._preserveHeaderStateOnScroll() && oDynamicPageHeader) {
 			if (this._headerBiggerThanAllowedToPin(iPageControlHeight) || Device.system.phone) {
@@ -1731,7 +1791,7 @@ sap.ui.define([
 			this._cacheTitleDom();
 			this._deRegisterResizeHandler(DynamicPage.RESIZE_HANDLER_ID.TITLE);
 			this._registerResizeHandler(DynamicPage.RESIZE_HANDLER_ID.TITLE, this.$title[0], this._onChildControlsHeightChange.bind(this));
-		} else if (oSourceControl instanceof DynamicPageHeader) {
+		} else if (oSourceControl instanceof DynamicPageHeader && oSourceControl.getDomRef() !== this.$header.get(0)) {
 			this._cacheHeaderDom();
 			this._deRegisterResizeHandler(DynamicPage.RESIZE_HANDLER_ID.HEADER);
 			this._registerResizeHandler(DynamicPage.RESIZE_HANDLER_ID.HEADER, this.$header[0], this._onChildControlsHeightChange.bind(this));
@@ -1747,7 +1807,9 @@ sap.ui.define([
 	 */
 	DynamicPage.prototype._onChildControlsHeightChange = function (oEvent) {
 		var bNeedsVerticalScrollBar = this._needsVerticalScrollBar(),
-			oHeader = this.getHeader();
+			oHeader = this.getHeader(),
+			bCurrentHeight,
+			bOldHeight;
 
 		// FitContainer needs to be updated, when height is changed and scroll bar appear, to enable calc of original height
 		if (bNeedsVerticalScrollBar) {
@@ -1763,7 +1825,10 @@ sap.ui.define([
 		this._bExpandingWithAClick = false;
 
 		if (oHeader && oEvent.target.id === oHeader.getId()) {
-			this._updateHeaderVisualState();
+			bCurrentHeight = oEvent.size.height;
+			bOldHeight = oEvent.oldSize.height;
+			this._updateHeaderVisualState(bCurrentHeight !== bOldHeight && bCurrentHeight !== 0 && bOldHeight !== 0);
+			this._adaptScrollPositionOnHeaderChange(bCurrentHeight, bOldHeight);
 		}
 	};
 
@@ -1777,9 +1842,11 @@ sap.ui.define([
 	 */
 	DynamicPage.prototype._onResize = function (oEvent) {
 		var oDynamicPageTitle = this.getTitle(),
-			iCurrentWidth = oEvent.size.width;
+			iCurrentWidth = oEvent.size.width,
+			iCurrentHeight = oEvent.size.height,
+			bHeightChange = iCurrentHeight !== oEvent.oldSize.height;
 
-		this._updateHeaderVisualState(oEvent.size.height);
+		this._updateHeaderVisualState(bHeightChange, iCurrentHeight);
 
 		if (exists(oDynamicPageTitle)) {
 			oDynamicPageTitle._onResize(iCurrentWidth);
@@ -1894,6 +1961,27 @@ sap.ui.define([
 	};
 
 	/**
+	 * When the header is in the overflow of the scroll container, it still takes space and whenever its height changes,
+	 * it affects the scroll position of the scrollable content bellow it. Whenever its height increases/decreases,
+	 * the content bellow it is pushed down or up, respectively.
+	 * To avoid a visual jump of the visible content upon change in the header height, we adjust the scroll position
+	 * accordingly, to compensate the increase/decrease of header height.
+	 * @param iNewHeight
+	 * @param iOldHeigh
+	 * @private
+	 */
+	DynamicPage.prototype._adaptScrollPositionOnHeaderChange = function (iNewHeight, iOldHeigh) {
+		var iHeightChange =  iNewHeight - iOldHeigh,
+			oHeader = this.getHeader();
+
+		// check if the header is in the scroll overflow (i.e. is snapped by being scrolled out of view)
+		if (iHeightChange && (!this.getHeaderExpanded() && (oHeader.$().css("visibility") !== "hidden"))
+			 && !this._bHeaderInTitleArea && this._needsVerticalScrollBar()) {
+			this._setScrollPosition(this._getScrollPosition() + iHeightChange);
+		}
+	};
+
+	/**
 	 * Handles the title press event and prevents the collapse/expand, if necessary
 	 * @private
 	 */
@@ -1978,7 +2066,7 @@ sap.ui.define([
 			var bMoveHeaderToContent = this._bHeaderInTitleArea;
 			this._snapHeader(bMoveHeaderToContent, bUserInteraction);
 			if (!bMoveHeaderToContent) {
-				this._setScrollPosition(this._getSnappingHeight());
+				this._setScrollPosition(this._getSnappingHeight() + this._iHeaderContentPaddingBottom);
 			}
 		}
 	};

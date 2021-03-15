@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -45,6 +45,10 @@ sap.ui.define([ "sap/ui/Device"],
 			if (control.getWidth()) {
 				rm.style("width", control.getWidth());
 			}
+			if (control.getMinHeight()) {
+				rm.style("min-height", control.getMinHeight());
+			}
+
 			this.addGridStyles(rm, control);
 
 			// Add tooltip
@@ -100,7 +104,6 @@ sap.ui.define([ "sap/ui/Device"],
 
 			rm.accessibilityState(oControl, {
 				role: "listitem",
-				keyshortcuts: oControl._oRb.getText("GRIDCONTAINER_ITEM_KEYSHORTCUTS"),
 				labelledby: oItem.getId()
 			});
 
@@ -158,6 +161,10 @@ sap.ui.define([ "sap/ui/Device"],
 
 			if (!oItem.getVisible()) {
 				aClasses.push("sapFGridContainerInvisiblePlaceholder");
+			}
+
+			if (oControl._hasOwnVisualFocus(oItem)) {
+				aClasses.push("sapFGridContainerItemWrapperNoVisualFocus");
 			}
 
 			return {

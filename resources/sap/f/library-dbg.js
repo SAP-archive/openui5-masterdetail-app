@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -29,7 +29,7 @@ sap.ui.define(["sap/ui/base/DataType",
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.f",
-		version: "1.79.0",
+		version: "1.84.7",
 		dependencies : ["sap.ui.core", "sap.m", "sap.ui.layout"],
 		designtime: "sap/f/designtime/library.designtime",
 		interfaces: [
@@ -58,6 +58,7 @@ sap.ui.define(["sap/ui/base/DataType",
 			"sap.f.cards.Header",
 			"sap.f.cards.NumericHeader",
 			"sap.f.cards.NumericSideIndicator",
+			"sap.f.CalendarInCard",
 			"sap.f.Card",
 			"sap.f.GridContainer",
 			"sap.f.DynamicPage",
@@ -67,7 +68,6 @@ sap.ui.define(["sap/ui/base/DataType",
 			"sap.f.semantic.SemanticPage",
 			"sap.f.GridList",
 			"sap.f.GridListItem",
-			"sap.f.PlanningCalendarInCard",
 			"sap.f.PlanningCalendarInCardLegend",
 			"sap.f.ProductSwitch",
 			"sap.f.ProductSwitchItem",
@@ -76,7 +76,6 @@ sap.ui.define(["sap/ui/base/DataType",
 		elements: [
 			"sap.f.DynamicPageAccessibleLandmarkInfo",
 			"sap.f.GridContainerItemLayoutData",
-			"sap.f.PlanningCalendarInCardRow",
 			"sap.f.semantic.AddAction",
 			"sap.f.semantic.CloseAction",
 			"sap.f.semantic.CopyAction",
@@ -129,7 +128,7 @@ sap.ui.define(["sap/ui/base/DataType",
 	 * @namespace
 	 * @alias sap.f
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 * @public
 	 */
 	var thisLib = sap.f;

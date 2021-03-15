@@ -1,20 +1,16 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
-	"sap/ui/core/Control",
-	"sap/f/CardRenderer",
 	"sap/f/library",
-	"sap/ui/core/InvisibleText",
-	"sap/ui/core/Core"
+	"./CardBase",
+	"sap/f/CardRenderer"
 ], function (
-	Control,
-	CardRenderer,
 	library,
-	InvisibleText,
-	Core
+	CardBase,
+	CardRenderer
 ) {
 	"use strict";
 
@@ -72,10 +68,10 @@ sap.ui.define([
 	 * <li>When you need more header configuration flexibility.</li>
 	 * </ul>
 	 *
-	 * @extends sap.ui.core.Control
+	 * @extends sap.f.CardBase
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -83,21 +79,10 @@ sap.ui.define([
 	 * @alias sap.f.Card
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
-	var Card = Control.extend("sap.f.Card", /** @lends sap.f.Card.prototype */ {
+	var Card = CardBase.extend("sap.f.Card", /** @lends sap.f.Card.prototype */ {
 		metadata: {
 			library: "sap.f",
-			interfaces: ["sap.f.ICard"],
 			properties: {
-
-				/**
-				 * Defines the width of the card.
-				 */
-				width: { type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: "100%" },
-
-				/**
-				 * Defines the height of the card.
-				 */
-				height: { type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: "auto" },
 
 				/**
 				 * Defines the position of the Card Header.
@@ -120,26 +105,6 @@ sap.ui.define([
 		},
 		renderer: CardRenderer
 	});
-
-	/**
-	 * Initialization hook.
-	 *
-	 *
-	 * @private
-	 */
-	Card.prototype.init = function () {
-		this._oRb  = Core.getLibraryResourceBundle("sap.f");
-		this._ariaText = new InvisibleText({id: this.getId() + "-ariaText"});
-		this._ariaText.setText(this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD"));
-	};
-
-	Card.prototype.exit = function () {
-
-		if (this._ariaText) {
-			this._ariaText.destroy();
-			this._ariaText = null;
-		}
-	};
 
 	/**
 	 * Implements sap.f.ICard interface.
@@ -172,14 +137,5 @@ sap.ui.define([
 		return this.getContent();
 	};
 
-	/**
-	 * Returns the DOM Element that should get the focus.
-	 *
-	 * @return {Element} Returns the DOM Element that should get the focus
-	 * @protected
-	 */
-	Card.prototype.getFocusDomRef = function () {
-		return this.getCardHeader() ? this.getCardHeader().getDomRef() : this.getDomRef() ;
-	};
 	return Card;
 });

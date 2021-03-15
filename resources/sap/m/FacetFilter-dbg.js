@@ -1,6 +1,6 @@
 /*!
 * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
 */
 
@@ -9,6 +9,7 @@ sap.ui.define([
 	'./NavContainer',
 	'./library',
 	'sap/ui/core/Control',
+	'sap/ui/core/CustomData',
 	'sap/ui/core/IconPool',
 	'sap/ui/core/delegate/ItemNavigation',
 	'sap/ui/core/InvisibleText',
@@ -17,6 +18,8 @@ sap.ui.define([
 	'sap/ui/base/ManagedObject',
 	'sap/ui/core/Icon',
 	'sap/ui/model/Filter',
+	'sap/ui/model/FilterOperator',
+	'sap/ui/model/json/JSONModel',
 	'./FacetFilterRenderer',
 	"sap/ui/events/KeyCodes",
 	"sap/base/assert",
@@ -47,6 +50,7 @@ sap.ui.define([
 		NavContainer,
 		library,
 		Control,
+		CustomData,
 		IconPool,
 		ItemNavigation,
 		InvisibleText,
@@ -55,6 +59,8 @@ sap.ui.define([
 		ManagedObject,
 		Icon,
 		Filter,
+		FilterOperator,
+		JSONModel,
 		FacetFilterRenderer,
 		KeyCodes,
 		assert,
@@ -166,7 +172,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @implements sap.ui.core.IShrinkable
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -1189,6 +1195,7 @@ sap.ui.define([
 	 * @private
 	 */
 	FacetFilter.prototype._openPopover = function(oPopover, oControl) {
+		var bIsListOpenDefaultPrevented;
 
 		// Don't open if already open, otherwise the popover will display empty.
 		if (!oPopover.isOpen()) {
@@ -1196,7 +1203,8 @@ sap.ui.define([
 			var oList = sap.ui.getCore().byId(oControl.getAssociation("list"));
 			assert(oList, "The facet filter button should be associated with a list.");
 
-			oList.fireListOpen({});
+			bIsListOpenDefaultPrevented = !oList.fireListOpen({});
+
 			this._moveListToDisplayContainer(oList, oPopover);
 			oPopover.openBy(oControl);
 			//Display remove facet icon only if ShowRemoveFacetIcon property is set to true
@@ -1207,7 +1215,9 @@ sap.ui.define([
 				oPopover.setContentWidth("30%");
 			}
 
-			oList._applySearch();
+			if (!bIsListOpenDefaultPrevented) {
+				oList._applySearch();
+			}
 		}
 		return this;
 };
@@ -1336,7 +1346,7 @@ sap.ui.define([
 
 		if (!oIcon) {
 			oIcon = new Icon({
-				src : IconPool.getIconURI("sys-cancel"),
+				src : IconPool.getIconURI("decline"),
 				tooltip:this._bundle.getText("FACETFILTER_REMOVE"),
 				press: function() {
 					oIcon._bPressed = true;
@@ -1475,7 +1485,7 @@ sap.ui.define([
 
 				var binding = oFacetList.getBinding("items");
 				if (binding) {
-					var filter = new Filter("text", sap.ui.model.FilterOperator.Contains, oEvent.getParameters()["newValue"]);
+					var filter = new Filter("text", FilterOperator.Contains, oEvent.getParameters()["newValue"]);
 					binding.filter([ filter ]);
 				}
 			}
@@ -1686,7 +1696,7 @@ sap.ui.define([
 					title: "{text}",
 					counter: "{count}",
 					type: ListType.Navigation,
-					customData : [ new sap.ui.core.CustomData({
+					customData : [ new CustomData({
 						key : "index",
 						value : "{index}"
 					}) ]
@@ -1697,7 +1707,7 @@ sap.ui.define([
 		// Create the facet list from a model binding so that we can implement facet list search using a filter.
 		var aFacetFilterLists = this._getMapFacetLists();
 
-		var oModel = new sap.ui.model.json.JSONModel({
+		var oModel = new JSONModel({
 			items: aFacetFilterLists
 		});
 

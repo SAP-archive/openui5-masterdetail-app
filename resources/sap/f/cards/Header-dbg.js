@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -25,6 +25,7 @@ sap.ui.define([
 	"use strict";
 
 	var AvatarShape = mLibrary.AvatarShape;
+	var AvatarColor = mLibrary.AvatarColor;
 
 	/**
 	 * Constructor for a new <code>Header</code>.
@@ -47,7 +48,7 @@ sap.ui.define([
 	 * @implements sap.f.cards.IHeader
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -89,7 +90,21 @@ sap.ui.define([
 				/**
 				 * Defines the initials of the icon.
 				 */
-				iconInitials: { type: "string", defaultValue: "" }
+				iconInitials: { type: "string", defaultValue: "" },
+
+				/**
+				 * Defines an alt text for the avatar or icon.
+				 *
+				 * @experimental Since 1.81 this feature is experimental and the API may change.
+				 */
+				iconAlt: { type: "string", defaultValue: "" },
+
+				/**
+				 * Defines a background color for the avatar or icon.
+				 *
+				 * @experimental Since 1.83 this feature is experimental and the API may change.
+				 */
+				iconBackgroundColor: { type: "sap.m.AvatarColor", defaultValue: AvatarColor.Transparent }
 			},
 			aggregations: {
 
@@ -122,7 +137,8 @@ sap.ui.define([
 				 */
 				press: {}
 			}
-		}
+		},
+		renderer: HeaderRenderer
 	});
 
 	/**
@@ -189,11 +205,16 @@ sap.ui.define([
 	 * @private
 	 */
 	Header.prototype.onBeforeRendering = function () {
+		var oAvatar = this._getAvatar();
+
 		this._getTitle().setText(this.getTitle());
 		this._getSubtitle().setText(this.getSubtitle());
-		this._getAvatar().setDisplayShape(this.getIconDisplayShape());
-		this._getAvatar().setSrc(this.getIconSrc());
-		this._getAvatar().setInitials(this.getIconInitials());
+
+		oAvatar.setDisplayShape(this.getIconDisplayShape());
+		oAvatar.setSrc(this.getIconSrc());
+		oAvatar.setInitials(this.getIconInitials());
+		oAvatar.setTooltip(this.getIconAlt());
+		oAvatar.setBackgroundColor(this.getIconBackgroundColor());
 
 		this._setAccessibilityAttributes();
 	};
@@ -205,12 +226,12 @@ sap.ui.define([
 	 * @returns {string} IDs of controls
 	 */
 	Header.prototype._getHeaderAccessibility = function () {
-		var sTitleId = this._getTitle() ? this._getTitle().getId() : "",
-			sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
+		var sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
 			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
-			sAvatarId = this._getAvatar() ? this._getAvatar().getId() : "";
+			sAvatarId = this._getAvatar() ? this._getAvatar().getId() : "",
+			sIds = sSubtitleId + " " + sStatusTextId + " " + sAvatarId;
 
-		return sTitleId + " " + sSubtitleId + " " + sStatusTextId + " " + sAvatarId;
+		return sIds.trim();
 	};
 
 	/**
@@ -233,7 +254,7 @@ sap.ui.define([
 	 */
 	Header.prototype.ontap = function (oEvent) {
 		var srcControl = oEvent.srcControl;
-		if (srcControl && srcControl.getId().indexOf('overflowButton') > -1) { // better way?
+		if (srcControl && srcControl.getId().indexOf("overflowButton") > -1) { // better way?
 			return;
 		}
 
@@ -254,12 +275,12 @@ sap.ui.define([
 	 */
 	Header.prototype._setAccessibilityAttributes = function () {
 		if (this.hasListeners("press")) {
-			this._sAriaRole = 'button';
+			this._sAriaRole = "button";
 			this._sAriaHeadingLevel = undefined;
 			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_INTERACTIVE_CARD_HEADER");
 		} else {
-			this._sAriaRole = 'heading';
-			this._sAriaHeadingLevel = '3';
+			this._sAriaRole = "heading";
+			this._sAriaHeadingLevel = "3";
 			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER");
 		}
 	};
@@ -288,6 +309,25 @@ sap.ui.define([
 		this.invalidate();
 
 		return this;
+	};
+
+	/**
+	 * Returns if the control is inside a sap.f.GridContainer
+	 *
+	 * @private
+	 */
+	Header.prototype._isInsideGridContainer = function() {
+		var oParent = this.getParent();
+		if (!oParent) {
+			return false;
+		}
+
+		oParent = oParent.getParent();
+		if (!oParent) {
+			return false;
+		}
+
+		return oParent.isA("sap.f.GridContainer");
 	};
 
 	return Header;

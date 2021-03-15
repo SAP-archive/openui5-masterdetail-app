@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -8,12 +8,12 @@
 * Provides a private class <code>sap.f.semantic.SemanticConfiguration</code>.
 */
 sap.ui.define([
-	"sap/ui/base/Metadata",
+	"sap/ui/base/Object",
 	"sap/ui/core/IconPool",
 	"sap/m/library",
 	"sap/m/OverflowToolbarLayoutData",
 	"sap/ui/core/InvisibleText"
-], function(Metadata,
+], function(BaseObject,
 			IconPool,
 			mobileLibrary,
 			OverflowToolbarLayoutData,
@@ -32,13 +32,17 @@ sap.ui.define([
 	* @class
 	* Defines the visual properties and placement for each supported semantic type.
 	*
-	* @version 1.79.0
+	* @version 1.84.7
 	* @private
 	* @since 1.46.0
 	* @alias sap.f.semantic.SemanticConfiguration
 	* @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	*/
-	var SemanticConfiguration = Metadata.createClass("sap.f.semantic.SemanticConfiguration", {});
+	var SemanticConfiguration = BaseObject.extend("sap.f.semantic.SemanticConfiguration", {
+		getInterface: function() {
+			return this; // no facade
+		}
+	});
 
 	/**
 	* The placement map of all supported semantic types.

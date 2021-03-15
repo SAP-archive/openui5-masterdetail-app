@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -59,7 +59,7 @@ sap.ui.define([
 	 * Also see {@link topic:91f28be26f4d1014b6dd926db0e91070 "Support for Unique IDs"} in the documentation.
 	 *
 	 * @extends sap.ui.core.Control
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.View
@@ -378,12 +378,12 @@ sap.ui.define([
 				var sOwnerId = ManagedObject._sOwnerId;
 				if (!oController._isExtended()) {
 					if (bAsync) {
-						oController = Controller.extendByCustomizing(oController, sName, bAsync)
+						oController = Controller.extendByCustomizing(oController, sName, sOwnerId, bAsync)
 							.then(function(oController) {
 								return Controller.extendByProvider(oController, sName, sOwnerId, bAsync);
 							});
 					} else {
-						oController = Controller.extendByCustomizing(oController, sName, bAsync);
+						oController = Controller.extendByCustomizing(oController, sName, sOwnerId, bAsync);
 						oController = Controller.extendByProvider(oController, sName, sOwnerId, bAsync);
 					}
 				} else if (bAsync) {
@@ -1027,6 +1027,7 @@ sap.ui.define([
 	 * @static
 	 * @deprecated since 1.56: Use {@link sap.ui.core.mvc.View.create View.create} instead
 	 * @return {sap.ui.core.mvc.View} the created View instance
+	 * @ui5-global-only
 	 */
 	sap.ui.view = function(sId, vView, sType /* used by factory functions */) {
 		var fnLogDeprecation = function(sMethod) {
@@ -1038,7 +1039,7 @@ sap.ui.define([
 			sName = sName || (vView && vView.name);
 
 			Log[sMethod](
-				"Do not use deprecated view factory functions (" + sName + ")." +
+				"Do not use deprecated view factory functions (" + sName + "). " +
 				"Use the static create function on the view module instead: [XML|JS|HTML|JSON|]View.create().",
 				"sap.ui.view",
 				null,

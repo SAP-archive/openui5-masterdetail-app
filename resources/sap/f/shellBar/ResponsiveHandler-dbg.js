@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -260,7 +260,11 @@ sap.ui.define([
 	ResponsiveHandler.prototype._transformTitleControlMobile = function (){
 		var bControlUpdateNeeded;
 		// Home icon should not be visible
-		if (!this._oControl._oHomeIcon) { return; }
+		if (!this._oControl._oHomeIcon ) {
+			return this.bIsMegaMenuConfigured ?
+				this._oControl._oMegaMenu.setText(this._oControl.getTitle()).setIcon("")
+				: false;
+		}
 			// We should inject the homeIcon in the MegaMenu and remove the text
 		bControlUpdateNeeded = this.bIsMegaMenuConfigured && this._oControl._oHomeIcon.getVisible() ||
 			!this.bIsMegaMenuConfigured && !this._oControl._oHomeIcon.getVisible();

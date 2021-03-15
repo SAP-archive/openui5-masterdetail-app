@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -27,7 +27,7 @@ sap.ui.define([
 	 * @class
 	 * A View defined/constructed by JavaScript code.
 	 * @extends sap.ui.core.mvc.View
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @public
 	 * @alias sap.ui.core.mvc.JSView
@@ -137,11 +137,12 @@ sap.ui.define([
 	 * @deprecated Since 1.56, use {@link sap.ui.core.mvc.JSView.create JSView.create} to create view instances;
 	 *   for defining JavaScript views, there's no substitute yet and <em>sap.ui.jsview</em> still has to be used
 	 * @return {sap.ui.core.mvc.JSView | undefined} the created JSView instance in the creation case, otherwise undefined
+	 * @ui5-global-only
 	 */
 	sap.ui.jsview = function(sId, vView, bAsync) {
 		var fnLogDeprecation = function(sMethod) {
 			Log[sMethod](
-				"Do not use deprecated view factory functions." +
+				"Do not use deprecated view factory functions. " +
 				"Use the static create function on the specific view module instead: [XML|JS|HTML|JSON]View.create().",
 				"sap.ui.view",
 				null,

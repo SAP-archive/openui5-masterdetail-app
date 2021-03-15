@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -64,7 +64,7 @@ sap.ui.define(['sap/m/PlanningCalendarLegendRenderer', 'sap/ui/core/Renderer'],
 			}
 
 			if (oLeg.getItems().length + oLeg.getAppointmentItems().length > iVisibleLegendItems){
-				oRm.renderControl(oLeg._getMoreLabel(oLeg.getItems().length + oLeg.getAppointmentItems().length - iVisibleLegendItems));
+				this.renderLegendItem(oRm, "sapUiCalLegMoreText", oLeg._getMoreItemsText(oLeg.getItems().length + oLeg.getAppointmentItems().length - iVisibleLegendItems), []);
 			}
 		};
 

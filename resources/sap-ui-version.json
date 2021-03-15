@@ -1,13 +1,13 @@
 {
 	"name": "openui5-masterdetail-app",
 	"version": "0.1.0",
-	"buildTimestamp": "202103151036",
+	"buildTimestamp": "202103151233",
 	"scmRevision": "",
 	"libraries": [
 		{
 			"name": "sap.f",
-			"version": "1.79.0",
-			"buildTimestamp": "202103151036",
+			"version": "1.84.7",
+			"buildTimestamp": "202103151233",
 			"scmRevision": "",
 			"manifestHints": {
 				"dependencies": {
@@ -24,8 +24,8 @@
 		},
 		{
 			"name": "sap.m",
-			"version": "1.79.0",
-			"buildTimestamp": "202103151036",
+			"version": "1.84.7",
+			"buildTimestamp": "202103151233",
 			"scmRevision": "",
 			"manifestHints": {
 				"dependencies": {
@@ -43,14 +43,14 @@
 		},
 		{
 			"name": "sap.ui.core",
-			"version": "1.79.0",
-			"buildTimestamp": "202103151036",
+			"version": "1.84.7",
+			"buildTimestamp": "202103151233",
 			"scmRevision": ""
 		},
 		{
 			"name": "sap.ui.layout",
-			"version": "1.79.0",
-			"buildTimestamp": "202103151036",
+			"version": "1.84.7",
+			"buildTimestamp": "202103151233",
 			"scmRevision": "",
 			"manifestHints": {
 				"dependencies": {
@@ -62,8 +62,8 @@
 		},
 		{
 			"name": "sap.ui.unified",
-			"version": "1.79.0",
-			"buildTimestamp": "202103151036",
+			"version": "1.84.7",
+			"buildTimestamp": "202103151233",
 			"scmRevision": "",
 			"manifestHints": {
 				"dependencies": {

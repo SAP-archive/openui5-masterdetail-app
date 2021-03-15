@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,7 +12,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 	 * Handles dragging of a control over a given grid container.
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @extends sap.ui.base.Object
 	 *
@@ -41,7 +41,9 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 			};
 
 			this._oDropContainerDelegate = {
-				ondragleave: this._onDragLeave
+				ondragleave: this._onDragLeave,
+				onBeforeRendering: this._onDropContainerBeforeRendering,
+				onAfterRendering: this._onDropContainerAfterRendering
 			};
 		},
 
@@ -75,11 +77,12 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 		}
 
 		this._oDragControl = oDragControl;
+		this._oDragContainer = oDragControl.getParent();
 		this._oDropContainer = oDropContainer;
 		this._sTargetAggregation = sTargetAggregation;
 
 		this._mDragItemDimensions = this._getDimensions(oDragControl);
-		this._bIsInSameContainer = oDragControl.getParent() === oDropContainer;
+		this._bIsInSameContainer = this._oDragContainer === this._oDropContainer;
 
 		if (this._bIsInSameContainer) {
 			this._iDragFromIndex = oDropContainer.indexOfAggregation(sTargetAggregation, oDragControl);
@@ -194,7 +197,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 			return;
 		}
 
-		this._$indicator.detach();
+		this._hideIndicator();
 
 		// this._oDragControl.setVisible(true); // todo
 		this._showDraggedItem();
@@ -206,7 +209,6 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 			indicator: this._$indicator
 		});
 
-		this._$indicator.attr("style", ""); // VirtualGrid sets position 'absolute' to the indicator, which breaks calculations in other containers, such as GridList
 		this._mDropIndicatorSize = null;
 		this._oDragControl = null;
 		this._oDropContainer = null;
@@ -232,11 +234,20 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 	 * @param {jQuery.Event} oDragEvent The jQuery drag event.
 	 */
 	GridDragOver.prototype._showIndicator = function(mDropPosition, oDragEvent) {
-		var $targetGridItem = this._findContainingGridItem(mDropPosition.targetControl),
-			$insertTarget = $targetGridItem || mDropPosition.targetControl.$(),
+		var oDropContainer = this._oDropContainer,
+			oDropContainerDomRef = oDropContainer.getDomRefForSetting(this._sTargetAggregation) || oDropContainer.getDomRef(),
+			oTargetControl = mDropPosition.targetControl,
+			iTargetIndex = oDropContainer.indexOfAggregation(this._sTargetAggregation, oTargetControl),
+			$targetGridItem,
+			$insertTarget,
 			mStyles;
 
-		if (this._oDropContainer.isA("sap.f.GridContainer")) {
+		if (oTargetControl) {
+			$targetGridItem = this._findContainingGridItem(oTargetControl);
+			$insertTarget = $targetGridItem || oTargetControl.$();
+		}
+
+		if ($insertTarget && oDropContainer.isA("sap.f.GridContainer")) {
 			// todo: find better way to find the item wrapper when it is not grid item, needed for IE
 			$insertTarget = $insertTarget.closest(".sapFGridContainerItemWrapper");
 		}
@@ -246,7 +257,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 				"grid-row-start": "span " + this._mDropIndicatorSize.rows,
 				"grid-column-start": "span " + this._mDropIndicatorSize.columns
 			};
-		} else if ($targetGridItem) { // target container is a grid
+		} else {
 			// indicator should be the same size as dragged item
 			mStyles = {
 				"grid-column-start": this._mDragItemDimensions.columnsSpan,
@@ -258,22 +269,26 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 			this._$indicator.css(mStyles);
 		}
 
-		if (mDropPosition.position == "Before") {
+		if ($insertTarget && mDropPosition.position == "Before") {
 			this._$indicator.insertBefore($insertTarget);
-		} else {
+		} else if ($insertTarget) {
 			this._$indicator.insertAfter($insertTarget);
+			iTargetIndex += 1;
+		} else {
+			oDropContainerDomRef.appendChild(this._$indicator[0]);
 		}
 
 		this._$indicator.show();
 
 		// when drop indicator is shown, it becomes the new "drag from"
-		this._iDragFromIndex = this._$indicator.index();
+		this._iDragFromIndex = iTargetIndex;
 
 		/* IE Polyfill */
 
 		// Let the container decide the dimensions of the indicator.
 		var oEventData = {
-			indicator: this._$indicator
+			indicator: this._$indicator,
+			indicatorIndex: this._iDragFromIndex
 		};
 
 		if (this._mDropIndicatorSize) {
@@ -289,15 +304,28 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 	};
 
 	/**
+	 * Removes the indicator from the drop container.
+	 */
+	GridDragOver.prototype._hideIndicator = function() {
+		this._$indicator.detach();
+
+		this._$indicator.attr("style", ""); // VirtualGrid sets position 'absolute' to the indicator, which breaks calculations in other containers, such as GridList
+	};
+
+	/**
 	 * Hides the control that is currently dragged.
 	 */
 	GridDragOver.prototype._hideDraggedItem = function() {
 		this._oDragControl.$().hide();
+
 		// this._oDragControl.setVisible(false); // todo, this brakes the drag session
 
 		var $gridItem = this._findContainingGridItem(this._oDragControl);
-		if ($gridItem) {
+
+		if ($gridItem && this._bIsInSameContainer) {
 			$gridItem.hide();
+		} else {
+			this._oDragContainer.fireEvent("_gridPolyfillDraggingInAnotherContainer");
 		}
 	};
 
@@ -309,6 +337,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 		if (this._oDragControl.getDomRef()) {
 			this._oDragControl.$().show();
 		}
+
 		// this._oDragControl.setVisible(false); // todo, this brakes the drag session
 
 		var $gridItem = this._findContainingGridItem(this._oDragControl);
@@ -392,6 +421,14 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 			// fallback to last item in the target
 			$target = this._getLastItem();
 			sBeforeOrAfter = "After";
+		}
+
+		if (!$target) {
+			// an empty grid
+			return {
+				targetControl: null,
+				position: "After"
+			};
 		}
 
 		if ($target.hasClass("sapUiDnDGridIndicator")) {
@@ -509,7 +546,7 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 		var aItems = this._oDropContainer.getAggregation(this._sTargetAggregation),
 			$target;
 
-		if (aItems.length) {
+		if (aItems && aItems.length) {
 			$target = aItems[aItems.length - 1].$();
 		}
 
@@ -617,6 +654,34 @@ sap.ui.define(['sap/ui/base/Object', "sap/ui/thirdparty/jquery", "sap/base/Log"]
 		}
 	};
 
+	/**
+	 * Before drop container rendering.
+	 * Handles the case when the drop container is invalidated during drag and drop.
+	 */
+	GridDragOver.prototype._onDropContainerBeforeRendering = function() {
+		if (!this._isDragActive()) {
+			return;
+		}
+
+		// Hides the indicator from the drop container so it does not brake the semantic rendering.
+		this._hideIndicator();
+	};
+
+	/**
+	 * After drop container rendering.
+	 * Handles the case when the drop container is invalidated during drag and drop.
+	 */
+	GridDragOver.prototype._onDropContainerAfterRendering = function() {
+		if (!this._isDragActive()) {
+			return;
+		}
+
+		this._hideDraggedItem();
+
+		if (this._mLastDropPosition) {
+			this._showIndicator(this._mLastDropPosition);
+		}
+	};
 
 	/**
 	 * Holds the instance of the current drag.

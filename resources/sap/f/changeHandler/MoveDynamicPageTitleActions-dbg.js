@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -12,7 +12,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 		 *
 		 * @alias sap.f.changeHandler.MoveDynamicPageTitleActions
 		 * @author SAP SE
-		 * @version 1.79.0
+		 * @version 1.84.7
 		 * @experimental Since 1.52
 		 */
 		var MoveActions = { };
@@ -44,7 +44,9 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 					oModifier.insertAggregation(oControl, "dependents", oButton, undefined, oView);
 
 					oChange.setRevertData({
-						index: iIndex
+						index: iIndex,
+						sourceParent: oModifier.getSelector(oControl, oAppComponent),
+						aggregation: ACTION_AGGREGATION_NAME
 					});
 				}
 			});
@@ -96,7 +98,11 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 				oChangeData = oChange.getDefinition();
 
 			// We need to add the information about the movedElements together with the source and target index
-			oChangeData.content = {movedElements: []};
+			oChangeData.content = {
+				movedElements: [],
+				targetAggregation: oSpecificChangeInfo.target.aggregation,
+				targetContainer: oSpecificChangeInfo.selector
+			};
 			oSpecificChangeInfo.movedElements.forEach(function (mElement) {
 				var oElement = mElement.element || oModifier.bySelector(mElement.id, oAppComponent);
 				oChangeData.content.movedElements.push({
@@ -105,6 +111,26 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 					targetIndex: mElement.targetIndex
 				});
 			});
+		};
+
+		MoveActions.getCondenserInfo = function(oChange) {
+			var oChangeContent = oChange.getContent();
+			var oRevertData = oChange.getRevertData();
+			return {
+				affectedControl: oChangeContent.movedElements[0].selector,
+				classification: sap.ui.fl.condenser.Classification.Move,
+				sourceContainer: oRevertData.sourceParent,
+				targetContainer: oChangeContent.targetContainer,
+				sourceIndex: oRevertData.index,
+				sourceAggregation: oRevertData.aggregation,
+				targetAggregation: oChangeContent.targetAggregation,
+				setTargetIndex: function(oChange, iNewTargetIndex) {
+					oChange.getContent().movedElements[0].targetIndex = iNewTargetIndex;
+				},
+				getTargetIndex: function(oChange) {
+					return oChange.getContent().movedElements[0].targetIndex;
+				}
+			};
 		};
 
 		return MoveActions;

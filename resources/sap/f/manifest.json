@@ -5,7 +5,7 @@
     "type": "library",
     "embeds": [],
     "applicationVersion": {
-      "version": "1.79.0"
+      "version": "1.84.7"
     },
     "title": "SAPUI5 library with Fiori controls.",
     "description": "SAPUI5 library with Fiori controls.",
@@ -22,16 +22,16 @@
   },
   "sap.ui5": {
     "dependencies": {
-      "minUI5Version": "1.79",
+      "minUI5Version": "1.84",
       "libs": {
         "sap.ui.core": {
-          "minVersion": "1.79.0"
+          "minVersion": "1.84.7"
         },
         "sap.ui.layout": {
-          "minVersion": "1.79.0"
+          "minVersion": "1.84.7"
         },
         "sap.m": {
-          "minVersion": "1.79.0"
+          "minVersion": "1.84.7"
         }
       }
     },
@@ -44,19 +44,25 @@
           "bg",
           "ca",
           "cs",
+          "cy",
           "da",
           "de",
           "el",
           "en",
+          "en-GB",
           "en-US-sappsd",
+          "en-US-saprigi",
           "en-US-saptrc",
           "es",
+          "es-MX",
           "et",
           "fi",
           "fr",
+          "fr-CA",
           "hi",
           "hr",
           "hu",
+          "id",
           "it",
           "iw",
           "ja",
@@ -69,6 +75,8 @@
           "no",
           "pl",
           "pt",
+          "pt-PT",
+          "rigi",
           "ro",
           "ru",
           "sh",
@@ -91,6 +99,7 @@
           "sap.f.cards.Header",
           "sap.f.cards.NumericHeader",
           "sap.f.cards.NumericSideIndicator",
+          "sap.f.CalendarInCard",
           "sap.f.Card",
           "sap.f.GridContainer",
           "sap.f.DynamicPage",
@@ -100,7 +109,6 @@
           "sap.f.semantic.SemanticPage",
           "sap.f.GridList",
           "sap.f.GridListItem",
-          "sap.f.PlanningCalendarInCard",
           "sap.f.PlanningCalendarInCardLegend",
           "sap.f.ProductSwitch",
           "sap.f.ProductSwitchItem",
@@ -109,7 +117,6 @@
         "elements": [
           "sap.f.DynamicPageAccessibleLandmarkInfo",
           "sap.f.GridContainerItemLayoutData",
-          "sap.f.PlanningCalendarInCardRow",
           "sap.f.semantic.AddAction",
           "sap.f.semantic.CloseAction",
           "sap.f.semantic.CopyAction",

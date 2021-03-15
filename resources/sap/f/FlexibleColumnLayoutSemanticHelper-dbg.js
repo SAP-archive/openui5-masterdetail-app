@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -49,19 +49,19 @@ sap.ui.define([
 	 *
 	 * For more information, see {@link sap.f.FlexibleColumnLayoutSemanticHelper#getCurrentUIState} and {@link sap.f.FlexibleColumnLayoutSemanticHelper#getNextUIState}
 	 *
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 * @param {sap.f.FlexibleColumnLayout} oFlexibleColumnLayout
 	 * The <code>sap.f.FlexibleColumnLayout</code> object whose state will be manipulated.
 	 *
 	 * @param {object} oSettings Determines the rules that will be used by the helper.
 	 *
-	 * @param {sap.f.LayoutType} oSettings.defaultTwoColumnLayoutType
+	 * @param {sap.f.LayoutType} [oSettings.defaultTwoColumnLayoutType=sap.f.LayoutType.TwoColumnsBeginExpanded]
 	 * Determines what two-column layout type will be suggested by default:
-	 * <code>sap.f.LayoutType.TwoColumnsBeginExpanded</code> (default) or <code>sap.f.LayoutType.TwoColumnsMidExpanded</code>.
+	 * <code>sap.f.LayoutType.TwoColumnsBeginExpanded</code> or <code>sap.f.LayoutType.TwoColumnsMidExpanded</code>.
 	 *
-	 * @param {sap.f.LayoutType} oSettings.defaultThreeColumnLayoutType
+	 * @param {sap.f.LayoutType} [oSettings.defaultThreeColumnLayoutType=sap.f.LayoutType.ThreeColumnsMidExpanded]
 	 * Determines what three-column layout type will be suggested by default:
-	 * <code>sap.f.LayoutType.ThreeColumnsMidExpanded</code> (default) or <code>sap.f.LayoutType.ThreeColumnsEndExpanded</code>.
+	 * <code>sap.f.LayoutType.ThreeColumnsMidExpanded</code> or <code>sap.f.LayoutType.ThreeColumnsEndExpanded</code>.
 	 *
 	 * @param {int} oSettings.maxColumnsCount
 	 * Determines the maximum number of columns that will be displayed side by side.

@@ -1,33 +1,45 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
+	"./GridContainerRenderer",
+	"./GridContainerSettings",
+	"./GridContainerUtils",
+	"./delegate/GridContainerItemNavigation",
 	"./library",
+	"./dnd/GridKeyboardDragAndDrop",
+	"sap/base/strings/capitalize",
+	"sap/ui/base/ManagedObjectObserver",
 	"sap/ui/core/Control",
 	"sap/ui/core/Core",
-	"sap/ui/base/ManagedObjectObserver",
-	'sap/ui/core/ResizeHandler',
+	"sap/ui/core/ResizeHandler",
 	"sap/ui/core/delegate/ItemNavigation",
-	"sap/f/GridContainerRenderer",
+	"sap/ui/core/InvisibleRenderer",
 	"sap/ui/Device",
+	"sap/ui/events/KeyCodes",
 	"sap/ui/layout/cssgrid/VirtualGrid",
-	"sap/f/GridContainerSettings",
-	"sap/base/strings/capitalize",
-	"sap/ui/core/InvisibleRenderer"
-], function (library,
-			Control,
-			Core,
-			ManagedObjectObserver,
-			ResizeHandler,
-			ItemNavigation,
-			GridContainerRenderer,
-			Device,
-			VirtualGrid,
-			GridContainerSettings,
-			capitalize,
-			InvisibleRenderer) {
+	"sap/ui/thirdparty/jquery"
+], function (
+	GridContainerRenderer,
+	GridContainerSettings,
+	GridContainerUtils,
+	GridContainerItemNavigation,
+	library,
+	GridKeyboardDragAndDrop,
+	capitalize,
+	ManagedObjectObserver,
+	Control,
+	Core,
+	ResizeHandler,
+	ItemNavigation,
+	InvisibleRenderer,
+	Device,
+	KeyCodes,
+	VirtualGrid,
+	jQuery
+) {
 	"use strict";
 
 	var isRtl = Core.getConfiguration().getRTL();
@@ -37,6 +49,15 @@ sap.ui.define([
 	 * @type {number}
 	 */
 	var EDGE_VERSION_WITH_GRID_SUPPORT = 16;
+
+	/**
+	 * For these controls the grid item visual focus should be displayed from the control inside.
+	 */
+	var aOwnVisualFocusControls = [
+		"sap.f.Card",
+		"sap.ui.integration.widgets.Card",
+		"sap.m.GenericTile"
+	];
 
 	/**
 	 * Indicates whether the grid is supported by the browser.
@@ -154,7 +175,7 @@ sap.ui.define([
 	 * @see {@link sap.f.dnd.GridDropInfo}
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @extends sap.ui.core.Control
 	 *
@@ -177,6 +198,15 @@ sap.ui.define([
 				 *
 				 */
 				width: {type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: ""},
+
+				/**
+				 * Defines the minimum height of the grid.
+				 *
+				 * Allows an empty grid to be available as a drop target.
+				 *
+				 * @experimental As of version 1.81 Disclaimer: this property is in a beta state - incompatible API changes may be done before its official public release.
+				 */
+				minHeight: {type: "sap.ui.core.CSSSize", group: "Appearance", defaultValue: "2rem"},
 
 				/**
 				 * If set to <code>true</code> the current range (large, medium or small) is defined by the size of the
@@ -338,7 +368,17 @@ sap.ui.define([
 	 * @private
 	 */
 	GridContainer.prototype._onAfterItemRendering = function () {
-		var container = this.getParent();
+
+		var container = this.getParent(),
+			oFocusDomRef;
+
+		if (container._hasOwnVisualFocus(this)) {
+			oFocusDomRef = this.getFocusDomRef();
+
+			// remove the focus DOM ref from the tab chain
+			oFocusDomRef.setAttribute("tabindex", -1);
+			oFocusDomRef.tabIndex = -1;
+		}
 
 		// register resize listener for that item only once
 		if (!container._resizeListeners[this.getId()]) {
@@ -365,16 +405,13 @@ sap.ui.define([
 	 */
 	GridContainer.prototype._reflectItemVisibilityToWrapper = function (oItem) {
 
-		var oItemDomRef = oItem.getDomRef(),
-			oInvisibleSpan = document.getElementById(InvisibleRenderer.createInvisiblePlaceholderId(oItem)),
-			oItemWrapper,
+		var oItemWrapper = this._getItemWrapper(oItem),
 			$oItemWrapper;
 
-		if (!oItemDomRef && !oInvisibleSpan) {
+		if (!oItemWrapper) {
 			return false;
 		}
 
-		oItemWrapper = (oItemDomRef ? oItemDomRef : oInvisibleSpan).parentElement;
 		$oItemWrapper = jQuery(oItemWrapper);
 
 		// check if we actually change something. Needed to judge whether to trigger IE polyfill.
@@ -434,17 +471,17 @@ sap.ui.define([
 			aWrapperItemsDomRef = [];
 
 		//Initialize the ItemNavigation
-		if (!that._itemNavigation) {
-			that._itemNavigation = new ItemNavigation()
+		if (!that._oItemNavigation) {
+			that._oItemNavigation = new GridContainerItemNavigation()
 				.setCycling(false)
-				.attachEvent(ItemNavigation.Events.FocusLeave, this._onItemNavigationFocusLeave, this)
 				.attachEvent(ItemNavigation.Events.BorderReached, this._onItemNavigationBorderReached, this)
 				.setDisabledModifiers({
-					sapnext : ["alt", "meta"],
-					sapprevious : ["alt", "meta"]
-				});
+					sapnext : ["alt", "meta", "ctrl"],
+					sapprevious : ["alt", "meta", "ctrl"]
+				})
+				.setFocusedIndex(0);
 
-			that.addDelegate(this._itemNavigation);
+			that.addDelegate(this._oItemNavigation);
 		}
 
 		that.$().children().map(function (iIndex, oWrapperItem) {
@@ -453,21 +490,8 @@ sap.ui.define([
 			}
 		});
 
-		that._itemNavigation.setRootDomRef(that.getDomRef());
-		that._itemNavigation.setItemDomRefs(aWrapperItemsDomRef);
-		that._itemNavigation.setFocusedIndex(0);
-	};
-
-	GridContainer.prototype._onItemNavigationFocusLeave = function (oEvent) {
-		var currentFocused = this._itemNavigation.getFocusedDomRef();
-		this._itemNavigation.getItemDomRefs().forEach(function (item, index) {
-			if (currentFocused === item ) {
-				var nextFocusableIndex = index++;
-				this._itemNavigation.setFocusedIndex(nextFocusableIndex);
-			}
-		}.bind(this));
-
-		this._itemNavigationFocusLeft = true;
+		that._oItemNavigation.setRootDomRef(that.getDomRef());
+		that._oItemNavigation.setItemDomRefs(aWrapperItemsDomRef);
 	};
 
 	/**
@@ -545,7 +569,7 @@ sap.ui.define([
 		this._initRangeSet();
 
 		this._resizeListeners = {};
-
+		this._oItemNavigation = null;
 		this._itemDelegate = {
 			onBeforeRendering: this._onBeforeItemRendering,
 			onAfterRendering: this._onAfterItemRendering
@@ -577,23 +601,24 @@ sap.ui.define([
 	 * @public
 	 */
 	GridContainer.prototype.insertItem = function (oItem, iIndex) {
-		if (!this.getDomRef() || !isGridSupportedByBrowser()) {
-			// if not rendered or not supported - insert aggregation and invalidate
-			return this.insertAggregation("items", oItem, iIndex);
+		this.insertAggregation("items", oItem, iIndex, true);
+
+		if (!this.getDomRef() || !isGridSupportedByBrowser() || !oItem.getVisible()) {
+			// if not rendered, not supported or an invisible item - we need to invalidate
+			this.invalidate();
+			return this;
 		}
 
 		var oRm = Core.createRenderManager(),
 			oWrapper = this._createItemWrapper(oItem),
-			oTarget = this._getItemAt(iIndex),
+			oNextItem = this._getItemAt(iIndex + 1),
 			oGridRef = this.getDomRef();
 
-		if (oTarget) {
-			oGridRef.insertBefore(oWrapper, oTarget.getDomRef().parentElement);
+		if (oNextItem) {
+			oGridRef.insertBefore(oWrapper, this._getItemWrapper(oNextItem));
 		} else {
 			oGridRef.insertBefore(oWrapper, oGridRef.lastChild);
 		}
-
-		this.insertAggregation("items", oItem, iIndex, true);
 
 		oItem.addStyleClass("sapFGridContainerItemInnerWrapper");
 		oRm.render(oItem, oWrapper);
@@ -651,6 +676,12 @@ sap.ui.define([
 
 		this._setItemNavigationItems();
 		this._applyLayout(true);
+
+		//force the focus when one item is available in grid via dnd(keyboard or mouse)
+		if (this.getItems().length === 1 && this._forceFocus) {
+			this.focusItem(0);
+			this._forceFocus = false;
+		}
 	};
 
 	/**
@@ -665,16 +696,18 @@ sap.ui.define([
 			delete this._itemsObserver;
 		}
 
-		if (this._itemNavigation) {
-			this.removeDelegate(this._itemNavigation);
-			this._itemNavigation.destroy();
-			delete this._itemNavigation;
-			this._itemNavigation = null;
+		if (this._oItemNavigation) {
+			this.removeDelegate(this._oItemNavigation);
+			this._oItemNavigation.destroy();
+			delete this._oItemNavigation;
+			this._oItemNavigation = null;
 		}
 
 		if (!isGridSupportedByBrowser()) {
 			this._detachDndPolyfill();
 		}
+
+		this._forceFocus = null;
 	};
 
 	/**
@@ -748,7 +781,12 @@ sap.ui.define([
 	 */
 	GridContainer.prototype._resizeItem = function (oEvent) {
 		if (!isGridSupportedByBrowser()) {
-			this._scheduleIEPolyfill();
+			// don't re-arrange the items if currently dragging one of the items from this container in another container
+			if (!this._bDraggingInAnotherContainer) {
+				this._scheduleIEPolyfill();
+			}
+
+			this._bDraggingInAnotherContainer = false;
 			return;
 		}
 
@@ -1063,7 +1101,7 @@ sap.ui.define([
 			width: oEvent.getParameter("width"),
 			height: oEvent.getParameter("height"),
 			domRef: $indicator,
-			insertAt: $indicator.index()
+			insertAt: oEvent.getParameter("indicatorIndex")
 		};
 
 		this._scheduleIEPolyfill();
@@ -1079,12 +1117,21 @@ sap.ui.define([
 	};
 
 	/**
+	 * Implements polyfill for IE after the item is dragged to another container.
+	 * @private
+	 */
+	GridContainer.prototype._polyfillDraggingInAnotherContainer = function () {
+		this._bDraggingInAnotherContainer = true;
+	};
+
+	/**
 	 * Attaches polyfill methods for drag and drop for IE.
 	 * @private
 	 */
 	GridContainer.prototype._attachDndPolyfill = function () {
 		this.attachEvent("_gridPolyfillAfterDragOver", this._polyfillAfterDragOver, this);
 		this.attachEvent("_gridPolyfillAfterDragEnd", this._polyfillAfterDragEnd, this);
+		this.attachEvent("_gridPolyfillDraggingInAnotherContainer", this._polyfillDraggingInAnotherContainer, this);
 	};
 
 	/**
@@ -1094,139 +1141,72 @@ sap.ui.define([
 	GridContainer.prototype._detachDndPolyfill = function () {
 		this.detachEvent("_gridPolyfillAfterDragOver", this._polyfillAfterDragOver, this);
 		this.detachEvent("_gridPolyfillAfterDragEnd", this._polyfillAfterDragEnd, this);
-	};
-
-	/**
-	 * Forward tab before or after GridContainer
-	 *
-	 * @see sap.f.GridContainer#onsaptabnext
-	 * @see sap.f.GridContainer#onsaptabprevious
-	 * @since 1.78
-	 * @protected
-	 */
-	GridContainer.prototype.forwardTab = function(bForward) {
-		this.$(bForward ? "after" : "before").focus();
-	};
-
-	/**
-	 * Forward tab to next focusable element inside GridContainer or out of it
-	 * This function should be called before tab key is pressed
-	 *
-	 * @since 1.78
-	 * @protected
-	 */
-	GridContainer.prototype.onsaptabnext = function(oEvent) {
-		if (!this._itemNavigation) {
-			return;
-		}
-
-		// get the last focused element from the ItemNavigation
-		var aNavigationDomRefs = this._itemNavigation.getItemDomRefs(),
-			iLastFocusedIndex = this._itemNavigation.getFocusedIndex(),
-			$LastFocused = jQuery(aNavigationDomRefs[iLastFocusedIndex]),
-			Tabbables = [];
-
-		// Tabbable elements in wrapper
-		var $AllTabbables = $LastFocused.find(":sapTabbable");
-
-		//leave only real tabbable elements in the tab chain, GridContainer and List types have dummy areas
-		$AllTabbables.map(function (index, element) {
-			if (element.className.indexOf("DummyArea") === -1) {
-				Tabbables.push(element);
-			}
-		});
-		var $Tabbables = jQuery(Tabbables),
-			focusableIndex = $Tabbables.length === 1 ? 0 : $Tabbables.length  - 1;
-
-		if ($Tabbables.control(focusableIndex) && $Tabbables.control(focusableIndex).getId() === oEvent.target.id) {
-			this._lastFocusedElement = oEvent.target;
-			this.forwardTab(true);
-		}
-	};
-
-	/**
-	* Forward tab to the previous focusable element inside GridContainer or out of it
-	* This function should be called before shift + tab key is pressed
-	*
-	* @since 1.78
-	* @protected
-	*/
-	GridContainer.prototype.onsaptabprevious = function(oEvent) {
-		if (oEvent.target.className !== "sapFGridContainerItemWrapper") {
-			this._lastFocusedElement = oEvent.target;
-			return;
-		}
-
-		var sTargetId = oEvent.target.id;
-		if (sTargetId == this.getId("nodata")) {
-			this.forwardTab(false);
-		} else if (sTargetId == this.getId("trigger")) {
-			this.focusPrevious();
-			oEvent.preventDefault();
-		}
-
-		//SHIFT + TAB out of the GridContainer should focused the last focused grid cell
-		this._lastFocusedElement = null;
-		this.forwardTab(false);
-	};
-
-	/**
-	 * Handles the <code>focusin</code> event.
-	 *
-	 * Handles when it is needed to return focus to c	orrect place
-	 * @param {jQuery.Event} oEvent The event object.
-	 */
-	GridContainer.prototype.onfocusin = function() {
-		if (this._itemNavigationFocusLeft) {
-			this._itemNavigationFocusLeft = false;
-			var aNavigationDomRefs = this._itemNavigation.getItemDomRefs(),
-				lastFocusedIndex = this._itemNavigation.getFocusedIndex();
-			if (this._lastFocusedElement) {
-				this._lastFocusedElement.focus();
-			} else {
-				aNavigationDomRefs[lastFocusedIndex].focus();
-			}
-		}
+		this.detachEvent("_gridPolyfillDraggingInAnotherContainer", this._polyfillDraggingInAnotherContainer, this);
 	};
 
 	/**
 	 * Fires when border is reached of the <code>sap.f.GridContainer</code>.
-	 * @param {jQuery.Event} oEvent The event object
+	 * @param {sap.ui.base.Event|jQuery.Event} oEvent The event object
 	 */
 	GridContainer.prototype._onItemNavigationBorderReached = function (oEvent) {
-
 		this.fireEvent("borderReached", {
-			event: oEvent.getParameter("event")
+			event: oEvent instanceof jQuery.Event ? oEvent : oEvent.getParameter("event")
 		});
 	};
 
 	/**
-	 * Handles the onsapnext event
-	 * Sets the focus to the previous item
+	 * Handles the <code>onsapnext</code> event. Sets the focus to the next item in the current container.
+	 * If the event is triggered by <code>ARROW_DOWN</code>, custom logic is applied to focus the item below and propagation to the ItemNavigation is stopped.
 	 *
 	 * @param {jQuery.Event} oEvent the browser event
 	 * @private
 	 */
 	GridContainer.prototype.onsapnext = function (oEvent) {
-		var aItemDomRefs = this._itemNavigation.getItemDomRefs();
+		var aItemDomRefs = this._oItemNavigation.getItemDomRefs();
+
 		if (aItemDomRefs.indexOf(oEvent.target) === -1) {
 			oEvent.stopImmediatePropagation(true);
-			return;
+		}
+
+		var oItem = jQuery(oEvent.target.firstElementChild).control(0);
+
+		if (oEvent.keyCode === KeyCodes.ARROW_DOWN) {
+			oEvent.stopImmediatePropagation(true);
+			var oNextFocusItem = this._getClosestItemBelowInThisContainer(oItem);
+
+			if (oNextFocusItem) {
+				this._getItemWrapper(oNextFocusItem).focus();
+			} else {
+				this._onItemNavigationBorderReached(oEvent);
+			}
 		}
 	};
 
 	/**
-	 * Handles the onsapprevious event
-	 * Sets the focus to the previous item
+	 * Handles the <code>onsapprevious</code> event. Sets the focus to the previous item in the current container.
+	 * If the event is triggered by <code>ARROW_UP</code>, custom logic is applied to focus the item above and propagation to the ItemNavigation is stopped.
 	 *
 	 * @param {jQuery.Event} oEvent the browser event
 	 * @private
 	 */
 	GridContainer.prototype.onsapprevious = function (oEvent) {
-		var aItemDomRefs = this._itemNavigation.getItemDomRefs();
+		var aItemDomRefs = this._oItemNavigation.getItemDomRefs();
+
 		if (aItemDomRefs.indexOf(oEvent.target) === -1) {
 			oEvent.stopImmediatePropagation(true);
-			return;
+		}
+
+		var oItem = jQuery(oEvent.target.firstElementChild).control(0);
+
+		if (oEvent.keyCode === KeyCodes.ARROW_UP) {
+			oEvent.stopImmediatePropagation(true);
+			var oNextFocusItem = this._getClosestItemAboveInThisContainer(oItem);
+
+			if (oNextFocusItem) {
+				this._getItemWrapper(oNextFocusItem).focus();
+			} else {
+				this._onItemNavigationBorderReached(oEvent);
+			}
 		}
 	};
 
@@ -1236,18 +1216,278 @@ sap.ui.define([
 	 */
 	["onkeypress", "onkeyup", "onkeydown", "onsapenter", "onsapselect", "onsapspace"].forEach(function (sName) {
 		GridContainer.prototype[sName] = function (oEvent) {
-			if (!oEvent.target.classList.contains('sapFGridContainerItemWrapper')) {
+			if (!this._isItemWrapper(oEvent.target)) {
 				return;
 			}
-			var oItem = jQuery(oEvent.target.firstChild).control()[0],
-				oFocusDomRef = oItem.getFocusDomRef(),
+
+			if (sName === "onsapspace") {
+				// prevent page scrolling
+				oEvent.preventDefault();
+			}
+
+			var oItem = jQuery(oEvent.target.firstChild).control()[0];
+
+			if (oItem) {
+				var oFocusDomRef = oItem.getFocusDomRef(),
 				oFocusControl = jQuery(oFocusDomRef).control()[0];
 
-			if (oFocusControl && oFocusControl[sName]) {
-				oFocusControl[sName].call(oFocusControl, oEvent);
+				if (oFocusControl && oFocusControl[sName]) {
+					oFocusControl[sName].call(oFocusControl, oEvent);
+				}
 			}
 		};
 	});
+
+	/**
+	 * Returns if the control should display the grid item visual focus.
+	 * @private
+	 * @return {boolean} If the control should display the grid item visual focus
+	 */
+	GridContainer.prototype._hasOwnVisualFocus = function (oControl) {
+		return aOwnVisualFocusControls.indexOf(oControl.getMetadata().getName()) > -1;
+	};
+
+	/**
+	 * Handles moving of the items using the arrow keys. Calculates new position for the moved item.
+	 * If moving is possible, calls <code>GridKeyboardDragAndDrop</code> to fire same events, which would be fired when performing drag and drop with mouse.
+	 * @param {jQuery.Event} oEvent The event.
+	 */
+	GridContainer.prototype._moveItem = function (oEvent) {
+		if (!this._isItemWrapper(oEvent.target)) {
+			return;
+		}
+
+		var oItem = jQuery(oEvent.target.firstElementChild).control(0),
+			iLength = this.getItems().length,
+			iItemIndex = this.indexOfItem(oItem),
+			iInsertAt = -1,
+			oInsertAround = null,
+			sDropPosition = "After";
+
+		switch (oEvent.keyCode) {
+			case KeyCodes.ARROW_RIGHT:
+				iInsertAt = Core.getConfiguration().getRTL() ? iItemIndex - 1 : iItemIndex + 1;
+
+				if (iInsertAt >= 0 && iInsertAt < iLength) {
+					oInsertAround = this.getItems()[iInsertAt];
+				}
+				break;
+			case KeyCodes.ARROW_LEFT:
+				iInsertAt = Core.getConfiguration().getRTL() ? iItemIndex + 1 : iItemIndex - 1;
+
+				if (iInsertAt >= 0 && iInsertAt < iLength) {
+					oInsertAround = this.getItems()[iInsertAt];
+				}
+				break;
+			case KeyCodes.ARROW_UP:
+				oInsertAround = this._getClosestItemAbove(oItem);
+
+				if (!oInsertAround || (oInsertAround.isA("sap.f.GridContainer") && !oInsertAround.getItems().length)) {
+					break;
+				}
+
+				if (this !== oInsertAround.getParent()) {
+					sDropPosition = "Before";
+				}
+				break;
+			case KeyCodes.ARROW_DOWN:
+				oInsertAround = this._getClosestItemBelow(oItem);
+				if (!oInsertAround || (oInsertAround.isA("sap.f.GridContainer") && !oInsertAround.getItems().length)) {
+					break;
+				}
+
+				if (this !== oInsertAround.getParent()) {
+					sDropPosition = "Before";
+				}
+				break;
+			default: break;
+		}
+
+		iInsertAt = this.indexOfItem(oInsertAround);
+
+		if (!oInsertAround) {
+			return;
+		}
+
+		// sap.m.ScrollEnablement scrolls every time Ctrl + arrow are pressed, so stop propagation here.
+		oEvent.stopPropagation();
+
+		if (!oInsertAround.isA("sap.f.GridContainer") && this === oInsertAround.getParent() &&  iInsertAt < iItemIndex) {
+			sDropPosition = "Before";
+		}
+
+		GridKeyboardDragAndDrop.fireDnDByKeyboard(oItem, oInsertAround, sDropPosition, oEvent);
+		this._setItemNavigationItems();
+	};
+
+	/**
+	 * Moves item for drag-and-drop keyboard handling
+	 * Modifier + Right Arrow || Modifier + Arrow Up
+	 * @param {jQuery.Event} oEvent
+	 */
+	GridContainer.prototype.onsapincreasemodifiers = GridContainer.prototype._moveItem;
+
+	/**
+	 * Moves item for drag-and-drop keyboard handling
+	 * Modifier + Left Arrow || Modifier + Arrow Down
+	 * @param {jQuery.Event} oEvent
+	 */
+	GridContainer.prototype.onsapdecreasemodifiers = GridContainer.prototype._moveItem;
+
+	GridContainer.prototype._getClosestItemBelowInThisContainer = function (oItem) {
+		var aItemsBelow = this.getItems()
+							.map(this._getItemWrapper)
+							.filter(function (oWrapper) {
+								return GridContainerUtils.isBelow(oItem, oWrapper);
+							});
+
+		// find the item which is closest to this one (shortest distance between the top left corners)
+		var oClosestItem = GridContainerUtils.findClosest(oItem, aItemsBelow);
+
+		if (oClosestItem) {
+			return jQuery(oClosestItem.firstElementChild).control(0);
+		}
+
+		return null;
+	};
+
+	/**
+	 * Searches for the closest item below the given one.
+	 * Tries to find it in the same container first, if there is no success, all other GridContainers below are being searched.
+	 * @param {sap.ui.core.Control} oItem The item.
+	 * @returns {sap.ui.core.Control} The found item or null.
+	 */
+	GridContainer.prototype._getClosestItemBelow = function (oItem) {
+		var oClosestItem = this._getClosestItemBelowInThisContainer(oItem);
+
+		if (oClosestItem) {
+			return oClosestItem;
+		}
+		var aGridContainersBelow = Array.from(document.querySelectorAll(".sapFGridContainer")).filter(function (oGridContainerElement) {
+			return GridContainerUtils.isBelow(oItem, oGridContainerElement);
+		});
+
+		var oClosestGridContainer = GridContainerUtils.findClosestGridContainer(oItem, aGridContainersBelow);
+
+		if (!oClosestGridContainer) {
+			return null;
+		}
+
+		var aItemsInClosestContainer = [];
+
+		jQuery(oClosestGridContainer).control(0).getItems().forEach(function(oItem) {
+			aItemsInClosestContainer.push(oItem.getDomRef());
+		});
+
+		if (aItemsInClosestContainer.length) {
+			oClosestItem = GridContainerUtils.findClosest(oItem, aItemsInClosestContainer);
+			return jQuery(oClosestItem).control(0);
+		}
+
+		return jQuery(oClosestGridContainer).control(0);
+	};
+
+	GridContainer.prototype._getClosestItemAboveInThisContainer = function (oItem) {
+		var aItemsAbove = this.getItems()
+							.map(this._getItemWrapper)
+							.filter(function (oWrapper) {
+								return GridContainerUtils.isAbove(oItem, oWrapper);
+							});
+
+		// find the item which is closest to this one (shortest distance between the top left corners)
+		var oClosestItem = GridContainerUtils.findClosest(oItem, aItemsAbove);
+
+		if (oClosestItem) {
+			return jQuery(oClosestItem.firstElementChild).control(0);
+		}
+
+		return null;
+	};
+
+	/**
+	 * Searches for the closest item above the given one.
+	 * Tries to find it in the same container first, if there is no success, all other GridContainers above are being searched.
+	 * @param {sap.ui.core.Control} oItem The item.
+	 * @returns {sap.ui.core.Control} The found item or null.
+	 */
+	GridContainer.prototype._getClosestItemAbove = function (oItem) {
+		// find the item which is closest to this one (shortest distance between the top left corners)
+		var oClosestItem = this._getClosestItemAboveInThisContainer(oItem);
+
+		if (oClosestItem) {
+			return oClosestItem;
+		}
+
+		var aGridContainersAbove = Array.from(document.querySelectorAll(".sapFGridContainer")).filter(function (oGridContainerElement) {
+			return GridContainerUtils.isAbove(oItem, oGridContainerElement);
+		});
+
+		var oClosestGridContainer = GridContainerUtils.findClosestGridContainer(oItem, aGridContainersAbove);
+
+		if (!oClosestGridContainer) {
+			return null;
+		}
+
+		var aItemsInClosestContainer = [];
+
+		jQuery(oClosestGridContainer).control(0).getItems().forEach(function(oItem) {
+			aItemsInClosestContainer.push(oItem.getDomRef());
+		});
+
+		if (aItemsInClosestContainer.length) {
+			oClosestItem = GridContainerUtils.findClosest(oItem, aItemsInClosestContainer);
+			return jQuery(oClosestItem).control(0);
+		}
+
+		return jQuery(oClosestGridContainer).control(0);
+	};
+
+	/**
+	 * Focuses the item on the given index. Should be called after successful drop operation.
+	 *
+	 * <b>Note:</b>Should not be called before the <code>GridContainer</code> has been rendered.
+	 *
+	 * @public
+	 * @experimental Since 1.81. Behavior might change.
+	 * @param {int} iIndex The index of the item, which will be focused.
+	 */
+	GridContainer.prototype.focusItem = function (iIndex) {
+		var aItemDomRefs,
+			oItemNavigation = this._oItemNavigation;
+
+		this._forceFocus = true;
+
+		this._setItemNavigationItems();
+
+		aItemDomRefs = oItemNavigation.getItemDomRefs();
+
+		if (aItemDomRefs[iIndex]) {
+			oItemNavigation.setFocusedIndex(iIndex);
+
+			aItemDomRefs[iIndex].focus();
+		}
+	};
+
+	GridContainer.prototype._isItemWrapper = function (oElement) {
+		return oElement.classList.contains("sapFGridContainerItemWrapper");
+	};
+
+	GridContainer.prototype._getItemWrapper = function (oItem) {
+		var oItemDomRef = oItem.getDomRef(),
+			oInvisibleSpan;
+
+		if (oItemDomRef) {
+			return oItemDomRef.parentElement;
+		}
+
+		oInvisibleSpan = document.getElementById(InvisibleRenderer.createInvisiblePlaceholderId(oItem));
+
+		if (oInvisibleSpan) {
+			return oInvisibleSpan.parentElement;
+		}
+
+		return null;
+	};
 
 	return GridContainer;
 });

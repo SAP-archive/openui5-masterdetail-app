@@ -1,12 +1,13 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
 // Provides control sap.f.DynamicPageTitle.
 sap.ui.define([
 	"./library",
+	"sap/ui/core/library",
 	"sap/ui/core/Control",
 	"sap/ui/base/ManagedObjectObserver",
 	"sap/m/library",
@@ -20,9 +21,11 @@ sap.ui.define([
 	"sap/ui/core/HTML",
 	"sap/ui/core/Icon",
 	"sap/ui/Device",
-    "sap/ui/events/KeyCodes"
+    "sap/ui/events/KeyCodes",
+	"sap/ui/core/InvisibleMessage"
 ], function(
 	library,
+	CoreLibrary,
 	Control,
 	ManagedObjectObserver,
 	mobileLibrary,
@@ -36,13 +39,15 @@ sap.ui.define([
 	HTML,
 	Icon,
 	Device,
-	KeyCodes
+	KeyCodes,
+	InvisibleMessage
 ) {
 	"use strict";
 
 	// shortcut for sap.f.DynamicPageTitleArea
 	var DynamicPageTitleArea = library.DynamicPageTitleArea,
-		ToolbarStyle = mobileLibrary.ToolbarStyle;
+		ToolbarStyle = mobileLibrary.ToolbarStyle,
+		InvisibleMessageMode = CoreLibrary.InvisibleMessageMode;
 	var oCore = sap.ui.getCore();
 
 	/**
@@ -85,7 +90,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.79.0
+	 * @version 1.84.7
 	 *
 	 * @constructor
 	 * @public
@@ -413,6 +418,7 @@ sap.ui.define([
 		});
 
 		this._oRB = sap.ui.getCore().getLibraryResourceBundle("sap.f");
+		this._oInvisibleMessage = null;
 	};
 
 	DynamicPageTitle.prototype.onBeforeRendering = function () {
@@ -429,6 +435,10 @@ sap.ui.define([
 		this._doNavigationActionsLayout();
 		// Needs update in order to determine its visibility by visibility of its content.
 		this._updateTopAreaVisibility();
+
+		if (!this._oInvisibleMessage) {
+			this._oInvisibleMessage = InvisibleMessage.getInstance();
+		}
 	};
 
 	DynamicPageTitle.prototype.exit = function () {
@@ -1180,6 +1190,7 @@ sap.ui.define([
 	 */
 	DynamicPageTitle.prototype._focusExpandButton = function () {
 		this._getExpandButton().$().trigger("focus");
+		this._oInvisibleMessage.announce(this._getExpandButton().getTooltip(), InvisibleMessageMode.Polite);
 	};
 
 	/**

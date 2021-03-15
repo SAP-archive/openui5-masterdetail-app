@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -97,7 +97,7 @@ sap.ui.define([
 	* @extends sap.ui.core.Control
 	*
 	* @author SAP SE
-	* @version 1.79.0
+	* @version 1.84.7
 	*
 	* @constructor
 	* @public
@@ -619,6 +619,7 @@ sap.ui.define([
 		"sapUiResponsiveContentPadding": true
 	};
 
+	SemanticPage.ARIA_ROLE_DESCRIPTION = "SEMANTIC_PAGE_ROLE_DESCRIPTION";
 	/*
 	* LIFECYCLE METHODS
 	*/
@@ -1025,11 +1026,17 @@ sap.ui.define([
 	* @private
 	*/
 	SemanticPage.prototype._initDynamicPage = function () {
-		this.setAggregation("_dynamicPage", new DynamicPage(this.getId() + "-page", {
-			title : this._getTitle(),
-			header : this._getHeader(),
-			footer: this._getFooter()
-		}), true);
+		var oDynamicPage = new DynamicPage(this.getId() + "-page", {
+				title: this._getTitle(),
+				header: this._getHeader(),
+				footer: this._getFooter()
+			}),
+			sAriaRoleDescription = sap.ui.getCore()
+				.getLibraryResourceBundle("sap.f")
+				.getText(SemanticPage.ARIA_ROLE_DESCRIPTION);
+
+		oDynamicPage._setAriaRoleDescription(sAriaRoleDescription);
+		this.setAggregation("_dynamicPage", oDynamicPage, true);
 	};
 
 	/**

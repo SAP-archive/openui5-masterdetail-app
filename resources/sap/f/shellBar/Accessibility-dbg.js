@@ -1,6 +1,6 @@
 /*!
  * OpenUI5
- * (c) Copyright 2009-2020 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
@@ -32,6 +32,8 @@ sap.ui.define([
 	};
 
 	Accessibility.prototype.attachDelegates = function () {
+		var oAvatar = this._oControl.getProfile();
+
 		this._oDelegateSecondTitle = {
 			onAfterRendering: this.onAfterRenderingSecondTitle
 		};
@@ -64,8 +66,8 @@ sap.ui.define([
 		if (this._oControl._oNotifications) {
 			this._oControl._oNotifications.addDelegate(this._oDelegateNotifications, false, this);
 		}
-		if (this._oControl._oAvatarButton) {
-			this._oControl._oAvatarButton.addDelegate(this._oDelegateAvatar, false, this);
+		if (oAvatar) {
+			oAvatar.addDelegate(this._oDelegateAvatar, false, this);
 		}
 		if (this._oControl._oProductSwitcher) {
 			this._oControl._oProductSwitcher.addDelegate(this._oDelegateProducts, false, this);
@@ -126,7 +128,7 @@ sap.ui.define([
 	};
 
 	Accessibility.prototype.onAfterRenderingAvatar = function () {
-		var $oAvatar = this._oControl._oAvatarButton.$();
+		var $oAvatar = this._oControl.getProfile().$();
 
 		$oAvatar.attr("aria-label", this.getEntityTooltip("PROFILE"));
 		$oAvatar.attr("aria-haspopup", "menu");
@@ -151,6 +153,7 @@ sap.ui.define([
 	};
 
 	Accessibility.prototype.exit = function () {
+		var oAvatar = this._oControl.getProfile();
 		// Detach Event Delegates
 		if (this._oControl) {
 			this._oControl.removeDelegate(this._controlDelegate);
@@ -164,8 +167,8 @@ sap.ui.define([
 		if (this._oControl._oNotifications) {
 			this._oControl._oNotifications.removeDelegate(this._oDelegateNotifications);
 		}
-		if (this._oControl._oAvatarButton) {
-			this._oControl._oAvatarButton.removeDelegate(this._oDelegateAvatar);
+		if (oAvatar) {
+			oAvatar.removeDelegate(this._oDelegateAvatar);
 		}
 		if (this._oControl._oProductSwitcher) {
 			this._oControl._oProductSwitcher.removeDelegate(this._oDelegateProducts);
