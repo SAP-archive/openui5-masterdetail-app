@@ -15,11 +15,11 @@ It includes generic application functionality and tests that can be easily exten
 * [UI5 Tooling](https://github.com/SAP/ui5-tooling)
 * [OpenUI5](https://github.com/SAP/openui5)
 
-## Prerequisites
+## Requirements
 The **UI5 build and development tooling command line interface (UI5 CLI)** has to be installed.
 For installation instructions please see [Installing the UI5 CLI](https://github.com/SAP/ui5-tooling#installing-the-ui5-cli).
 
-## Setup
+## Download and Installation
 1. Clone the repository and navigate into it
     ```sh
     git clone https://github.com/SAP/openui5-masterdetail-app.git
@@ -54,3 +54,6 @@ For more build and development options please see: [UI5 Build and Development To
 ## Support
 This repository is based on the [OpenUI5 template demo apps](https://openui5.hana.ondemand.com/demoapps.html) and updated regularly with our latest recommendations. 
 If you found a bug, please create an [OpenUI5 issue](https://github.com/sap/openui5/issues). Thank you!
+
+# Licensing
+Please see our [LICENSE.txt](LICENSE.txt) for copyright and license information. Detailed information including third-party components and their licensing/copyright information is available via the [REUSE tool](https://api.reuse.software/info/github.com/SAP/openui5-masterdetail-app).
