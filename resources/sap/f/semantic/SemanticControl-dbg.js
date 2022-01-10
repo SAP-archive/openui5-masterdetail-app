@@ -6,10 +6,9 @@
 
 sap.ui.define([
 	"sap/ui/thirdparty/jquery",
-	"sap/ui/base/ManagedObject",
 	"sap/ui/core/Element",
 	"./SemanticConfiguration"
-], function (jQuery, ManagedObject, Element, SemanticConfiguration) {
+], function (jQuery, Element, SemanticConfiguration) {
 	"use strict";
 
 	/**
@@ -25,7 +24,7 @@ sap.ui.define([
 	* @abstract
 	*
 	* @author SAP SE
-	* @version 1.84.7
+	* @version 1.96.2
 	*
 	* @constructor
 	* @public
@@ -57,7 +56,7 @@ sap.ui.define([
 	});
 
 	SemanticControl.prototype.setProperty = function (key, value, bSuppressInvalidate) {
-		ManagedObject.prototype.setProperty.call(this, key, value, true);
+		Element.prototype.setProperty.call(this, key, value, true);
 		this._applyProperty(key, value, bSuppressInvalidate);
 
 		return this;
@@ -73,14 +72,14 @@ sap.ui.define([
 
 	SemanticControl.prototype.setAggregation = function (sAggregationName, oObject, bSuppressInvalidate) {
 		if (sAggregationName === '_control') {
-			return ManagedObject.prototype.setAggregation.call(this, sAggregationName, oObject, bSuppressInvalidate);
+			return Element.prototype.setAggregation.call(this, sAggregationName, oObject, bSuppressInvalidate);
 		}
 		return this._getControl().setAggregation(sAggregationName, oObject, bSuppressInvalidate);
 	};
 
 	SemanticControl.prototype.getAggregation = function (sAggregationName, oDefaultForCreation) {
 		if (sAggregationName === '_control') {
-			return ManagedObject.prototype.getAggregation.call(this, sAggregationName, oDefaultForCreation);
+			return Element.prototype.getAggregation.call(this, sAggregationName, oDefaultForCreation);
 		}
 		return this._getControl().getAggregation(sAggregationName, oDefaultForCreation);
 	};

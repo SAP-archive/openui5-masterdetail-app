@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
-sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
+sap.ui.define([], function() {
 	"use strict";
 
 		/**
@@ -12,7 +12,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 		 *
 		 * @alias sap.f.changeHandler.MoveDynamicPageTitleActions
 		 * @author SAP SE
-		 * @version 1.84.7
+		 * @version 1.96.2
 		 * @experimental Since 1.52
 		 */
 		var MoveActions = { };
@@ -25,61 +25,75 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 		 * @param {sap.f.DynamicPageTitle} oControl Containing the buttons
 		 * @param {object} mPropertyBag Map of properties
 		 * @param {object} mPropertyBag.modifier Modifier for the controls
-		 * @return {boolean} true if change could be applied
+		 * @return {Promise} Promise resolving when change is successfully applied
 		 *
 		 * @public
 		 */
 		MoveActions.applyChange = function(oChange, oControl, mPropertyBag) {
-			var oModifier = mPropertyBag.modifier,
-				oView = mPropertyBag.view,
-				oAppComponent = mPropertyBag.appComponent,
-				oMovedElementInfo = oChange.getDefinition().content.movedElements[0];
+			var oModifier = mPropertyBag.modifier;
+			var oView = mPropertyBag.view;
+			var oAppComponent = mPropertyBag.appComponent;
+			var oMovedElementInfo = oChange.getDefinition().content.movedElements[0];
+			var iTargetIndex = oMovedElementInfo.targetIndex;
+			var oMovedElement;
+			var iOriginalIndex;
 
-			var oMovedElement = oModifier.bySelector(oMovedElementInfo.selector, oAppComponent, oView),
-				iTargetIndex = oMovedElementInfo.targetIndex;
-
-			oModifier.getAggregation(oControl, ACTION_AGGREGATION_NAME).forEach(function(oButton, iIndex) {
-				if (oModifier.getId(oButton) === oModifier.getId(oMovedElement)) {
-					oModifier.removeAggregation(oControl, ACTION_AGGREGATION_NAME, oButton);
-					oModifier.insertAggregation(oControl, "dependents", oButton, undefined, oView);
-
-					oChange.setRevertData({
-						index: iIndex,
-						sourceParent: oModifier.getSelector(oControl, oAppComponent),
-						aggregation: ACTION_AGGREGATION_NAME
+			return Promise.resolve()
+				.then(oModifier.bySelector.bind(oModifier, oMovedElementInfo.selector, oAppComponent, oView))
+				.then(function(oElement) {
+					oMovedElement = oElement;
+					return oModifier.getAggregation(oControl, ACTION_AGGREGATION_NAME);
+				})
+				.then(function(aButtons) {
+					var oPromise;
+					aButtons.some(function(oButton, iButtonIndex) {
+						if (oModifier.getId(oButton) === oModifier.getId(oMovedElement)) {
+							iOriginalIndex = iButtonIndex;
+							oPromise = Promise.resolve()
+								.then(oModifier.removeAggregation.bind(oModifier, oControl, ACTION_AGGREGATION_NAME, oButton))
+								.then(oModifier.insertAggregation.bind(oModifier, oControl, "dependents", oButton, undefined, oView));
+							return true;
+						}
+						return false;
 					});
-				}
-			});
-
-			oModifier.insertAggregation(oControl, ACTION_AGGREGATION_NAME, oMovedElement, iTargetIndex, oView);
-
-			return true;
+					return oPromise
+						.then(function() {
+							oChange.setRevertData({
+								index: iOriginalIndex,
+								sourceParent: oModifier.getSelector(oControl, oAppComponent),
+								aggregation: ACTION_AGGREGATION_NAME
+							});
+							return oModifier.insertAggregation(oControl, ACTION_AGGREGATION_NAME, oMovedElement, iTargetIndex, oView);
+						});
+				});
 		};
 
 		/**
 		 * Reverts the change
 		 *
 		 * @param {sap.ui.fl.Change} oChange Change object with instructions to be applied on the control
-		 * @param {sap.ui.core.Control} oRelevantContainer Control that matches the change selector for applying the change, which is the source of the move
+		 * @param {sap.ui.core.Control} oControl Control that matches the change selector for applying the change, which is the source of the move
 		 * @param {object} mPropertyBag Map of properties
-		 * @return {boolean} true Indicates whether the change can be applied
+		 * @return {Promise} Promise resolving when the change is reverted
 		 * @public
 		 */
 		MoveActions.revertChange = function(oChange, oControl, mPropertyBag) {
-			var oModifier = mPropertyBag.modifier,
-				oView = mPropertyBag.view,
-				oAppComponent = mPropertyBag.appComponent,
-				oMovedElementInfo = oChange.getDefinition().content.movedElements[0],
-				oRevertData = oChange.getRevertData();
+			var oModifier = mPropertyBag.modifier;
+			var oView = mPropertyBag.view;
+			var oAppComponent = mPropertyBag.appComponent;
+			var oMovedElementInfo = oChange.getDefinition().content.movedElements[0];
+			var oRevertData = oChange.getRevertData();
+			var oMovedElement;
+			var iTargetIndex;
+			var iSourceIndex;
 
-			var oMovedElement = oModifier.bySelector(oMovedElementInfo.selector, oAppComponent, oView),
-				iTargetIndex = oRevertData ? oRevertData.index : oMovedElementInfo.targetIndex,
-				iSourceIndex = oMovedElementInfo.sourceIndex;
+			oMovedElement = oModifier.bySelector(oMovedElementInfo.selector, oAppComponent, oView);
+			iTargetIndex = oRevertData ? oRevertData.index : oMovedElementInfo.targetIndex;
+			iSourceIndex = oMovedElementInfo.sourceIndex;
+			return Promise.resolve()
+				.then(oModifier.removeAggregation.bind(oModifier, oControl, ACTION_AGGREGATION_NAME, oMovedElement, iTargetIndex, oView))
+				.then(oModifier.insertAggregation.bind(oModifier, oControl, ACTION_AGGREGATION_NAME, oMovedElement, iSourceIndex, oView));
 
-			oModifier.removeAggregation(oControl, ACTION_AGGREGATION_NAME, oMovedElement, iTargetIndex, oView);
-			oModifier.insertAggregation(oControl, ACTION_AGGREGATION_NAME, oMovedElement, iSourceIndex, oView);
-
-			return true;
 		};
 
 		/**
@@ -103,6 +117,7 @@ sap.ui.define(["sap/ui/fl/Utils"], function(FlexUtils) {
 				targetAggregation: oSpecificChangeInfo.target.aggregation,
 				targetContainer: oSpecificChangeInfo.selector
 			};
+
 			oSpecificChangeInfo.movedElements.forEach(function (mElement) {
 				var oElement = mElement.element || oModifier.bySelector(mElement.id, oAppComponent);
 				oChangeData.content.movedElements.push({

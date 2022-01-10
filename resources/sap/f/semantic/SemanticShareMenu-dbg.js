@@ -10,6 +10,7 @@
 sap.ui.define([
 	"sap/ui/core/IconPool",
 	"sap/ui/base/EventProvider",
+	"sap/ui/core/library",
 	"sap/m/library",
 	"sap/m/OverflowToolbarButton",
 	"sap/m/OverflowToolbarLayoutData",
@@ -17,6 +18,7 @@ sap.ui.define([
 ], function(
 	IconPool,
 	EventProvider,
+	coreLibrary,
 	mobileLibrary,
 	OverflowToolbarButton,
 	OverflowToolbarLayoutData,
@@ -25,6 +27,9 @@ sap.ui.define([
 
 	// shortcut for sap.m.ButtonType
 	var ButtonType = mobileLibrary.ButtonType;
+
+	// shortcut for sap.ui.core.aria.HasPopup
+	var AriaHasPopup = coreLibrary.aria.HasPopup;
 
 	/**
 	* Constructor for a <code>sap.f.semantic.SemanticShareMenu</code>.
@@ -130,7 +135,7 @@ sap.ui.define([
 	* Adds a <code>sap.f.semantic.SemanticControl</code> to the container.
 	*
 	* @param {sap.f.semantic.SemanticControl} oSemanticControl
-	* @returns {sap.f.semantic.SemanticShareMenu}
+	* @returns {this}
 	*/
 	SemanticShareMenu.prototype.addContent = function (oSemanticControl) {
 		var oControl = this._getControl(oSemanticControl);
@@ -162,7 +167,7 @@ sap.ui.define([
 	 * Destroys all the actions - custom and semantic
 	 * and cleans all the references in use.
 	 *
-	 * @returns {sap.f.semantic.SemanticShareMenu}
+	 * @returns {this}
 	 */
 	SemanticShareMenu.prototype.destroy = function() {
 		this._oShareMenuBtn = null;
@@ -190,7 +195,7 @@ sap.ui.define([
 	 * Sets the <code>ShareMenu</code> mode - <code>initial</code>, <code>button</code> or <code>actionSheet</code>.
 	 *
 	 * @param {String} sMode
-	 * @returns {sap.f.semantic.SemanticShareMenu}
+	 * @returns {this}
 	 */
 	SemanticShareMenu.prototype._setMode = function (sMode) {
 		if (this._getMode() === sMode) {
@@ -235,6 +240,7 @@ sap.ui.define([
 
 		if (!this._oShareMenuBtn) {
 			this._oShareMenuBtn = new OverflowToolbarButton(oContainer.getId() + "-shareButton", {
+				ariaHasPopup: AriaHasPopup.Menu,
 				icon: IconPool.getIconURI("action"),
 				tooltip: sap.ui.getCore().getLibraryResourceBundle("sap.f").getText("SEMANTIC_CONTROL_ACTION_SHARE"),
 				layoutData: new OverflowToolbarLayoutData({
@@ -246,12 +252,6 @@ sap.ui.define([
 					oContainer.openBy(this._oShareMenuBtn);
 				}.bind(this)
 			});
-
-			this._oShareMenuBtn.addEventDelegate({
-				onAfterRendering: function() {
-					this._oShareMenuBtn.$().attr("aria-haspopup", "menu");
-				}.bind(this)
-			}, this);
 		}
 
 		return this._oShareMenuBtn;
@@ -296,7 +296,7 @@ sap.ui.define([
 	 * in order to update the <code>ShareMenu</code> mode.
 	 *
 	 * @param {sap.f.semantic.SemanticControl} oControl
-	 * @returns {Boolean}
+	 * @returns {boolean}
 	 */
 	SemanticShareMenu.prototype._onControlAdded = function(oControl) {
 		if (this._isInitialMode()) {
@@ -308,7 +308,7 @@ sap.ui.define([
 	 * The method is called after a control has been removed
 	 * in order to update the <code>ShareMenu</code> mode.
 	 *
-	 * @returns {Boolean}
+	 * @returns {boolean}
 	 */
 	SemanticShareMenu.prototype._onControlRemoved = function() {
 		var iActions = this._aShareMenuActions.length,

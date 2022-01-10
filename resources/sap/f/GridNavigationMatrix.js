@@ -1,0 +1,6 @@
+/*!
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
+ * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
+ */
+sap.ui.define([],function(){"use strict";return{EMPTY_CELL:false,create:function(t,r,n){var o=Array.from(new Array(n.rows.length),function(){return new Array(n.columns.length).fill(this.EMPTY_CELL)}.bind(this));r.forEach(function(r){var e=this._getPosition(t,r,n);this._addToMatrix(o,e,r)}.bind(this));return o},_getPosition:function(t,r,n){var o=t.getBoundingClientRect(),e=r.getBoundingClientRect(),i=this._getGridRow(o,e,n),a=this._getGridCol(o,e,n);return{xFrom:i.start,xTo:i.end,yFrom:a.start,yTo:a.end}},_getGridRow:function(t,r,n){var o=-1,e=0,i=0,a,s=r.top-t.top,f=s+r.height;for(a=0;a<n.rows.length;a++){i+=parseFloat(n.rows[a]);if(o===-1&&s<i){o=a}i+=n.gap;if(f<i){e=a+1;break}}return{start:o,end:e}},_getGridCol:function(t,r,n){var o=-1,e=0,i=0,a,s=r.left-t.left,f=s+r.width;for(a=0;a<n.columns.length;a++){i+=parseFloat(n.columns[a]);if(o===-1&&s<i){o=a}i+=n.gap;if(f<=i){e=a+1;break}}return{start:o,end:e}},_addToMatrix:function(t,r,n){var o,e;for(o=r.xFrom;o<r.xTo;o++){for(e=r.yFrom;e<r.yTo;e++){t[o][e]=n}}}}});

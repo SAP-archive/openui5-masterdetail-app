@@ -4,23 +4,23 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
+	"./BaseHeader",
 	"sap/m/library",
 	"sap/f/library",
-	"sap/ui/core/Control",
 	"sap/m/Text",
-	"sap/f/Avatar",
-	"sap/ui/Device",
+	"sap/m/Avatar",
 	"sap/f/cards/HeaderRenderer",
-	"sap/ui/core/Core"
+	"sap/ui/core/Core",
+	"sap/ui/core/InvisibleText"
 ], function (
+	BaseHeader,
 	mLibrary,
 	library,
-	Control,
 	Text,
 	Avatar,
-	Device,
 	HeaderRenderer,
-	Core
+	Core,
+	InvisibleText
 ) {
 	"use strict";
 
@@ -44,11 +44,11 @@ sap.ui.define([
 	 * <li>To show a KPI or any numeric information, use {@link sap.f.cards.NumericHeader} instead.</li>
 	 * <ul>
 	 *
-	 * @extends sap.ui.core.Control
+	 * @extends sap.f.cards.BaseHeader
 	 * @implements sap.f.cards.IHeader
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @public
@@ -56,7 +56,7 @@ sap.ui.define([
 	 * @alias sap.f.cards.Header
 	 * @ui5-metamodel This control/element also will be described in the UI5 (legacy) designtime metamodel
 	 */
-	var Header = Control.extend("sap.f.cards.Header", {
+	var Header = BaseHeader.extend("sap.f.cards.Header", {
 		metadata: {
 			library: "sap.f",
 			interfaces: ["sap.f.cards.IHeader"],
@@ -109,13 +109,6 @@ sap.ui.define([
 			aggregations: {
 
 				/**
-				 * Defines the toolbar.
-				 * @experimental Since 1.75
-				 * @since 1.75
-				 */
-				toolbar: { type: "sap.ui.core.Control", multiple: false },
-
-				/**
 				 * Defines the inner title control.
 				 */
 				_title: { type: "sap.m.Text", multiple: false, visibility: "hidden" },
@@ -128,7 +121,7 @@ sap.ui.define([
 				/**
 				 * Defines the inner avatar control.
 				 */
-				_avatar: { type: "sap.f.Avatar", multiple: false, visibility: "hidden" }
+				_avatar: { type: "sap.m.Avatar", multiple: false, visibility: "hidden" }
 			},
 			events: {
 
@@ -146,11 +139,23 @@ sap.ui.define([
 	 * @private
 	 */
 	Header.prototype.init = function () {
+		BaseHeader.prototype.init.apply(this, arguments);
+
 		this._oRb = Core.getLibraryResourceBundle("sap.f");
 		this.data("sap-ui-fastnavgroup", "true", true); // Define group for F6 handling
+
+		this._oAriaAvatarText = new InvisibleText({id: this.getId() + "-ariaAvatarText"});
+		this._oAriaAvatarText.setText(this._oRb.getText("ARIA_HEADER_AVATAR_TEXT"));
+
 	};
 
 	Header.prototype.exit = function () {
+		BaseHeader.prototype.exit.apply(this, arguments);
+
+		if (this._oAriaAvatarText) {
+			this._oAriaAvatarText.destroy();
+			this._oAriaAvatarText = null;
+		}
 		this._oRb = null;
 	};
 
@@ -189,7 +194,7 @@ sap.ui.define([
 	/**
 	 * Lazily creates an avatar control and returns it.
 	 * @private
-	 * @returns {sap.f.Avatar} The inner avatar aggregation
+	 * @returns {sap.m.Avatar} The inner avatar aggregation
 	 */
 	Header.prototype._getAvatar = function () {
 		var oAvatar = this.getAggregation("_avatar");
@@ -205,6 +210,8 @@ sap.ui.define([
 	 * @private
 	 */
 	Header.prototype.onBeforeRendering = function () {
+		BaseHeader.prototype.onBeforeRendering.apply(this, arguments);
+
 		var oAvatar = this._getAvatar();
 
 		this._getTitle().setText(this.getTitle());
@@ -215,8 +222,6 @@ sap.ui.define([
 		oAvatar.setInitials(this.getIconInitials());
 		oAvatar.setTooltip(this.getIconAlt());
 		oAvatar.setBackgroundColor(this.getIconBackgroundColor());
-
-		this._setAccessibilityAttributes();
 	};
 
 	/**
@@ -225,28 +230,39 @@ sap.ui.define([
 	 * @private
 	 * @returns {string} IDs of controls
 	 */
-	Header.prototype._getHeaderAccessibility = function () {
-		var sSubtitleId = this._getSubtitle() ? this._getSubtitle().getId() : "",
-			sStatusTextId = this.getStatusText() ? this.getId() + "-status" : "",
-			sAvatarId = this._getAvatar() ? this._getAvatar().getId() : "",
-			sIds = sSubtitleId + " " + sStatusTextId + " " + sAvatarId;
+	Header.prototype._getAriaLabelledBy = function () {
+		var sCardTypeId = "",
+			sTitleId = "",
+			sSubtitleId = "",
+			sStatusTextId = "",
+			sAvatarId = "",
+			sIds;
 
-		return sIds.trim();
-	};
-
-	/**
-	 * Called after the control is rendered.
-	 */
-	Header.prototype.onAfterRendering = function() {
-		//TODO performance will be affected, but text should clamp on IE also - TBD
-		if (Device.browser.msie) {
-			if (this.getTitle()) {
-				this._getTitle().clampText();
-			}
-			if (this.getSubtitle()) {
-				this._getSubtitle().clampText();
-			}
+		if (this.getParent() && this.getParent()._ariaText) {
+			sCardTypeId = this.getParent()._ariaText.getId();
 		}
+
+		if (this.getTitle()) {
+			sTitleId = this._getTitle().getId();
+		}
+
+		if (this.getSubtitle()) {
+			sSubtitleId = this._getSubtitle().getId();
+		}
+
+		if (this.getStatusText()) {
+			sStatusTextId = this.getId() + "-status";
+		}
+
+		if (this.getIconSrc() || this.getIconInitials()) {
+			sAvatarId = this.getId() + "-ariaAvatarText";
+		}
+
+		sIds = sCardTypeId + " " + sTitleId + " " + sSubtitleId + " " + sStatusTextId + " " + sAvatarId;
+
+		// remove whitespace from both sides
+		// and merge consecutive spaces into one
+		return sIds.replace(/ {2,}/g, ' ').trim();
 	};
 
 	/**
@@ -268,23 +284,6 @@ sap.ui.define([
 		this.firePress();
 	};
 
-	/**
-	 * Sets accessibility to the header to the header.
-	 *
-	 * @private
-	 */
-	Header.prototype._setAccessibilityAttributes = function () {
-		if (this.hasListeners("press")) {
-			this._sAriaRole = "button";
-			this._sAriaHeadingLevel = undefined;
-			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_INTERACTIVE_CARD_HEADER");
-		} else {
-			this._sAriaRole = "heading";
-			this._sAriaHeadingLevel = "3";
-			this._sAriaRoleDescritoion = this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD_HEADER");
-		}
-	};
-
 	Header.prototype.isLoading = function () {
 		return false;
 	};
@@ -293,7 +292,7 @@ sap.ui.define([
 		var aMyArgs = Array.prototype.slice.apply(arguments);
 		aMyArgs.unshift("press");
 
-		Control.prototype.attachEvent.apply(this, aMyArgs);
+		BaseHeader.prototype.attachEvent.apply(this, aMyArgs);
 
 		this.invalidate();
 
@@ -304,7 +303,7 @@ sap.ui.define([
 		var aMyArgs = Array.prototype.slice.apply(arguments);
 		aMyArgs.unshift("press");
 
-		Control.prototype.detachEvent.apply(this, aMyArgs);
+		BaseHeader.prototype.detachEvent.apply(this, aMyArgs);
 
 		this.invalidate();
 

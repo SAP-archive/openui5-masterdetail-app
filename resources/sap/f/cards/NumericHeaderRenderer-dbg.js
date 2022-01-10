@@ -20,12 +20,14 @@ sap.ui.define([], function () {
 	 */
 	NumericHeaderRenderer.render = function (oRm, oNumericHeader) {
 		var bLoading = oNumericHeader.isLoading(),
-			oToolbar = oNumericHeader.getToolbar(),
+			oError = oNumericHeader.getAggregation("_error"),
 			sTabIndex = oNumericHeader._isInsideGridContainer() ? "-1" : "0";
 
 		oRm.openStart("div", oNumericHeader)
 			.class("sapFCardHeader")
-			.class("sapFCardNumericHeader");
+			.class("sapFCardNumericHeader")
+			.class("sapFCardNumericHeaderSideIndicatorsAlign" + oNumericHeader.getSideIndicatorsAlignment())
+			.attr("tabindex", sTabIndex);
 
 		if (bLoading) {
 			oRm.class("sapFCardHeaderLoading");
@@ -35,13 +37,16 @@ sap.ui.define([], function () {
 			oRm.class("sapFCardClickable");
 		}
 
-		oRm.attr("tabindex", sTabIndex);
+		if (oError) {
+			oRm.class("sapFCardHeaderError");
+		}
+
 		//Accessibility state
 		oRm.accessibilityState(oNumericHeader, {
-			role: oNumericHeader._sAriaRole,
-			labelledby: { value: oNumericHeader._getHeaderAccessibility(), append: true },
-			roledescription: { value: oNumericHeader._sAriaRoleDescritoion, append: true },
-			level: { value: oNumericHeader._sAriaHeadingLevel }
+			role: oNumericHeader.getAriaRole(),
+			labelledby: { value: oNumericHeader._getAriaLabelledBy(), append: true },
+			roledescription: { value: oNumericHeader.getAriaRoleDescription(), append: true },
+			level: { value: oNumericHeader.getAriaHeadingLevel() }
 		});
 		oRm.openEnd();
 
@@ -49,23 +54,41 @@ sap.ui.define([], function () {
 			.class("sapFCardHeaderContent")
 			.openEnd();
 
-		NumericHeaderRenderer.renderHeaderText(oRm, oNumericHeader);
-		NumericHeaderRenderer.renderIndicators(oRm, oNumericHeader);
-		NumericHeaderRenderer.renderDetails(oRm, oNumericHeader);
+		if (oError) {
+			oRm.renderControl(oError);
+		} else {
+			NumericHeaderRenderer.renderHeaderText(oRm, oNumericHeader);
+			NumericHeaderRenderer.renderIndicators(oRm, oNumericHeader);
+			NumericHeaderRenderer.renderDetails(oRm, oNumericHeader);
+		}
 
 		oRm.close("div");
 
+		if (!oError) {
+			NumericHeaderRenderer.renderToolbar(oRm, oNumericHeader);
+		}
+
+		oRm.close("div");
+	};
+
+	/**
+	 * Render toolbar.
+	 *
+	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer
+	 * @param {sap.f.cards.NumericHeader} oNumericHeader An object representation of the control that should be rendered
+	 */
+	NumericHeaderRenderer.renderToolbar = function (oRm, oNumericHeader) {
+		var oToolbar = oNumericHeader.getToolbar();
+
 		if (oToolbar) {
 			oRm.openStart("div")
-				.class("sapFCardHeaderToolbar")
+				.class("sapFCardHeaderToolbarCont")
 				.openEnd();
 
 			oRm.renderControl(oToolbar);
 
 			oRm.close("div");
 		}
-
-		oRm.close("div");
 	};
 
 	/**
@@ -76,8 +99,6 @@ sap.ui.define([], function () {
 	 */
 	NumericHeaderRenderer.renderHeaderText = function(oRm, oNumericHeader) {
 		var oTitle = oNumericHeader.getAggregation("_title"),
-			oSubtitle = oNumericHeader.getAggregation("_subtitle"),
-			oUnitOfMeasurement = oNumericHeader.getAggregation("_unitOfMeasurement"),
 			sStatus = oNumericHeader.getStatusText(),
 			oBindingInfos = oNumericHeader.mBindingInfos;
 
@@ -113,11 +134,33 @@ sap.ui.define([], function () {
 
 		oRm.close("div");
 
-		if (((oSubtitle && oSubtitle.getText()) || ( oBindingInfos && oBindingInfos.subtitle))
-			|| ((oUnitOfMeasurement && oUnitOfMeasurement.getText()) || ( oBindingInfos && oBindingInfos.unitOfMeasurement))) {
+		NumericHeaderRenderer.renderSubtitle(oRm, oNumericHeader);
+
+		oRm.close("div");
+	};
+
+	/**
+	 * Render subtitle and unit of measurement.
+	 *
+	 * @param {sap.ui.core.RenderManager} oRm The RenderManager that can be used for writing to the render output buffer
+	 * @param {sap.f.cards.NumericHeader} oNumericHeader An object representation of the control that should be rendered
+	 */
+	NumericHeaderRenderer.renderSubtitle = function(oRm, oNumericHeader) {
+		var oBindingInfos = oNumericHeader.mBindingInfos,
+			oSubtitle = oNumericHeader.getAggregation("_subtitle"),
+			oUnitOfMeasurement = oNumericHeader.getAggregation("_unitOfMeasurement"),
+			bHasSubtitle = oSubtitle && oSubtitle.getText() || oBindingInfos && oBindingInfos.subtitle,
+			bHasUnitOfMeasurement = oUnitOfMeasurement && oUnitOfMeasurement.getText() || oBindingInfos && oBindingInfos.unitOfMeasurement;
+
+		if (bHasSubtitle || bHasUnitOfMeasurement) {
 			oRm.openStart("div")
-				.class("sapFCardSubtitle")
-				.openEnd();
+				.class("sapFCardSubtitle");
+
+			if (bHasSubtitle && oUnitOfMeasurement) {
+				oRm.class("sapFCardSubtitleAndUnit");
+			}
+
+			oRm.openEnd();
 
 			if (oSubtitle) {
 				if (oBindingInfos.subtitle) {
@@ -135,8 +178,6 @@ sap.ui.define([], function () {
 			}
 			oRm.close("div");
 		}
-
-		oRm.close("div");
 	};
 
 	/**
@@ -198,15 +239,40 @@ sap.ui.define([], function () {
 	 * @param {sap.f.cards.NumericHeader} oNumericHeader An object representation of the control that should be rendered
 	 */
 	NumericHeaderRenderer.renderDetails = function(oRm, oNumericHeader) {
-		var oDetails = oNumericHeader.getAggregation("_details"),
-			oBindingInfos = oNumericHeader.mBindingInfos;
+		var oBindingInfos = oNumericHeader.mBindingInfos,
+			oDetails = oNumericHeader.getAggregation("_details"),
+			bHasDetails = oNumericHeader.getDetails() || oBindingInfos.details,
+			oDataTimestamp = oNumericHeader.getAggregation("_dataTimestamp"),
+			bHasDataTimestamp = oNumericHeader.getDataTimestamp() || oBindingInfos.dataTimestamp;
+
+		if (!bHasDetails && !bHasDataTimestamp) {
+			return;
+		}
+
+		oRm.openStart("div")
+			.class("sapFCardHeaderDetailsWrapper");
+
+		if (bHasDataTimestamp) {
+			oRm.class("sapFCardHeaderLineIncludesDataTimestamp");
+		}
+
+		oRm.openEnd();
 
 		//show placeholder when there is binded value also
-		if ((oDetails && oDetails.getText()) || oBindingInfos.details) {
-					oDetails.addStyleClass("sapFCardHeaderItemBinded");
-					oDetails.addStyleClass("sapFCardHeaderDetails");
-					oRm.renderControl(oDetails);
+		if (bHasDetails) {
+			if (oBindingInfos.details) {
+				oDetails.addStyleClass("sapFCardHeaderItemBinded");
+			}
+
+			oDetails.addStyleClass("sapFCardHeaderDetails");
+			oRm.renderControl(oDetails);
 		}
+
+		if (bHasDataTimestamp) {
+			oRm.renderControl(oDataTimestamp);
+		}
+
+		oRm.close("div");
 	};
 
 	return NumericHeaderRenderer;

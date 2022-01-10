@@ -29,7 +29,7 @@ sap.ui.define(['sap/ui/core/message/MessageProcessor'],
 	 * @extends sap.ui.core.message.MessageProcessor
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @public
 	 * @alias sap.ui.core.message.ControlMessageProcessor
@@ -91,7 +91,7 @@ sap.ui.define(['sap/ui/core/message/MessageProcessor'],
 			oControl = sap.ui.getCore().byId(aParts[0]);
 
 			//if control does not exist: nothing to do
-			if  (!oControl) {
+			if  (!oControl || oControl._bIsBeingDestroyed) {
 				return;
 			}
 

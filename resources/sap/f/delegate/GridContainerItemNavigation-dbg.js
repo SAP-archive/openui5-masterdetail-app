@@ -5,10 +5,12 @@
  */
 sap.ui.define([
 	"sap/ui/core/delegate/ItemNavigation",
-	"./GridItemNavigation"
+	"./GridItemNavigation",
+	"sap/ui/dom/containsOrEquals"
 ], function (
 	ItemNavigation,
-	GridItemNavigation
+	GridItemNavigation,
+	containsOrEquals
 ) {
 	"use strict";
 
@@ -34,7 +36,7 @@ sap.ui.define([
 	 *
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @extends sap.f.delegate.GridItemNavigation
 	 *
@@ -61,6 +63,7 @@ sap.ui.define([
 	});
 
 	GridContainerItemNavigation.prototype._onFocusLeave = function (oEvent) {
+
 		var currentFocused = this.getFocusedDomRef();
 		this.getItemDomRefs().forEach(function (item, index) {
 			if (currentFocused === item) {
@@ -178,18 +181,35 @@ sap.ui.define([
 	};
 
 	/**
+	 * Handles 'dragend' event.
+	 * Used to release the mouse down flag. Needed because the browser will not fire 'mouseup' event after drag and drop.
+	 */
+	GridContainerItemNavigation.prototype.ondragend = function() {
+		this._bIsMouseDown = false;
+	};
+
+	/**
+	 * Handles 'drop' event.
+	 * Used to release the mouse down flag. Needed because the browser will not fire 'mouseup' event after drag and drop.
+	 */
+	GridContainerItemNavigation.prototype.ondrop = function() {
+		this._bIsMouseDown = false;
+	};
+
+	/**
 	 * Handles the <code>focusin</code> event.
 	 *
 	 * Handles when it is needed to return focus to correct place
 	 */
 	GridContainerItemNavigation.prototype.onfocusin = function(oEvent) {
 
-		ItemNavigation.prototype.onfocusin.call(this, oEvent);
+		GridItemNavigation.prototype.onfocusin.call(this, oEvent);
 
 		var $listItem = jQuery(oEvent.target).closest('.sapFGridContainerItemWrapperNoVisualFocus'),
 			oControl,
 			aNavigationDomRefs,
-			lastFocusedIndex;
+			iLastFocusedIndex,
+			oLastFocused;
 
 		if ($listItem.length) {
 			oControl = $listItem.children().eq(0).control()[0];
@@ -211,18 +231,18 @@ sap.ui.define([
 			this._lastFocusedElement = null;
 		}
 
-		if (this._bFocusLeft) {
-			this._bFocusLeft = false;
-
+		if (this._bFocusLeft && !this._bIsMouseDown) {
 			aNavigationDomRefs = this.getItemDomRefs();
-			lastFocusedIndex = this.getFocusedIndex();
+			iLastFocusedIndex = this.getFocusedIndex();
 
-			if (this._lastFocusedElement) {
-				this._lastFocusedElement.focus();
-			} else {
-				aNavigationDomRefs[lastFocusedIndex].focus();
+			oLastFocused = this._lastFocusedElement || aNavigationDomRefs[iLastFocusedIndex];
+
+			if (!containsOrEquals(oLastFocused, oEvent.target)) {
+				oLastFocused.focus();
 			}
 		}
+
+		this._bFocusLeft = false;
 	};
 
 	/**
@@ -233,6 +253,10 @@ sap.ui.define([
 	 * @private
 	 */
 	GridContainerItemNavigation.prototype.focusItem = function(iIndex, oEvent) {
+		var oItemItemNavigation,
+			oInnerControl,
+			oInnerControlFocusDomRef;
+
 		if (iIndex === this.iFocusedIndex && this.aItemDomRefs[this.iFocusedIndex] === document.activeElement) {
 			this.fireEvent(ItemNavigation.Events.FocusAgain, {
 				index: iIndex,
@@ -252,13 +276,24 @@ sap.ui.define([
 		if (oEvent && jQuery(this.aItemDomRefs[this.iFocusedIndex]).data("sap.INRoot")) {
 
 			// store event type for nested ItemNavigations
-			var oItemItemNavigation = jQuery(this.aItemDomRefs[this.iFocusedIndex]).data("sap.INRoot");
+			oItemItemNavigation = jQuery(this.aItemDomRefs[this.iFocusedIndex]).data("sap.INRoot");
 			oItemItemNavigation._sFocusEvent = oEvent.type;
 		}
 
 		// this is what the GridContainer changes
 		if (!this._bIsMouseDown && this.aItemDomRefs.length) {
 			this.aItemDomRefs[this.iFocusedIndex].focus();
+
+			// make the DOM element that has the outline focus to be visible in the view area
+			oInnerControl = jQuery(this.aItemDomRefs[this.iFocusedIndex].firstChild).control()[0];
+
+			if (oInnerControl) {
+				oInnerControlFocusDomRef = oInnerControl.getFocusDomRef();
+
+				if (oInnerControlFocusDomRef) {
+					this.scrollIntoViewIfNeeded(oInnerControlFocusDomRef);
+				}
+			}
 		}
 		/////////////////////////////////////////////
 
@@ -266,6 +301,40 @@ sap.ui.define([
 			index: iIndex,
 			event: oEvent
 		});
+	};
+
+	GridContainerItemNavigation.prototype.scrollIntoViewIfNeeded = function(oElementDomRef) {
+		var oParentDomRef = oElementDomRef.parentElement,
+			oContainerRect,
+			oElementRect;
+
+		// find the closest parent container with scroll
+		while (oParentDomRef &&
+			oParentDomRef.offsetWidth >= oParentDomRef.scrollWidth &&
+			oParentDomRef.offsetHeight >= oParentDomRef.scrollHeight) {
+			oParentDomRef = oParentDomRef.parentElement;
+		}
+
+		if (!oParentDomRef) {
+			return;
+		}
+
+		// we need to check according to its parent
+		oParentDomRef = oParentDomRef.parentElement;
+
+		if (!oParentDomRef) {
+			return;
+		}
+
+		oContainerRect = oParentDomRef.getBoundingClientRect();
+		oElementRect = oElementDomRef.getBoundingClientRect();
+
+		if (oElementRect.top < oContainerRect.top ||
+			oElementRect.bottom > oContainerRect.bottom ||
+			oElementRect.right > oContainerRect.right ||
+			oElementRect.left < oContainerRect.left) {
+			oElementDomRef.scrollIntoView();
+		}
 	};
 
 	return GridContainerItemNavigation;

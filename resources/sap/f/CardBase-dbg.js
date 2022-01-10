@@ -37,7 +37,7 @@ sap.ui.define([
 	 * @extends sap.ui.core.Control
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @public
@@ -82,13 +82,10 @@ sap.ui.define([
 		this._ariaContentText = new InvisibleText({id: this.getId() + "-ariaContentText"});
 		this._ariaContentText.setText(this._oRb.getText("ARIA_LABEL_CARD_CONTENT"));
 
-
 		this._ariaText = new InvisibleText({id: this.getId() + "-ariaText"});
 		this._ariaText.setText(this._oRb.getText("ARIA_ROLEDESCRIPTION_CARD"));
 
-		this.initBadgeEnablement({
-			accentColor: "AccentColor6"
-		});
+		this.initBadgeEnablement();
 	};
 
 	CardBase.prototype.exit = function () {
@@ -103,6 +100,32 @@ sap.ui.define([
 		if (this._ariaText) {
 			this._ariaText.destroy();
 			this._ariaText = null;
+		}
+	};
+
+	CardBase.prototype.setAggregation = function (sAggregationName, oObject) {
+		var oPrevObject;
+
+		if (sAggregationName === "header" || sAggregationName === "_header") {
+			oPrevObject = this.getAggregation(sAggregationName);
+
+			if (oPrevObject) {
+				oPrevObject.detachEvent("_change", this._onHeaderVisibilityChange, this);
+			}
+
+			if (oObject) {
+				oObject.attachEvent("_change", this._onHeaderVisibilityChange, this);
+			}
+		}
+
+		return Control.prototype.setAggregation.apply(this, arguments);
+	};
+
+	CardBase.prototype._onHeaderVisibilityChange = function (oEvent) {
+		if (oEvent.getParameters().name === "visible") {
+			setTimeout(function() {
+				this.invalidate();
+			}.bind(this), 0);
 		}
 	};
 
@@ -219,10 +242,26 @@ sap.ui.define([
 	 */
 	CardBase.prototype._getAriaLabelledIds = function () {
 		var oHeader = this.getCardHeader(),
-			sTitleId = oHeader && oHeader._getTitle() ? oHeader._getTitle().getId() : "",
-			sAriaLabelledBy = this.getId() + "-ariaText " + sTitleId;
+			sAriaLabelledBy = "";
 
-		return sAriaLabelledBy.trim();
+		if (oHeader && oHeader._getTitle()) {
+			sAriaLabelledBy = oHeader._getTitle().getId();
+		}
+
+		return sAriaLabelledBy;
+	};
+
+	/**
+	 * @ui5-restricted
+	 */
+	CardBase.prototype.getAriaRoleDescription = function () {
+		var oHeader = this.getCardHeader();
+
+		if (oHeader) {
+			return oHeader.getAriaRoleDescription();
+		}
+
+		return null;
 	};
 
 	return CardBase;

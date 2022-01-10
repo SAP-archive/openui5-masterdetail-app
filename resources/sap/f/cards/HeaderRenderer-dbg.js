@@ -18,12 +18,16 @@ sap.ui.define([], function () {
 	 * @param {sap.f.cards.Header} oHeader An object representation of the control that should be rendered
 	 */
 	HeaderRenderer.render = function (oRm, oHeader) {
-		var sStatus = oHeader.getStatusText(),
+		var oBindingInfos = oHeader.mBindingInfos,
+			sStatus = oHeader.getStatusText(),
 			oTitle = oHeader.getAggregation("_title"),
 			oSubtitle = oHeader.getAggregation("_subtitle"),
+			bHasSubtitle = oHeader.getSubtitle() || oBindingInfos.subtitle,
 			oAvatar = oHeader.getAggregation("_avatar"),
+			oDataTimestamp = oHeader.getAggregation("_dataTimestamp"),
+			bHasDataTimestamp = oHeader.getDataTimestamp() || oBindingInfos.dataTimestamp,
 			bLoading = oHeader.isLoading(),
-			oBindingInfos = oHeader.mBindingInfos,
+			oError = oHeader.getAggregation("_error"),
 			oToolbar = oHeader.getToolbar(),
 			sTabIndex = oHeader._isInsideGridContainer() ? "-1" : "0";
 
@@ -39,24 +43,41 @@ sap.ui.define([], function () {
 			oRm.class("sapFCardClickable");
 		}
 
+		if (oError) {
+			oRm.class("sapFCardHeaderError");
+		}
+
 		//Accessibility state
 		oRm.accessibilityState(oHeader, {
-			role: oHeader._sAriaRole,
-			labelledby: { value: oHeader._getHeaderAccessibility(), append: true },
-			roledescription: { value: oHeader._sAriaRoleDescritoion, append: true },
-			level: { value: oHeader._sAriaHeadingLevel }
+			role: oHeader.getAriaRole(),
+			labelledby: { value: oHeader._getAriaLabelledBy(), append: true },
+			roledescription: { value: oHeader.getAriaRoleDescription(), append: true },
+			level: { value: oHeader.getAriaHeadingLevel() }
 		});
 		oRm.openEnd();
+
+		oRm.openStart("div")
+			.class("sapFCardHeaderWrapper")
+			.openEnd();
+
+		if (oError) {
+			oRm.renderControl(oError);
+
+			oRm.close("div");
+			oRm.close("div");
+			return;
+		}
 
 		if (oHeader.getIconSrc() || oHeader.getIconInitials() || oBindingInfos.iconSrc) {
 			oRm.openStart("div")
 				.class("sapFCardHeaderImage")
 				.openEnd();
 
-			if (oBindingInfos.iconSrc) {
+			if (oBindingInfos.iconSrc && oBindingInfos.iconSrc.binding && !oBindingInfos.iconSrc.binding.getValue()) {
 				oAvatar.addStyleClass("sapFCardHeaderItemBinded");
 			}
 			oRm.renderControl(oAvatar);
+			oRm.renderControl(oHeader._oAriaAvatarText);
 			oRm.close("div");
 		}
 
@@ -90,19 +111,40 @@ sap.ui.define([], function () {
 
 			oRm.close("div");
 
-			if (oHeader.getSubtitle() || oBindingInfos.subtitle) {
-				if (oBindingInfos.subtitle) {
-					oSubtitle.addStyleClass("sapFCardHeaderItemBinded");
+			if (bHasSubtitle || bHasDataTimestamp) {
+				oRm.openStart("div")
+					.class("sapFCardHeaderTextSecondLine");
+
+				if (bHasDataTimestamp) {
+					oRm.class("sapFCardHeaderLineIncludesDataTimestamp");
 				}
-				oRm.renderControl(oSubtitle);
+
+				oRm.openEnd();
+
+				if (bHasSubtitle) {
+
+					if (oBindingInfos.subtitle) {
+						oSubtitle.addStyleClass("sapFCardHeaderItemBinded");
+					}
+
+					oRm.renderControl(oSubtitle);
+				}
+
+				if (bHasDataTimestamp) {
+					oRm.renderControl(oDataTimestamp);
+				}
+
+				oRm.close("div"); //closes sapFCardHeaderTextSecondLine
 			}
 		}
 
 		oRm.close("div");
 
+		oRm.close("div");
+
 		if (oToolbar) {
 			oRm.openStart("div")
-				.class("sapFCardHeaderToolbar")
+				.class("sapFCardHeaderToolbarCont")
 				.openEnd();
 
 			oRm.renderControl(oToolbar);

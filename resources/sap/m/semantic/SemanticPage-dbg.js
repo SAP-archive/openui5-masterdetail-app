@@ -109,7 +109,7 @@ function(
 	 * @abstract
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @public

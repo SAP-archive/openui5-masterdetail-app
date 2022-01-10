@@ -23,7 +23,7 @@ sap.ui.define(['../base/Object', './EventBus', "sap/base/assert"],
 		 *
 		 * @extends sap.ui.base.Object
 		 * @author SAP SE
-		 * @version 1.84.7
+		 * @version 1.96.2
 		 * @public
 		 * @since 1.11.0
 		 * @alias sap.ui.core.IntervalTrigger
@@ -50,7 +50,10 @@ sap.ui.define(['../base/Object', './EventBus', "sap/base/assert"],
 		 * @private
 		 */
 		var trigger = function() {
-			clearTimeout(this._delayedCallId);
+			if (this._delayedCallId) {
+				 clearTimeout(this._delayedCallId);
+				 this._delayedCallId = null;
+			}
 
 			// if interval is active and there are registered listeners
 			var bHasListeners = this._oEventBus._defaultChannel.hasListeners(_EVENT_ID);
@@ -69,6 +72,10 @@ sap.ui.define(['../base/Object', './EventBus', "sap/base/assert"],
 		IntervalTrigger.prototype.destroy = function() {
 			BaseObject.prototype.destroy.apply(this, arguments);
 
+			if (this._delayedCallId) {
+				 clearTimeout(this._delayedCallId);
+				 this._delayedCallId = null;
+			}
 			delete this._trigger;
 
 			this._oEventBus.destroy();

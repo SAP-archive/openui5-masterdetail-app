@@ -4,13 +4,13 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 /**
- * See {@link https://lodash.com/docs/4.17.20#max}
+ * See {@link https://lodash.com/docs/4.17.21#max}
  *
  * @function
  * @alias module:sap/base/util/restricted/_max
  * @author SAP SE
  * @since 1.71
- * @version 1.84.7
+ * @version 1.96.2
  * @private
  * @ui5-restricted
 */

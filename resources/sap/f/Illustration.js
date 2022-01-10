@@ -1,0 +1,6 @@
+/*!
+ * OpenUI5
+ * (c) Copyright 2009-2021 SAP SE or an SAP affiliate company.
+ * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
+ */
+sap.ui.define(["sap/base/Log","sap/ui/core/Control","./IllustrationRenderer","./IllustrationPool"],function(t,e,i,s){"use strict";var l=e.extend("sap.f.Illustration",{metadata:{library:"sap.f",properties:{set:{type:"string",defaultValue:null},media:{type:"string",defaultValue:null},type:{type:"string",defaultValue:null}},dnd:{draggable:true,droppable:false}}});l.CAN_NOT_BUILD_SYMBOL_MSG="Some of the Control's properties are missing. Can't build Symbol ID. No SVG will be displayed.";l.prototype.init=function(){this._sId=this.getId()};l.prototype.onBeforeRendering=function(){this._buildSymbolId();if(this._sSymbolId){s.loadAsset(this._sSymbolId,this._sId)}else{t.warning(l.CAN_NOT_BUILD_SYMBOL_MSG)}};l.prototype._buildSymbolId=function(){var t=this.getSet(),e=this.getMedia(),i=this.getType();this._sSymbolId="";if(t&&e&&i){this._sSymbolId=t+"-"+e+"-"+i}};return l});

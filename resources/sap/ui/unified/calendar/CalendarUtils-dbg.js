@@ -162,7 +162,7 @@ sap.ui.define([
 			// search Locale for containing "en-US", since sometimes
 			// when any user settings have been defined, subtag "sapufmt" is added to the locale name
 			// this is described inside sap.ui.core.Configuration file
-			if (oLocale && (oLocale.getLanguage() == 'en' && oLocale.getRegion() == 'US')) {
+			if (oLocale && oLocale.getLanguage() === "en" && (oLocale.getRegion() === "US" || !oLocale.getRegion())) {
 				/*
 				 * in US the week starts with Sunday
 				 * The first week of the year starts with January 1st. But Dec. 31 is still in the last year
@@ -476,6 +476,16 @@ sap.ui.define([
 			oNewSecondDate.setUTCFullYear(oSecondDate.getUTCFullYear());
 
 			return Math.abs((oNewFirstDate.getTime() - oNewSecondDate.getTime()) / (1000 * 60 * 60));
+		};
+
+		/**
+		 * Evaluates whether a given date time part indicates midniht.
+		 *
+		 * @param {Object} oDate - JavaScript date
+		 * @returns {boolean}
+		 */
+		CalendarUtils._isMidnight = function(oDate) {
+			return oDate.getHours() === 0 && oDate.getMinutes() === 0 && oDate.getSeconds() === 0 && oDate.getMilliseconds() === 0;
 		};
 
 		 // Utilities for working with sap.ui.unified.calendar.CalendarDate

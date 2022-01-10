@@ -7,6 +7,7 @@ sap.ui.define([
 	"./GridContainerRenderer",
 	"./GridContainerSettings",
 	"./GridContainerUtils",
+	"./GridNavigationMatrix",
 	"./delegate/GridContainerItemNavigation",
 	"./library",
 	"./dnd/GridKeyboardDragAndDrop",
@@ -15,16 +16,14 @@ sap.ui.define([
 	"sap/ui/core/Control",
 	"sap/ui/core/Core",
 	"sap/ui/core/ResizeHandler",
-	"sap/ui/core/delegate/ItemNavigation",
-	"sap/ui/core/InvisibleRenderer",
 	"sap/ui/Device",
 	"sap/ui/events/KeyCodes",
-	"sap/ui/layout/cssgrid/VirtualGrid",
 	"sap/ui/thirdparty/jquery"
 ], function (
 	GridContainerRenderer,
 	GridContainerSettings,
 	GridContainerUtils,
+	GridNavigationMatrix,
 	GridContainerItemNavigation,
 	library,
 	GridKeyboardDragAndDrop,
@@ -33,40 +32,26 @@ sap.ui.define([
 	Control,
 	Core,
 	ResizeHandler,
-	ItemNavigation,
-	InvisibleRenderer,
 	Device,
 	KeyCodes,
-	VirtualGrid,
 	jQuery
 ) {
 	"use strict";
 
-	var isRtl = Core.getConfiguration().getRTL();
-
 	/**
-	 * Indicates the version of Microsoft Edge browser that has support for the display grid.
-	 * @type {number}
+	 * For these controls check if the grid item visual focus can be displayed from the control inside.
 	 */
-	var EDGE_VERSION_WITH_GRID_SUPPORT = 16;
-
-	/**
-	 * For these controls the grid item visual focus should be displayed from the control inside.
-	 */
-	var aOwnVisualFocusControls = [
-		"sap.f.Card",
-		"sap.ui.integration.widgets.Card",
-		"sap.m.GenericTile"
-	];
-
-	/**
-	 * Indicates whether the grid is supported by the browser.
-	 * @private
-	 * @returns {boolean} If native grid is supported by the browser
-	 */
-	function isGridSupportedByBrowser() {
-		return !Device.browser.msie && !(Device.browser.edge && Device.browser.version < EDGE_VERSION_WITH_GRID_SUPPORT);
-	}
+	var mOwnVisualFocusControls = {
+		"sap.f.Card": function (oCard) {
+			return oCard.getCardHeader() || oCard.getCardContent();
+		},
+		"sap.ui.integration.widgets.Card": function (oCard) {
+			return oCard.getCardHeader() || oCard.getCardContent();
+		},
+		"sap.m.GenericTile": function () {
+			return true;
+		}
+	};
 
 	/**
 	 * Gets the column-span property from the item's layout data.
@@ -169,13 +154,16 @@ sap.ui.define([
 	 * Both <code>{@link sap.ui.core.dnd.DropInfo}</code> and <code>{@link sap.f.dnd.GridDropInfo}</code> can be used to configure drag and drop.
 	 * The difference is that the <code>{@link sap.f.dnd.GridDropInfo}</code> will provide a drop indicator, which mimics the size of the dragged item and shows the potential drop position inside the grid.
 	 *
+	 * <h3>Keyboard Navigation:</h3>
+	 * <code>GridContainer</code> provides support for two-dimensional keyboard navigation through its contained controls. Navigating up/down or left/right using the arrow keys follows the configurable two-dimensional grid mesh. This provides stable navigation paths in the cases when there are items of different sizes. When the user presses an arrow key in a direction outward of the <code>GridContainer</code>, a <code>borderReached</code> event will be fired. The implementation of the <code>borderReached</code> event allows the application developer to control where the focus goes, and depending on the surrounding layout pass the focus to a specific place in a neighboring <code>GridContainer</code> using the method {@link #focusItemByDirection}.
+	 *
 	 * @see {@link topic:cca5ee5d63ca44c89318f8496a58f9f2 Grid Container}
 	 * @see {@link topic:32d4b9c2b981425dbc374d3e9d5d0c2e Grid Controls}
 	 * @see {@link topic:5b46b03f024542ba802d99d67bc1a3f4 Cards}
 	 * @see {@link sap.f.dnd.GridDropInfo}
 	 *
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @extends sap.ui.core.Control
 	 *
@@ -234,9 +222,6 @@ sap.ui.define([
 				 * Makes the grid items act like an inline-block elements. They will be arranged in rows with height equal to the highest item in the row.
 				 *
 				 * <b>Note:</b> If set to <code>true</code> the properties <code>rowSize</code> for grid layout, and <code>minRows</code> and <code>rows</code> per item will be ignored.
-				 *
-				 * <b>Note:</b> Not supported in IE11, Edge 15.
-				 *
 				 * @experimental As of version 1.66 Disclaimer: this property is in a beta state - incompatible API changes may be done before its official public release. Use at your own discretion.
 				 */
 				inlineBlockLayout: {type: "boolean", group: "Appearance", defaultValue: false}
@@ -303,6 +288,18 @@ sap.ui.define([
 					}
 				},
 				/**
+				 * Fired when the grid columns count is changed.
+				 */
+				columnsChange: {
+					parameters: {
+
+						/**
+						 * The count of the gird columns.
+						 */
+						columns: { type: "int" }
+					}
+				},
+				/**
 				 * Fires if the border of the visualizations is reached
 				 * so that an application can react on this.
 				 */
@@ -312,7 +309,21 @@ sap.ui.define([
 						/**
 						 * Event that leads to the focus change.
 						 */
-						event: { type: "jQuery.Event" }
+						event: { type: "jQuery.Event" },
+						/**
+						 * The navigation direction that is used to reach the border.
+						 */
+						direction: {type: "sap.f.NavigationDirection"},
+
+						/**
+						 * The row index, from which the border is reached.
+						 */
+						row: {type: "int"},
+
+						/**
+						 * The column index, from which the border is reached.
+						 */
+						column: {type: "int"}
 					}
 				}
 			},
@@ -356,11 +367,12 @@ sap.ui.define([
 	GridContainer.prototype._onBeforeItemRendering = function () {
 		var oContainer = this.getParent();
 
-		// The item just became invisible. In such cases there won't be _onAfterItemRendering,
-		// so we have to to schedule the polyfill here.
-		if (oContainer._reflectItemVisibilityToWrapper(this) && !isGridSupportedByBrowser()) {
-			oContainer._scheduleIEPolyfill();
+		if (oContainer._resizeListeners[this.getId()]) {
+			ResizeHandler.deregister(oContainer._resizeListeners[this.getId()]);
+			delete oContainer._resizeListeners[this.getId()];
 		}
+
+		oContainer._reflectItemVisibilityToWrapper(this);
 	};
 
 	/**
@@ -368,61 +380,52 @@ sap.ui.define([
 	 * @private
 	 */
 	GridContainer.prototype._onAfterItemRendering = function () {
+		var oContainer = this.getParent();
 
-		var container = this.getParent(),
-			oFocusDomRef;
+		oContainer._checkOwnVisualFocus(this);
 
-		if (container._hasOwnVisualFocus(this)) {
-			oFocusDomRef = this.getFocusDomRef();
+		oContainer._resizeListeners[this.getId()] = ResizeHandler.register(this, oContainer._resizeItemHandler);
 
-			// remove the focus DOM ref from the tab chain
-			oFocusDomRef.setAttribute("tabindex", -1);
-			oFocusDomRef.tabIndex = -1;
+		oContainer._setItemNavigationItems();
+
+		oContainer._applyItemAutoRows(this);
+
+		if (this.getAriaRoleDescription) {
+			var oListItemDomRef = this.getDomRef().parentElement,
+				sAriaRoleDesc = this.getAriaRoleDescription();
+
+			if (oListItemDomRef.classList.contains("sapFGridContainerItemWrapper")) {
+				if (sAriaRoleDesc) {
+					oListItemDomRef.setAttribute("aria-roledescription", sAriaRoleDesc);
+				} else {
+					oListItemDomRef.removeAttribute("aria-roledescription");
+				}
+			}
 		}
-
-		// register resize listener for that item only once
-		if (!container._resizeListeners[this.getId()]) {
-			container._resizeListeners[this.getId()] = ResizeHandler.register(this, container._resizeItemHandler);
-		}
-
-		container._setItemNavigationItems();
-
-		if (!isGridSupportedByBrowser()) {
-			container._scheduleIEPolyfill();
-			return;
-		}
-
-		container._applyItemAutoRows(this);
 	};
-
 
 	/**
 	 * Reflects "visible" behavior of the control to the wrapper element - sapFGridContainerItemWrapper.
 	 *
 	 * @private
 	 * @param {sap.ui.core.Control} oItem The control of which we will check "visible" property.
-	 * @returns {boolean} Whether the wrapper turned to invisible. Needed to judge whether to trigger IE polyfill.
 	 */
 	GridContainer.prototype._reflectItemVisibilityToWrapper = function (oItem) {
 
-		var oItemWrapper = this._getItemWrapper(oItem),
+		var oItemWrapper = GridContainerUtils.getItemWrapper(oItem),
 			$oItemWrapper;
 
 		if (!oItemWrapper) {
-			return false;
+			return;
 		}
 
 		$oItemWrapper = jQuery(oItemWrapper);
 
-		// check if we actually change something. Needed to judge whether to trigger IE polyfill.
 		if (oItem.getVisible() && $oItemWrapper.hasClass("sapFGridContainerInvisiblePlaceholder")) {
 			$oItemWrapper.removeClass("sapFGridContainerInvisiblePlaceholder");
 		} else if (!oItem.getVisible() && !$oItemWrapper.hasClass("sapFGridContainerInvisiblePlaceholder")) {
 			$oItemWrapper.addClass("sapFGridContainerInvisiblePlaceholder");
-			return true;
 		}
-
-		return false;
 	};
 
 	/**
@@ -474,7 +477,6 @@ sap.ui.define([
 		if (!that._oItemNavigation) {
 			that._oItemNavigation = new GridContainerItemNavigation()
 				.setCycling(false)
-				.attachEvent(ItemNavigation.Events.BorderReached, this._onItemNavigationBorderReached, this)
 				.setDisabledModifiers({
 					sapnext : ["alt", "meta", "ctrl"],
 					sapprevious : ["alt", "meta", "ctrl"]
@@ -526,6 +528,30 @@ sap.ui.define([
 		}
 
 		return bSettingsAreChanged;
+	};
+
+	/**
+	 * Detects if there is change in columns count and fires column change event if needed.
+	 * @private
+	 */
+	GridContainer.prototype._detectColumnsChange = function () {
+		var oSettings = this.getActiveLayoutSettings(),
+			iWidth = this.$().innerWidth(),
+			iColumns;
+
+		if (!oSettings) {
+			return;
+		}
+
+		iColumns = oSettings.getComputedColumnsCount(iWidth);
+
+		if (this._iColumns !== iColumns) {
+			this.fireColumnsChange({
+				columns: iColumns
+			});
+
+			this._iColumns = iColumns;
+		}
 	};
 
 	/**
@@ -584,10 +610,6 @@ sap.ui.define([
 		Device.resize.attachHandler(this._resizeDeviceHandler);
 
 		this._resizeItemHandler = this._resizeItem.bind(this);
-
-		if (!isGridSupportedByBrowser()) {
-			this._attachDndPolyfill();
-		}
 	};
 
 	/**
@@ -597,14 +619,14 @@ sap.ui.define([
 	 * @param {int} iIndex The <code>0</code>-based index the item should be inserted at; for
 	 *             a negative value of <code>iIndex</code>, the item is inserted at position 0; for a value
 	 *             greater than the current size of the aggregation, the item is inserted at the last position.
-	 * @returns {sap.f.GridContainer} <code>this</code> to allow method chaining.
+	 * @returns {this} <code>this</code> to allow method chaining.
 	 * @public
 	 */
 	GridContainer.prototype.insertItem = function (oItem, iIndex) {
 		this.insertAggregation("items", oItem, iIndex, true);
 
-		if (!this.getDomRef() || !isGridSupportedByBrowser() || !oItem.getVisible()) {
-			// if not rendered, not supported or an invisible item - we need to invalidate
+		if (!this.getDomRef() || !oItem.getVisible()) {
+			// if not rendered, or an invisible item - we need to invalidate
 			this.invalidate();
 			return this;
 		}
@@ -615,12 +637,11 @@ sap.ui.define([
 			oGridRef = this.getDomRef();
 
 		if (oNextItem) {
-			oGridRef.insertBefore(oWrapper, this._getItemWrapper(oNextItem));
+			oGridRef.insertBefore(oWrapper, GridContainerUtils.getItemWrapper(oNextItem));
 		} else {
 			oGridRef.insertBefore(oWrapper, oGridRef.lastChild);
 		}
 
-		oItem.addStyleClass("sapFGridContainerItemInnerWrapper");
 		oRm.render(oItem, oWrapper);
 		oRm.destroy();
 
@@ -639,7 +660,7 @@ sap.ui.define([
 			oGridRef = this.getDomRef(),
 			oItemRef = oRemovedItem.getDomRef();
 
-		if (!oGridRef || !oItemRef || !isGridSupportedByBrowser()) {
+		if (!oGridRef || !oItemRef) {
 			this.invalidate();
 			return oRemovedItem;
 		}
@@ -663,6 +684,8 @@ sap.ui.define([
 		}
 
 		this._isRenderingFinished = false;
+		this._lastGridWidth = null;
+		this._lastViewportWidth = null;
 	};
 
 	/**
@@ -703,11 +726,12 @@ sap.ui.define([
 			this._oItemNavigation = null;
 		}
 
-		if (!isGridSupportedByBrowser()) {
-			this._detachDndPolyfill();
-		}
-
 		this._forceFocus = null;
+
+		if (this._checkColumnsTimeout) {
+			clearTimeout(this._checkColumnsTimeout);
+			this._checkColumnsTimeout = null;
+		}
 	};
 
 	/**
@@ -780,16 +804,6 @@ sap.ui.define([
 	 * @param {Object} oEvent ResizeHandler resize event
 	 */
 	GridContainer.prototype._resizeItem = function (oEvent) {
-		if (!isGridSupportedByBrowser()) {
-			// don't re-arrange the items if currently dragging one of the items from this container in another container
-			if (!this._bDraggingInAnotherContainer) {
-				this._scheduleIEPolyfill();
-			}
-
-			this._bDraggingInAnotherContainer = false;
-			return;
-		}
-
 		this._applyItemAutoRows(oEvent.control);
 	};
 
@@ -803,17 +817,28 @@ sap.ui.define([
 			return;
 		}
 
-		if (!isGridSupportedByBrowser()) {
-			this._scheduleIEPolyfill(bSettingsAreChanged);
-			return;
-		}
-
 		if (bSettingsAreChanged) {
 			this.$().css(this._getActiveGridStyles());
 			this.getItems().forEach(this._applyItemAutoRows.bind(this));
 		}
 
-		this._enforceMaxColumns();
+		this._checkColumns();
+	};
+
+	/**
+	 * Applies operations related to columns count with a delay.
+	 * @private
+	 */
+	GridContainer.prototype._checkColumns = function () {
+		if (this._checkColumnsTimeout) {
+			clearTimeout(this._checkColumnsTimeout);
+			this._checkColumnsTimeout = null;
+		}
+
+		this._checkColumnsTimeout = setTimeout(function () {
+			this._detectColumnsChange();
+			this._enforceMaxColumns();
+		}.bind(this), 0);
 	};
 
 	/**
@@ -833,7 +858,8 @@ sap.ui.define([
 		if (hasItemAutoHeight(oItem)) {
 			var $item = oItem.$(),
 				oSettings = this.getActiveLayoutSettings(),
-				iRows = oSettings.calculateRowsForItem($item.outerHeight());
+				fHeight = oItem.getDomRef() ? oItem.getDomRef().getBoundingClientRect().height : 0,
+				iRows = oSettings.calculateRowsForItem(Math.round(fHeight));
 
 			if (!iRows) {
 				// if the rows can not be calculated correctly, don't do anything
@@ -853,14 +879,20 @@ sap.ui.define([
 	 */
 	GridContainer.prototype._enforceMaxColumns = function () {
 		var oSettings = this.getActiveLayoutSettings(),
-			iMaxColumns = oSettings.getComputedColumnsCount(this.$().innerWidth());
+			iMaxColumns;
+
+		if (!oSettings) {
+			return;
+		}
+
+		iMaxColumns = oSettings.getComputedColumnsCount(this.$().innerWidth());
 
 		if (!iMaxColumns) {
 			// if the max columns can not be calculated correctly, don't do anything
 			return;
 		}
 
-		this.getItems().forEach(function(oItem) {
+		this.getItems().forEach(function (oItem) {
 			// if item has more columns than total columns, it brakes the whole layout
 			oItem.$().parent().css("grid-column", "span " + Math.min(getItemColumnCount(oItem), iMaxColumns));
 		});
@@ -910,304 +942,13 @@ sap.ui.define([
 	};
 
 	/**
-	 * ===================== IE11 Polyfill =====================
-	 */
-
-	/**
-	 * Schedules the application of the IE polyfill for the next tick.
+	 * Fires when border of the <code>sap.f.GridContainer</code> is reached.
+	 * @param {object} mParameters a set of parameters
 	 * @private
-	 * @param {boolean} bImmediately If set to true - apply the polyfill immediately.
+	 * @ui5-restricted
 	 */
-	GridContainer.prototype._scheduleIEPolyfill = function (bImmediately) {
-		if (this._iPolyfillCallId) {
-			clearTimeout(this._iPolyfillCallId);
-		}
-
-		if (bImmediately) {
-			this._applyIEPolyfillLayout();
-			return;
-		}
-
-		this._iPolyfillCallId = setTimeout(this._applyIEPolyfillLayout.bind(this), 0);
-	};
-
-	/**
-	 * Calculates absolute positions for items, so it mimics a css grid.
-	 * @private
-	 */
-	GridContainer.prototype._applyIEPolyfillLayout = function () {
-		if (!this._isRenderingFinished) {
-			return;
-		}
-
-		if (this.bIsDestroyed) {
-			return;
-		}
-
-		var $that = this.$(),
-			innerWidth = $that.innerWidth(),
-			oSettings = this.getActiveLayoutSettings(),
-			columnSize = oSettings.getMinColumnSizeInPx() || oSettings.getColumnSizeInPx(),
-			rowSize = oSettings.getRowSizeInPx(),
-			gapSize = oSettings.getGapInPx(),
-			columnsCount = oSettings.getComputedColumnsCount(innerWidth),
-			topOffset = parseInt($that.css("padding-top").replace("px", "")),
-			leftOffset = parseInt($that.css("padding-left").replace("px", "")),
-			items = this.getItems();
-
-		if (!columnSize || !rowSize) {
-			return;
-		}
-
-		if (!items.length) {
-			return;
-		}
-
-		var virtualGrid = new VirtualGrid();
-		virtualGrid.init({
-			numberOfCols: Math.max(1, columnsCount),
-			cellWidth: columnSize,
-			cellHeight: rowSize,
-			unitOfMeasure: "px",
-			gapSize: gapSize,
-			topOffset: topOffset ? topOffset : 0,
-			leftOffset: leftOffset ? leftOffset : 0,
-			allowDenseFill: this.getAllowDenseFill(),
-			rtl: isRtl,
-			width: innerWidth
-		});
-
-		var i,
-			k,
-			item,
-			$item,
-			columns,
-			rows,
-			aFittedElements = [];
-
-		var fnInsertPolyfillDropIndicator = function (iKId) {
-			virtualGrid.fitElement(
-				iKId + '',
-				this._polyfillDropIndicator.columns || oSettings.calculateColumnsForItem(Math.round(this._polyfillDropIndicator.width)),
-				this._polyfillDropIndicator.rows || oSettings.calculateRowsForItem(Math.round(this._polyfillDropIndicator.height))
-
-			);
-			aFittedElements.push({
-				id: iKId + '',
-				domRef: this._polyfillDropIndicator.domRef
-			});
-		}.bind(this);
-
-		for (i = 0, k = 0; i < items.length; i++) {
-
-			if (this._polyfillDropIndicator && this._polyfillDropIndicator.insertAt === i) {
-				fnInsertPolyfillDropIndicator(k);
-				k++;
-			}
-
-			item = items[i];
-			$item = item.$();
-
-			if (!$item.is(":visible")) {
-				continue;
-			}
-
-			columns = getItemColumnCount(item);
-
-			if (hasItemAutoHeight(item)) {
-				rows = this._calcAutoRowsForPolyfill(item, oSettings);
-			} else {
-				rows = getItemRowCount(item);
-			}
-
-			virtualGrid.fitElement(k + '', columns, rows);
-			aFittedElements.push({
-				id: k + '',
-				domRef: $item.parent()
-			});
-			k++;
-		}
-
-		if (this._polyfillDropIndicator && this._polyfillDropIndicator.insertAt >= items.length) {
-			fnInsertPolyfillDropIndicator(items.length);
-		}
-
-		virtualGrid.calculatePositions();
-
-		aFittedElements.forEach(function (oFittedElement) {
-
-			var virtualGridItem = virtualGrid.getItems()[oFittedElement.id];
-
-			oFittedElement.domRef.css({
-				position: 'absolute',
-				top: virtualGridItem.top,
-				left: virtualGridItem.left,
-				width: virtualGridItem.width,
-				height: virtualGridItem.height
-			});
-		});
-
-		// width and height has to be set for the grid because the items inside are absolute positioned and the grid will not have dimensions
-		$that.css("height", virtualGrid.getHeight() + "px");
-
-		if (!this.getWidth() && oSettings.getColumns()) {
-			// use virtual grid width only if grid width is not specified and we know the columns count
-			if (!this.getContainerQuery()) {
-				// centering GridContainer in IE11 when containerQuery is set to true doesn't work
-				$that.css("width", virtualGrid.getWidth() + "px");
-			}
-		}
-	};
-
-	/**
-	 * Calculates rows count for item depending on its height.
-	 * @param {sap.ui.core.Control} oItem The item to calculate for
-	 * @param {sap.f.GridContainerSettings} oGridSettings The current grid settings
-	 * @returns {int} The number of rows which the item should have
-	 * @private
-	 */
-	GridContainer.prototype._calcAutoRowsForPolyfill = function (oItem, oGridSettings) {
-		var $item = oItem.$(),
-			iItemHeight,
-			iRows;
-
-		// height is explicitly set to 100% for analytical card
-		// so we need to use the scrollHeight for it
-		if ($item.hasClass("sapFCardAnalytical")) {
-			iItemHeight = $item[0].scrollHeight;
-		} else {
-			iItemHeight = $item.outerHeight();
-		}
-
-		iRows = Math.max(
-			oGridSettings.calculateRowsForItem(iItemHeight),
-			getItemRowCount(oItem)
-		);
-
-		return iRows;
-	};
-
-	/**
-	 * Implements polyfill for IE after drag over.
-	 * @param {Object} oEvent After drag over event
-	 * @private
-	 */
-	GridContainer.prototype._polyfillAfterDragOver = function (oEvent) {
-		var $indicator = oEvent.getParameter("indicator");
-
-		this._polyfillDropIndicator = {
-			rows: oEvent.getParameter("rows"),
-			columns: oEvent.getParameter("columns"),
-			width: oEvent.getParameter("width"),
-			height: oEvent.getParameter("height"),
-			domRef: $indicator,
-			insertAt: oEvent.getParameter("indicatorIndex")
-		};
-
-		this._scheduleIEPolyfill();
-	};
-
-	/**
-	 * Implements polyfill for IE after drag end.
-	 * @param {Object} oEvent After drag end event
-	 * @private
-	 */
-	GridContainer.prototype._polyfillAfterDragEnd = function (oEvent) {
-		this._polyfillDropIndicator = null;
-	};
-
-	/**
-	 * Implements polyfill for IE after the item is dragged to another container.
-	 * @private
-	 */
-	GridContainer.prototype._polyfillDraggingInAnotherContainer = function () {
-		this._bDraggingInAnotherContainer = true;
-	};
-
-	/**
-	 * Attaches polyfill methods for drag and drop for IE.
-	 * @private
-	 */
-	GridContainer.prototype._attachDndPolyfill = function () {
-		this.attachEvent("_gridPolyfillAfterDragOver", this._polyfillAfterDragOver, this);
-		this.attachEvent("_gridPolyfillAfterDragEnd", this._polyfillAfterDragEnd, this);
-		this.attachEvent("_gridPolyfillDraggingInAnotherContainer", this._polyfillDraggingInAnotherContainer, this);
-	};
-
-	/**
-	 * Detaches polyfill methods for drag and drop for IE.
-	 * @private
-	 */
-	GridContainer.prototype._detachDndPolyfill = function () {
-		this.detachEvent("_gridPolyfillAfterDragOver", this._polyfillAfterDragOver, this);
-		this.detachEvent("_gridPolyfillAfterDragEnd", this._polyfillAfterDragEnd, this);
-		this.detachEvent("_gridPolyfillDraggingInAnotherContainer", this._polyfillDraggingInAnotherContainer, this);
-	};
-
-	/**
-	 * Fires when border is reached of the <code>sap.f.GridContainer</code>.
-	 * @param {sap.ui.base.Event|jQuery.Event} oEvent The event object
-	 */
-	GridContainer.prototype._onItemNavigationBorderReached = function (oEvent) {
-		this.fireEvent("borderReached", {
-			event: oEvent instanceof jQuery.Event ? oEvent : oEvent.getParameter("event")
-		});
-	};
-
-	/**
-	 * Handles the <code>onsapnext</code> event. Sets the focus to the next item in the current container.
-	 * If the event is triggered by <code>ARROW_DOWN</code>, custom logic is applied to focus the item below and propagation to the ItemNavigation is stopped.
-	 *
-	 * @param {jQuery.Event} oEvent the browser event
-	 * @private
-	 */
-	GridContainer.prototype.onsapnext = function (oEvent) {
-		var aItemDomRefs = this._oItemNavigation.getItemDomRefs();
-
-		if (aItemDomRefs.indexOf(oEvent.target) === -1) {
-			oEvent.stopImmediatePropagation(true);
-		}
-
-		var oItem = jQuery(oEvent.target.firstElementChild).control(0);
-
-		if (oEvent.keyCode === KeyCodes.ARROW_DOWN) {
-			oEvent.stopImmediatePropagation(true);
-			var oNextFocusItem = this._getClosestItemBelowInThisContainer(oItem);
-
-			if (oNextFocusItem) {
-				this._getItemWrapper(oNextFocusItem).focus();
-			} else {
-				this._onItemNavigationBorderReached(oEvent);
-			}
-		}
-	};
-
-	/**
-	 * Handles the <code>onsapprevious</code> event. Sets the focus to the previous item in the current container.
-	 * If the event is triggered by <code>ARROW_UP</code>, custom logic is applied to focus the item above and propagation to the ItemNavigation is stopped.
-	 *
-	 * @param {jQuery.Event} oEvent the browser event
-	 * @private
-	 */
-	GridContainer.prototype.onsapprevious = function (oEvent) {
-		var aItemDomRefs = this._oItemNavigation.getItemDomRefs();
-
-		if (aItemDomRefs.indexOf(oEvent.target) === -1) {
-			oEvent.stopImmediatePropagation(true);
-		}
-
-		var oItem = jQuery(oEvent.target.firstElementChild).control(0);
-
-		if (oEvent.keyCode === KeyCodes.ARROW_UP) {
-			oEvent.stopImmediatePropagation(true);
-			var oNextFocusItem = this._getClosestItemAboveInThisContainer(oItem);
-
-			if (oNextFocusItem) {
-				this._getItemWrapper(oNextFocusItem).focus();
-			} else {
-				this._onItemNavigationBorderReached(oEvent);
-			}
-		}
+	GridContainer.prototype.onItemNavigationBorderReached = function (mParameters) {
+		this.fireEvent("borderReached", mParameters);
 	};
 
 	/**
@@ -1239,12 +980,21 @@ sap.ui.define([
 	});
 
 	/**
-	 * Returns if the control should display the grid item visual focus.
+	 * Checks if the control will display the grid item visual focus.
+	 * @param {sap.ui.core.Control} oControl The control
 	 * @private
-	 * @return {boolean} If the control should display the grid item visual focus
 	 */
-	GridContainer.prototype._hasOwnVisualFocus = function (oControl) {
-		return aOwnVisualFocusControls.indexOf(oControl.getMetadata().getName()) > -1;
+	GridContainer.prototype._checkOwnVisualFocus = function (oControl) {
+		var sName = oControl.getMetadata().getName(),
+			oFocusDomRef;
+
+		if (mOwnVisualFocusControls[sName] && mOwnVisualFocusControls[sName](oControl)) {
+			oFocusDomRef = oControl.getFocusDomRef();
+			// remove the focus DOM ref from the tab chain
+			oFocusDomRef.setAttribute("tabindex", -1);
+			oFocusDomRef.tabIndex = -1;
+			GridContainerUtils.getItemWrapper(oControl).classList.add("sapFGridContainerItemWrapperNoVisualFocus");
+		}
 	};
 
 	/**
@@ -1261,62 +1011,47 @@ sap.ui.define([
 			iLength = this.getItems().length,
 			iItemIndex = this.indexOfItem(oItem),
 			iInsertAt = -1,
-			oInsertAround = null,
-			sDropPosition = "After";
+			oCfg,
+			aDropConfigs = [];
 
 		switch (oEvent.keyCode) {
 			case KeyCodes.ARROW_RIGHT:
 				iInsertAt = Core.getConfiguration().getRTL() ? iItemIndex - 1 : iItemIndex + 1;
 
 				if (iInsertAt >= 0 && iInsertAt < iLength) {
-					oInsertAround = this.getItems()[iInsertAt];
+					oCfg = GridContainerUtils.createConfig(this, this.getItems()[iInsertAt]);
+					oCfg.dropPosition = "After";
+					aDropConfigs = [oCfg];
 				}
 				break;
 			case KeyCodes.ARROW_LEFT:
 				iInsertAt = Core.getConfiguration().getRTL() ? iItemIndex + 1 : iItemIndex - 1;
 
 				if (iInsertAt >= 0 && iInsertAt < iLength) {
-					oInsertAround = this.getItems()[iInsertAt];
+					oCfg = GridContainerUtils.createConfig(this, this.getItems()[iInsertAt]);
+					oCfg.dropPosition = "Before";
+					aDropConfigs = [oCfg];
 				}
 				break;
 			case KeyCodes.ARROW_UP:
-				oInsertAround = this._getClosestItemAbove(oItem);
-
-				if (!oInsertAround || (oInsertAround.isA("sap.f.GridContainer") && !oInsertAround.getItems().length)) {
-					break;
-				}
-
-				if (this !== oInsertAround.getParent()) {
-					sDropPosition = "Before";
-				}
+				aDropConfigs = GridContainerUtils.findDropTargetsAbove(this, oItem);
+				aDropConfigs.forEach(function (oCfg) {
+					oCfg.dropPosition = "Before";
+				});
 				break;
 			case KeyCodes.ARROW_DOWN:
-				oInsertAround = this._getClosestItemBelow(oItem);
-				if (!oInsertAround || (oInsertAround.isA("sap.f.GridContainer") && !oInsertAround.getItems().length)) {
-					break;
-				}
-
-				if (this !== oInsertAround.getParent()) {
-					sDropPosition = "Before";
-				}
+				aDropConfigs = GridContainerUtils.findDropTargetsBelow(this, oItem);
+				aDropConfigs.forEach(function (oCfg) {
+					oCfg.dropPosition = (this.indexOfItem(oCfg.item) !== -1) ? "After" : "Before";
+				}.bind(this));
 				break;
 			default: break;
-		}
-
-		iInsertAt = this.indexOfItem(oInsertAround);
-
-		if (!oInsertAround) {
-			return;
 		}
 
 		// sap.m.ScrollEnablement scrolls every time Ctrl + arrow are pressed, so stop propagation here.
 		oEvent.stopPropagation();
 
-		if (!oInsertAround.isA("sap.f.GridContainer") && this === oInsertAround.getParent() &&  iInsertAt < iItemIndex) {
-			sDropPosition = "Before";
-		}
-
-		GridKeyboardDragAndDrop.fireDnDByKeyboard(oItem, oInsertAround, sDropPosition, oEvent);
+		GridKeyboardDragAndDrop.fireDnD(oItem, aDropConfigs, oEvent);
 		this._setItemNavigationItems();
 	};
 
@@ -1333,114 +1068,6 @@ sap.ui.define([
 	 * @param {jQuery.Event} oEvent
 	 */
 	GridContainer.prototype.onsapdecreasemodifiers = GridContainer.prototype._moveItem;
-
-	GridContainer.prototype._getClosestItemBelowInThisContainer = function (oItem) {
-		var aItemsBelow = this.getItems()
-							.map(this._getItemWrapper)
-							.filter(function (oWrapper) {
-								return GridContainerUtils.isBelow(oItem, oWrapper);
-							});
-
-		// find the item which is closest to this one (shortest distance between the top left corners)
-		var oClosestItem = GridContainerUtils.findClosest(oItem, aItemsBelow);
-
-		if (oClosestItem) {
-			return jQuery(oClosestItem.firstElementChild).control(0);
-		}
-
-		return null;
-	};
-
-	/**
-	 * Searches for the closest item below the given one.
-	 * Tries to find it in the same container first, if there is no success, all other GridContainers below are being searched.
-	 * @param {sap.ui.core.Control} oItem The item.
-	 * @returns {sap.ui.core.Control} The found item or null.
-	 */
-	GridContainer.prototype._getClosestItemBelow = function (oItem) {
-		var oClosestItem = this._getClosestItemBelowInThisContainer(oItem);
-
-		if (oClosestItem) {
-			return oClosestItem;
-		}
-		var aGridContainersBelow = Array.from(document.querySelectorAll(".sapFGridContainer")).filter(function (oGridContainerElement) {
-			return GridContainerUtils.isBelow(oItem, oGridContainerElement);
-		});
-
-		var oClosestGridContainer = GridContainerUtils.findClosestGridContainer(oItem, aGridContainersBelow);
-
-		if (!oClosestGridContainer) {
-			return null;
-		}
-
-		var aItemsInClosestContainer = [];
-
-		jQuery(oClosestGridContainer).control(0).getItems().forEach(function(oItem) {
-			aItemsInClosestContainer.push(oItem.getDomRef());
-		});
-
-		if (aItemsInClosestContainer.length) {
-			oClosestItem = GridContainerUtils.findClosest(oItem, aItemsInClosestContainer);
-			return jQuery(oClosestItem).control(0);
-		}
-
-		return jQuery(oClosestGridContainer).control(0);
-	};
-
-	GridContainer.prototype._getClosestItemAboveInThisContainer = function (oItem) {
-		var aItemsAbove = this.getItems()
-							.map(this._getItemWrapper)
-							.filter(function (oWrapper) {
-								return GridContainerUtils.isAbove(oItem, oWrapper);
-							});
-
-		// find the item which is closest to this one (shortest distance between the top left corners)
-		var oClosestItem = GridContainerUtils.findClosest(oItem, aItemsAbove);
-
-		if (oClosestItem) {
-			return jQuery(oClosestItem.firstElementChild).control(0);
-		}
-
-		return null;
-	};
-
-	/**
-	 * Searches for the closest item above the given one.
-	 * Tries to find it in the same container first, if there is no success, all other GridContainers above are being searched.
-	 * @param {sap.ui.core.Control} oItem The item.
-	 * @returns {sap.ui.core.Control} The found item or null.
-	 */
-	GridContainer.prototype._getClosestItemAbove = function (oItem) {
-		// find the item which is closest to this one (shortest distance between the top left corners)
-		var oClosestItem = this._getClosestItemAboveInThisContainer(oItem);
-
-		if (oClosestItem) {
-			return oClosestItem;
-		}
-
-		var aGridContainersAbove = Array.from(document.querySelectorAll(".sapFGridContainer")).filter(function (oGridContainerElement) {
-			return GridContainerUtils.isAbove(oItem, oGridContainerElement);
-		});
-
-		var oClosestGridContainer = GridContainerUtils.findClosestGridContainer(oItem, aGridContainersAbove);
-
-		if (!oClosestGridContainer) {
-			return null;
-		}
-
-		var aItemsInClosestContainer = [];
-
-		jQuery(oClosestGridContainer).control(0).getItems().forEach(function(oItem) {
-			aItemsInClosestContainer.push(oItem.getDomRef());
-		});
-
-		if (aItemsInClosestContainer.length) {
-			oClosestItem = GridContainerUtils.findClosest(oItem, aItemsInClosestContainer);
-			return jQuery(oClosestItem).control(0);
-		}
-
-		return jQuery(oClosestGridContainer).control(0);
-	};
 
 	/**
 	 * Focuses the item on the given index. Should be called after successful drop operation.
@@ -1468,25 +1095,58 @@ sap.ui.define([
 		}
 	};
 
-	GridContainer.prototype._isItemWrapper = function (oElement) {
-		return oElement.classList.contains("sapFGridContainerItemWrapper");
+	/**
+	 * Focuses an item in the given direction - up, down, left or right,
+	 * from the starting position specified by row and column.
+	 *
+	 * If the direction is up or down, the method focuses
+	 * the nearest item in the same column, located in the specified direction.
+	 *
+	 * If the direction is left or right, the method focuses
+	 * the nearest item at the same row, in the specified direction.
+	 *
+	 * <b>Note:</b>Should be called after the rendering of <code>GridContainer</code> is ready.
+	 *
+	 * @public
+	 * @experimental Since 1.85. Behavior might change.
+	 * @param {sap.f.NavigationDirection} sDirection The navigation direction.
+	 * @param {int} iRow The row index of the starting position.
+	 * @param {int} iColumn The column index of the starting position.
+	 */
+	GridContainer.prototype.focusItemByDirection = function (sDirection, iRow, iColumn) {
+		this._oItemNavigation.focusItemByDirection(this, sDirection, iRow, iColumn);
 	};
 
-	GridContainer.prototype._getItemWrapper = function (oItem) {
-		var oItemDomRef = oItem.getDomRef(),
-			oInvisibleSpan;
-
-		if (oItemDomRef) {
-			return oItemDomRef.parentElement;
+	/**
+	 * @private
+	 * @ui5-restricted
+	 */
+	GridContainer.prototype.getNavigationMatrix = function () {
+		if (!Core.isThemeApplied()) {
+			return null;
 		}
 
-		oInvisibleSpan = document.getElementById(InvisibleRenderer.createInvisiblePlaceholderId(oItem));
+		var mGridStyles = window.getComputedStyle(this.getDomRef()),
+			aCssRows = mGridStyles.gridTemplateRows.split(/\s+/),
+			aCssColumns = mGridStyles.gridTemplateColumns.split(/\s+/),
+			oLayoutSettings = this.getActiveLayoutSettings();
 
-		if (oInvisibleSpan) {
-			return oInvisibleSpan.parentElement;
-		}
+		var aItemsDomRefs = this.getItems().reduce(function (aAcc, oItem) {
+			if (oItem.getVisible()) {
+				aAcc.push(GridContainerUtils.getItemWrapper(oItem));
+			}
+			return aAcc;
+		}, []);
 
-		return null;
+		return GridNavigationMatrix.create(this.getDomRef(), aItemsDomRefs, {
+					gap: oLayoutSettings.getGapInPx(),
+					rows: aCssRows,
+					columns: aCssColumns
+				});
+	};
+
+	GridContainer.prototype._isItemWrapper = function (oElement) {
+		return oElement.classList.contains("sapFGridContainerItemWrapper");
 	};
 
 	return GridContainer;

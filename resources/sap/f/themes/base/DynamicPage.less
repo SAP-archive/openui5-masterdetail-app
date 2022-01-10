@@ -17,12 +17,26 @@
 		}
 	}
 
+	.sapFDynamicPageHeaderSolid {
+		background: @sapUiBaseBG;
+	}
+
 	.sapFDynamicPageContentWrapperTransparent>.sapFDynamicPageContent {
 		background: transparent;
 	}
 
 	.sapFDynamicPageContentWrapperList>.sapFDynamicPageContent {
 		background: @sapUiGroupContentBackground;
+	}
+}
+
+html[data-sap-ui-browser^="ff"].sap-desktop .sapFDynamicPage.sapFDynamicPageWithScroll {
+	 .sapFDynamicPageTitleWrapper {
+		padding-right: 17px;
+	}
+
+	.sapFDynamicPageFooter .sapFDynamicPageActualFooterControl {
+		right: 17px;
 	}
 }
 
@@ -44,22 +58,6 @@ html[data-sap-ui-browser^="ie"] {
 	}
 }
 
-.sapFDynamicPageContentWrapper {
-	.sapFDynamicPageContentWrapperSpacer {
-		height: 4rem;
-		flex: 0 0 4rem;
-	}
-}
-
-.sapUiSizeCompact {
-	.sapFDynamicPageContentWrapper {
-		.sapFDynamicPageContentWrapperSpacer {
-			height: 3.5rem;
-			flex: 0 0 3.5rem;
-		}
-	}
-}
-
 .sapFDynamicPageContent,
 .sapFDynamicPageContentFitContainer {
 	position: relative;
@@ -72,9 +70,21 @@ html[data-sap-ui-browser^="ie"] {
 	right: 0;
 	top: 0;
 	bottom: 0;
+}
 
-	&.sapFDynamicPageContentFitContainerFooterVisible {
-		bottom: 4rem;
+// adds space underneath the footer (when page in scrollable mode)
+.sapFDynamicPageContentFitContainerFooterVisible:not(.sapFDynamicPageContentFitContainer) {
+	padding-bottom: 4rem;
+}
+
+// adds space underneath the footer (when page in non-scrollable mode)
+.sapFDynamicPageContentFitContainerFooterVisible.sapFDynamicPageContentFitContainer:first-child {
+	max-height: ~"calc(100% - 4rem)";
+}
+
+.sapUiSizeCompact {
+	.sapFDynamicPageContentFitContainerFooterVisible.sapFDynamicPageContentFitContainer:first-child {
+		max-height: ~"calc(100% - 3.5rem)";
 	}
 }
 
@@ -116,6 +126,7 @@ html[data-sap-ui-browser^="ie"] {
 		.sapFDynamicPageContent,
 		.sapFDynamicPageContentFitContainer {
 			padding: 0;
+			padding-top: 1rem;
 		}
 	}
 
@@ -171,6 +182,16 @@ html[data-sap-ui-browser^="ie"] {
 	-webkit-flex-shrink: 0;
 }
 
+html.sap-desktop .sapFDynamicPage.sapFDynamicPageWithScroll {
+	.sapFDynamicPageTitleWrapper {
+		padding-right: 12px;
+	}
+
+	.sapFDynamicPageFooter .sapFDynamicPageActualFooterControl {
+		right: 12px;
+	}
+}
+
 .sapFDynamicPageContentWrapper {
 	-webkit-flex-grow: 1;
 	flex-grow: 1;
@@ -190,6 +211,10 @@ html[data-sap-ui-browser^="ie"] {
 	.sapFDynamicPageTitle:hover,
 	&.sapFDynamicPageTitleForceHovered .sapFDynamicPageTitle {
 		cursor: pointer;
+
+		.sapMFlexBox {
+			cursor: default;
+		}
 	}
 }
 

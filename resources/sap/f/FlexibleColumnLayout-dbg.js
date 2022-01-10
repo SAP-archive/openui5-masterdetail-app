@@ -92,7 +92,7 @@ sap.ui.define([
 	 *
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @public
@@ -104,6 +104,9 @@ sap.ui.define([
 	 */
 	var FlexibleColumnLayout = Control.extend("sap.f.FlexibleColumnLayout", {
 		metadata: {
+			interfaces: [
+				"sap.ui.core.IPlaceholderSupport"
+			],
 			properties: {
 
 				/**
@@ -157,23 +160,30 @@ sap.ui.define([
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>Begin</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				beginColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getBeginColumn", aggregation: "pages"}},
 				/**
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>Mid</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				midColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getMidColumn", aggregation: "pages"}},
 				/**
 				 * The content entities between which the <code>FlexibleColumnLayout</code> navigates in the <code>End</code> column.
 				 *
 				 * These should be any control with page semantics.
-				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:beforeShow beforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
+				 * These aggregated controls will receive navigation events like {@link sap.m.NavContainerChild#event:BeforeShow BeforeShow}, they are documented in the pseudo interface {@link sap.m.NavContainerChild sap.m.NavContainerChild}.
 				 */
 				endColumnPages: {type: "sap.ui.core.Control", multiple: true, forwarding: {getter: "_getEndColumn", aggregation: "pages"}},
+				/**
+				 * Accessible landmark settings to be applied on the containers of the <code>sap.f.FlexibleColumnLayout</code> control.
+				 *
+				 * If not set, no landmarks will be written.
+				 * @since 1.95
+				 */
+				landmarkInfo : {type : "sap.f.FlexibleColumnLayoutAccessibleLandmarkInfo", multiple : false},
 
 				_beginColumnNav: {type : "sap.m.NavContainer", multiple : false, visibility : "hidden"},
 				_midColumnNav: {type : "sap.m.NavContainer", multiple : false, visibility : "hidden"},
@@ -635,9 +645,18 @@ sap.ui.define([
 		}
 	});
 
+	FlexibleColumnLayout.DEFAULT_COLUMN_LABELS = {
+		"FirstColumn" : "FCL_BEGIN_COLUMN_REGION_TEXT",
+		"MiddleColumn" : "FCL_MID_COLUMN_REGION_TEXT",
+		"LastColumn" : "FCL_END_COLUMN_REGION_TEXT"
+	};
+
 	FlexibleColumnLayout.COLUMN_RESIZING_ANIMATION_DURATION = 560; // ms
 	FlexibleColumnLayout.PINNED_COLUMN_CLASS_NAME = "sapFFCLPinnedColumn";
 	FlexibleColumnLayout.COLUMN_ORDER = ["begin", "mid", "end"]; // natural order of the columns in FCL
+	// synced with @_sap_f_FCL_navigation_arrow_width in base less file
+	FlexibleColumnLayout.NAVIGATION_ARROW_WIDTH = DomUnitsRem.toPx("1rem");
+
 	FlexibleColumnLayout.prototype.init = function () {
 		this._iWidth = 0;
 
@@ -661,9 +680,6 @@ sap.ui.define([
 
 		// Indicates if there are rendered pages inside columns
 		this._oRenderedColumnPagesBoolMap = {};
-
-		// We need to have column navigating buttons single width for animations of the layout
-		this._iNavigationArrowWidth = DomUnitsRem.toPx(Parameters.get("_sap_f_FCL_navigation_arrow_width"));
 
 		this._oColumnWidthInfo = {
 			begin: 0,
@@ -720,6 +736,26 @@ sap.ui.define([
 		oNavContainer.addEventDelegate(this["_" + sColumn + 'ColumnFocusOutDelegate'], this);
 
 		return oNavContainer;
+	};
+
+	/**
+	 * Formats <code>FlexibleColumnLayoutAccessibleLandmarkInfo</code> role and label of the provided <code>FlexibleColumnLayout</code> column.
+	 *
+	 * @param {sap.f.FlexibleColumnLayoutAccessibleLandmarkInfo} oLandmarkInfo FlexibleColumnLayout LandmarkInfo
+	 * @param {string} sColumnName column of the layout
+	 * @returns {sap.f.FlexibleColumnLayoutAccessibleLandmarkInfo} The formatted landmark info
+	 * @private
+	 */
+	 FlexibleColumnLayout.prototype._formatLandmarkInfo = function (oLandmarkInfo, sColumnName) {
+		var sLabel = null;
+		if (oLandmarkInfo) {
+			sLabel = oLandmarkInfo["get" + sColumnName + "Label"]();
+		}
+
+		return {
+			role: "region",
+			label: sLabel || FlexibleColumnLayout._getResourceBundle().getText(FlexibleColumnLayout.DEFAULT_COLUMN_LABELS[sColumnName])
+		};
 	};
 
 	/**
@@ -1081,7 +1117,7 @@ sap.ui.define([
 			iSeparatorsCount++;
 		}
 
-		return this._getControlWidth() - iSeparatorsCount * this._iNavigationArrowWidth;
+		return this._getControlWidth() - iSeparatorsCount * FlexibleColumnLayout.NAVIGATION_ARROW_WIDTH;
 	};
 
 	/**
@@ -1730,7 +1766,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can or should not directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1744,7 +1780,7 @@ sap.ui.define([
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.to = function(sPageId, sTransitionName, oData, oTransitionParameters) {
 		if (this._getBeginColumn().getPage(sPageId)) {
@@ -1763,10 +1799,10 @@ sap.ui.define([
 	 * Columns are scanned for the page in the following order: <code>Begin</code>, <code>Mid</code>, <code>End</code>.
 	 *
 	 * Calling this navigation method, first triggers the (cancelable) navigate event on the SplitContainer,
-	 * then the beforeHide pseudo event on the source page, beforeFirstShow (if applicable),
-	 * and beforeShow on the target page. Later, after the transition has completed,
-	 * the afterShow pseudo event is triggered on the target page and afterHide - on the page, which has been left.
-	 * The given backData object is available in the beforeFirstShow, beforeShow, and afterShow event objects as data
+	 * then the BeforeHide pseudo event on the source page, BeforeFirstShow (if applicable),
+	 * and BeforeShow on the target page. Later, after the transition has completed,
+	 * the AfterShow pseudo event is triggered on the target page and AfterHide - on the page, which has been left.
+	 * The given backData object is available in the BeforeFirstShow, BeforeShow, and AfterShow event objects as data
 	 * property. The original "data" object from the "to" navigation is also available in these event objects.
 	 *
 	 * @param {string} sPageId
@@ -1788,7 +1824,7 @@ sap.ui.define([
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.backToPage = function(sPageId, oBackData, oTransitionParameters) {
 		if (this._getBeginColumn().getPage(sPageId)) {
@@ -1831,7 +1867,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1845,7 +1881,7 @@ sap.ui.define([
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.toBeginColumnPage = function(sPageId, sTransitionName, oData, oTransitionParameters) {
 		this._getBeginColumn().to(sPageId, sTransitionName, oData, oTransitionParameters);
@@ -1863,7 +1899,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1877,7 +1913,7 @@ sap.ui.define([
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.toMidColumnPage = function(sPageId, sTransitionName, oData, oTransitionParameters) {
 		this._getMidColumn().to(sPageId, sTransitionName, oData, oTransitionParameters);
@@ -1895,7 +1931,7 @@ sap.ui.define([
 	 *
 	 *         None of the standard transitions is currently making use of any given transition parameters.
 	 * @param {object} oData
-	 *         This optional object can carry any payload data which should be made available to the target page. The beforeShow event on the target page will contain this data object as data property.
+	 *         This optional object can carry any payload data which should be made available to the target page. The BeforeShow event on the target page will contain this data object as data property.
 	 *
 	 *         Use case: in scenarios where the entity triggering the navigation can't or shouldn't directly initialize the target page, it can fill this object and the target page itself (or a listener on it) can take over the initialization, using the given data.
 	 *
@@ -1909,7 +1945,7 @@ sap.ui.define([
 	 *         The "show", "slide" and "fade" transitions do not use any parameter.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.toEndColumnPage = function(sPageId, sTransitionName, oData, oTransitionParameters) {
 		this._getEndColumn().to(sPageId, sTransitionName, oData, oTransitionParameters);
@@ -1961,7 +1997,7 @@ sap.ui.define([
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.backToTopBeginColumn = function(oBackData, oTransitionParameters) {
 		this._getBeginColumn().backToTop(oBackData, oTransitionParameters);
@@ -1989,7 +2025,7 @@ sap.ui.define([
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.backToTopMidColumn = function(oBackData, oTransitionParameters) {
 		this._getMidColumn().backToTop(oBackData, oTransitionParameters);
@@ -2018,7 +2054,7 @@ sap.ui.define([
 	 *         NOTE: it depends on the transition function how the object should be structured and which parameters are actually used to influence the transition.
 	 * @public
 	 * @ui5-metamodel This method also will be described in the UI5 (legacy) designtime metamodel
-	 * @returns {sap.f.FlexibleColumnLayout} The <code>sap.f.FlexibleColumnLayout</code> instance
+	 * @returns {this} The <code>sap.f.FlexibleColumnLayout</code> instance
 	 */
 	FlexibleColumnLayout.prototype.backToTopEndColumn = function(oBackData, oTransitionParameters) {
 		this._getEndColumn().backToTop(oBackData, oTransitionParameters);
@@ -2080,7 +2116,7 @@ sap.ui.define([
 
 	/**
 	 * Returns the layout history object
-	 * @returns {LayoutHistory}
+	 * @returns {sap.f.FlexibleColumnLayout.LayoutHistory}
 	 * @private
 	 * @ui5-restricted sap.f.FlexibleColumnLayoutSemanticHelper
 	 */
@@ -2214,8 +2250,85 @@ sap.ui.define([
 	};
 
 	/**
-	 * Layout history helper class
+	 * Shows the placeholder on the corresponding column for the provided aggregation name.
+	 *
+	 * @param {object} mSettings Object containing the aggregation name
+	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be shown
+	 * @private
+	 * @ui5-restricted SAPUI5 Distribution libraries only
+	 * @since 1.91
+	 */
+	FlexibleColumnLayout.prototype.showPlaceholder = function(mSettings) {
+		if (!sap.ui.getCore().getConfiguration().getPlaceholder()) {
+			return;
+		}
+
+		switch (mSettings && mSettings.aggregation) {
+			case "beginColumnPages":
+				return this.getAggregation("_beginColumnNav").showPlaceholder(mSettings);
+			case "midColumnPages":
+				return this.getAggregation("_midColumnNav").showPlaceholder(mSettings);
+			default:
+				return this.getAggregation("_endColumnNav").showPlaceholder(mSettings);
+		}
+	};
+
+	/**
+	 * Hides the placeholder on the corresponding column for the provided aggregation name.
+	 *
+	 * @param {object} mSettings Object containing the aggregation name
+	 * @param {string} mSettings.aggregation The aggregation name to decide on which column/container the placeholder should be hidden
+	 * @private
+	 * @ui5-restricted SAP internal apps
+	 * @since 1.91
+	 */
+	FlexibleColumnLayout.prototype.hidePlaceholder = function(mSettings) {
+		switch (mSettings.aggregation) {
+			case "beginColumnPages":
+				this.getAggregation("_beginColumnNav").hidePlaceholder(mSettings);
+				break;
+			case "midColumnPages":
+				this.getAggregation("_midColumnNav").hidePlaceholder(mSettings);
+				break;
+			default:
+				this.getAggregation("_endColumnNav").hidePlaceholder(mSettings);
+		}
+	};
+
+	/**
+	 * Checks whether a placeholder is needed by comparing the currently displayed page with
+	 * the page object that is going to be displayed. If they are the same, no placeholder needs
+	 * to be shown.
+	 *
+	 * @param {string} sAggregationName The aggregation name for the corresponding column
+	 * @param {sap.ui.core.Control} oObject The page object to be displayed
+	 * @returns {boolean} Whether placeholder is needed or not
+	 * @private
+	 * @ui5-restricted sap.ui.core.routing
+	 */
+	FlexibleColumnLayout.prototype.needPlaceholder = function(sAggregationName, oObject) {
+		var oContainer;
+
+		switch (sAggregationName) {
+			case "beginColumnPages":
+				oContainer = this.getAggregation("_beginColumnNav");
+				break;
+			case "midColumnPages":
+				oContainer = this.getAggregation("_midColumnNav");
+				break;
+			default:
+				oContainer = this.getAggregation("_endColumnNav");
+		}
+
+		return !oObject || (oContainer.getCurrentPage() !== oObject);
+	};
+
+	/**
+	 * Layout history helper class.
 	 * @constructor
+	 * @alias sap.f.FlexibleColumnLayout.LayoutHistory
+	 * @private
+	 * @ui5-restricted sap.f.FlexibleColumnLayoutSemanticHelper
 	 */
 	function LayoutHistory () {
 		this._aLayoutHistory = [];

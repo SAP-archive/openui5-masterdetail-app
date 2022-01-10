@@ -4,11 +4,16 @@
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 sap.ui.define([
+	'sap/ui/core/library',
 	"sap/ui/core/Core"
 ], function(
+	coreLibrary,
 	Core
 ) {
 	"use strict";
+
+	// shortcut for sap.ui.core.aria.HasPopup
+	var AriaHasPopup = coreLibrary.aria.HasPopup;
 
 	/**
 	 * This class is used to maintain all the accessibility roles, tooltips, etc., needed for the ShellBar control life cycle.
@@ -25,6 +30,12 @@ sap.ui.define([
 		this.oRb = Core.getLibraryResourceBundle("sap.f");
 	};
 
+	Accessibility.AriaHasPopup = {
+		MENU: AriaHasPopup.Menu,
+		PRODUCTS: AriaHasPopup.Menu,
+		PROFILE: AriaHasPopup.Menu,
+		NOTIFICATIONS: AriaHasPopup.Dialog
+	};
 	Accessibility.prototype._controlDelegate = {
 		onBeforeRendering: function () {
 			this.attachDelegates();
@@ -39,9 +50,6 @@ sap.ui.define([
 		};
 		this._oDelegateSearch = {
 			onAfterRendering: this.onAfterRenderingSearch
-		};
-		this._oDelegateNotifications = {
-			onAfterRendering: this.onAfterRenderingNotifications
 		};
 		this._oDelegateAvatar = {
 			onAfterRendering: this.onAfterRenderingAvatar
@@ -62,9 +70,6 @@ sap.ui.define([
 		}
 		if (this._oControl._oSearch) {
 			this._oControl._oSearch.addDelegate(this._oDelegateSearch, false, this);
-		}
-		if (this._oControl._oNotifications) {
-			this._oControl._oNotifications.addDelegate(this._oDelegateNotifications, false, this);
 		}
 		if (oAvatar) {
 			oAvatar.addDelegate(this._oDelegateAvatar, false, this);
@@ -103,7 +108,6 @@ sap.ui.define([
 			sAriaLabel = sNotificationsNumber ? sNotificationsNumber + " " + sTooltip : sTooltip;
 
 		this._oControl._oNotifications.setTooltip(sAriaLabel);
-		this._oControl._oNotifications.$().attr("aria-label", sAriaLabel);
 	};
 
 	Accessibility.prototype.onAfterRenderingSecondTitle = function () {
@@ -117,16 +121,6 @@ sap.ui.define([
 		this._oControl._oSearch.$().attr("aria-label", this.getEntityTooltip("SEARCH"));
 	};
 
-	Accessibility.prototype.onAfterRenderingNotifications = function () {
-		var $oNotifications = this._oControl._oNotifications.$(),
-			sTooltip = this.getEntityTooltip("NOTIFICATIONS"),
-			sNotificationsNubmer = this._oControl._oNotifications.data("notifications"),
-			sAriaLabel = sNotificationsNubmer ? sNotificationsNubmer + " " + sTooltip : sTooltip;
-
-		$oNotifications.attr("aria-label", sAriaLabel);
-		$oNotifications.attr("aria-haspopup", "dialog");
-	};
-
 	Accessibility.prototype.onAfterRenderingAvatar = function () {
 		var $oAvatar = this._oControl.getProfile().$();
 
@@ -138,7 +132,6 @@ sap.ui.define([
 		var $oProducts = this._oControl._oProductSwitcher.$();
 
 		$oProducts.attr("aria-label", this.getEntityTooltip("PRODUCTS"));
-		$oProducts.attr("aria-haspopup", "menu");
 	};
 
 	Accessibility.prototype.onAfterRenderingNavButton = function () {
@@ -149,7 +142,6 @@ sap.ui.define([
 		var $oMenuButton = this._oControl._oMenuButton.$();
 
 		$oMenuButton.attr("aria-label", this.getEntityTooltip("MENU"));
-		$oMenuButton.attr("aria-haspopup", "menu");
 	};
 
 	Accessibility.prototype.exit = function () {
@@ -163,9 +155,6 @@ sap.ui.define([
 		}
 		if (this._oControl._oSearch) {
 			this._oControl._oSearch.removeDelegate(this._oDelegateSearch);
-		}
-		if (this._oControl._oNotifications) {
-			this._oControl._oNotifications.removeDelegate(this._oDelegateNotifications);
 		}
 		if (oAvatar) {
 			oAvatar.removeDelegate(this._oDelegateAvatar);

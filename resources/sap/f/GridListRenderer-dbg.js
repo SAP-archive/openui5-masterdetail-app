@@ -18,6 +18,14 @@ sap.ui.define([
 	GridListRenderer.apiVersion = 2;
 
 	/**
+	 * Adds aria role to the "No Data" list item.
+	 * @override
+	 */
+	GridListRenderer.getNoDataAriaRole = function() {
+		return "option";
+	};
+
+	/**
 	 * This hook method is called to render container attributes.
 	 * @override
 	 */
@@ -44,7 +52,7 @@ sap.ui.define([
 	GridListRenderer.renderGridAttributes = function (oRM, oControl) {
 		var oGridLayout = oControl.getGridLayoutConfiguration();
 		if (oGridLayout) {
-			oGridLayout.renderSingleGridLayout(oRM);
+			oGridLayout.addGridStyles(oRM);
 		} else {
 			oRM.class("sapFGridListDefault");
 		}

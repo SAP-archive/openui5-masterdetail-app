@@ -11,14 +11,15 @@
  */
 sap.ui.define([
 	'sap/ui/base/ManagedObject',
-	'./Core',
 	'sap/ui/thirdparty/URI',
 	'sap/base/Log',
 	'sap/base/util/extend',
 	'sap/base/strings/escapeRegExp',
-	'sap/ui/thirdparty/jquery'
+	'sap/ui/thirdparty/jquery',
+	'sap/ui/core/_IconRegistry',
+	'./Core' // provides sap.ui.getCore()
 ],
-	function(ManagedObject, Core, URI, Log, extend, escapeRegExp, jQuery) {
+	function(ManagedObject, URI, Log, extend, escapeRegExp, jQuery, _IconRegistry/*, Core */) {
 	"use strict";
 
 	/*
@@ -328,6 +329,7 @@ sap.ui.define([
 			 * <li><code>HTMLScriptElement.prototype.src</code></li>
 			 * <li><code>HTMLLinkElement.prototype.href</code></li>
 			 * <li><code>sap.ui.base.ManagedObject.prototype.validateProperty</code></li>
+			 * <li><code>IconPool._convertUrl</code></li>
 			 * </ul>
 			 *
 			 * @private
@@ -387,6 +389,10 @@ sap.ui.define([
 					return fnValidateProperty.apply(this, oArgs || arguments);
 				};
 
+				_IconRegistry._convertUrl = function(sUrl) {
+					return fnConvertUrl(sUrl);
+				};
+
 				// create an interceptor description which validates the value
 				// of the setter whether to rewrite the URL or not
 				var fnCreateInterceptorDescriptor = function(descriptor) {
@@ -438,6 +444,9 @@ sap.ui.define([
 
 				// remove the function interceptions
 				ManagedObject.prototype.validateProperty = fnValidateProperty;
+
+				// remove the function from IconPool
+				delete _IconRegistry._convertUrl;
 
 				// only remove xhr interception if xhr#open was not modified meanwhile
 				if (XMLHttpRequest.prototype.open === fnEnhancedXhrOpen) {

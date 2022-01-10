@@ -32,11 +32,22 @@ sap.ui.define([], function() {
 						eventData: vData,
 						targetControl: oViewInfo.control,
 						view: oViewInfo.view,
-						layout: oRouteConfig.layout
+						layout: oRouteConfig.layout,
+						placeholderConfig: oViewInfo.placeholderConfig
 					});
 					return oViewInfo;
 				});
-			});
+			}, this._oOptions._name);
+
+		},
+		showPlaceholder : function(mSettings) {
+			return this._oTargetHandler.showPlaceholder(mSettings);
+		},
+		hidePlaceholder : function(mSettings) {
+		/**
+		 * Overriding the hidePlaceholder to empty function because the placeholder is removed
+		 * after all targets are displayed
+		 */
 		}
 	};
 }, /* bExport= */ true);

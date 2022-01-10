@@ -45,7 +45,7 @@ sap.ui.define([
 	 * <code>sap.m.Toolbar</code> with <code>sap.m.Buttons</code>.
 	 *
 	 * @extends sap.ui.unified.Calendar
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @private
@@ -64,6 +64,11 @@ sap.ui.define([
 	 * if 2 a year picker is shown.
 	 * If 3 a year range picker is shown.
 	 */
+
+	CalendarInCard.prototype.init = function() {
+		Calendar.prototype.init.apply(this, arguments);
+		this.setProperty("_currentPicker", "month");
+	};
 
 	CalendarInCard.prototype.onBeforeRendering = function() {
 		var aMonths = this.getAggregation("month"),
@@ -91,41 +96,9 @@ sap.ui.define([
 
 	CalendarInCard.prototype.onAfterRendering = function(oEvent) {};
 
-	CalendarInCard.prototype.onsaptabnext = function(oEvent) {
-		if (containsOrEquals(this.getDomRef("content"), oEvent.target)) {
-			if (this._oTodayBtn.getEnabled()) {
-				this._oTodayBtn.focus();
-			} else {
-				this._oPickerBtn.focus();
-			}
-			oEvent.preventDefault();
-		} else if (oEvent.target.id === this._oTodayBtn.getId()) {
-			if (this._oPickerBtn.getVisible()) {
-				this._oPickerBtn.focus();
-				oEvent.preventDefault();
-			} else {
-				this._clearTabindex0();
-			}
-		} else if (oEvent.target.id === this._oPickerBtn.getId()) {
-			this._clearTabindex0();
-		}
-	};
+	CalendarInCard.prototype.onsaptabnext = function(oEvent) {};
 
-	CalendarInCard.prototype.onsaptabprevious = function(oEvent) {
-		if (containsOrEquals(this.getDomRef("content"), oEvent.target)) {
-			this._clearTabindex0();
-		} else if (oEvent.target.id === this._oTodayBtn.getId()) {
-			this._moveFocusToCalContent();
-			oEvent.preventDefault();
-		} else if (oEvent.target.id === this._oPickerBtn.getId()) {
-			if (this._oTodayBtn.getEnabled()) {
-				this._oTodayBtn.focus();
-			} else {
-				this._moveFocusToCalContent();
-			}
-			oEvent.preventDefault();
-		}
-	};
+	CalendarInCard.prototype.onsaptabprevious = function(oEvent) {};
 
 	/**
 	 * Initializes the header part of the calendar.
@@ -229,6 +202,7 @@ sap.ui.define([
 			this._oPickerBtn.setText(this._formatPickerText());
 		}
 		this._updateTodayButtonState();
+		this.fireStartDateChange();
 		this.fireSelect();
 	};
 
@@ -295,14 +269,9 @@ sap.ui.define([
 		var oDate = this._getFocusedDate(),
 			oMonthPicker = this._getMonthPicker();
 
-		this._iMode === 2 && this._hideYearPicker(true);
-
-		oMonthPicker.setVisible(true);
-		this._renderPicker(oMonthPicker);
+		this.setProperty("_currentPicker", "monthPicker");
 
 		oMonthPicker._setYear(oDate.getYear());
-
-		this._showOverlay();
 
 		if (!bSkipFocus){
 			oMonthPicker.setMonth(oDate.getMonth());
@@ -324,26 +293,9 @@ sap.ui.define([
 	 */
 	CalendarInCard.prototype._showYearPicker = function () {
 		var oDate = this._getFocusedDate(),
-			oYearPicker = this._getYearPicker(),
-			oMonth, aDomRefs;
+			oYearPicker = this._getYearPicker();
 
-		this._iMode === 1 && this._hideMonthPicker(true);
-
-		oYearPicker.getDomRef() ? oYearPicker.$().css("display", "") : this._renderPicker(oYearPicker);
-
-		this._showOverlay();
-
-		// check special case if only 4 weeks are displayed (e.g. February 2021) -> top padding must be removed
-		// can only happen if only one month is displayed -> otherwise at least one month has more than 28 days.
-		if (_getMonths.call(this) == 1) {
-			oMonth = this.getAggregation("month")[0];
-			aDomRefs = oMonth.$("days").find(".sapUiCalItem");
-			if (aDomRefs.length == 28) {
-				oYearPicker.$().addClass("sapUiCalYearNoTop");
-			}else {
-				oYearPicker.$().removeClass("sapUiCalYearNoTop");
-			}
-		}
+		this.setProperty("_currentPicker", "yearPicker");
 
 		this._togglePrevNexYearPicker();
 		this._iMode = 2;
@@ -361,7 +313,6 @@ sap.ui.define([
 	 * @override
 	 */
 	CalendarInCard.prototype._showYearRangePicker = function () {
-		this._hideYearPicker();
 		Calendar.prototype._showYearRangePicker.apply(this, arguments);
 		this._oPickerBtn.setVisible(false);
 	};
@@ -373,7 +324,6 @@ sap.ui.define([
 	 */
 	CalendarInCard.prototype._selectMonth = function () {
 		Calendar.prototype._selectMonth.apply(this, arguments);
-		this.getSelectedDates()[0].setStartDate(this._getFocusedDate().toLocalJSDate());
 		this._oPickerBtn.setText(this._formatPickerText());
 		this._updateTodayButtonState();
 	};
@@ -385,7 +335,6 @@ sap.ui.define([
 	 */
 	CalendarInCard.prototype._selectYear = function () {
 		Calendar.prototype._selectYear.apply(this, arguments);
-		this.getSelectedDates()[0].setStartDate(this._getFocusedDate().toLocalJSDate());
 		this._oPickerBtn.setText(this._formatMonthPickerText());
 		this._showMonthPicker();
 		this._updateTodayButtonState();
@@ -405,21 +354,14 @@ sap.ui.define([
 
 		oStartDate.setMonth(oFocusedDate.getMonth(), oFocusedDate.getDate());
 		oStartDate.setYear(oStartDate.getYear() + Math.floor(iRangeSize / 2));
-		this.getSelectedDates()[0].setStartDate(oStartDate.toLocalJSDate());
 		oFocusedDate.setYear(oStartDate.getYear());
 		this._setFocusedDate(oFocusedDate);
 
-		this._hideYearRangePicker();
 		this._showYearPicker();
 
 		this._oPickerBtn.setVisible(true)
 			.setText(this._formatYearPickerText());
 		this._updateTodayButtonState();
-	};
-
-	CalendarInCard.prototype._hideYearRangePicker = function() {
-		Calendar.prototype._hideYearRangePicker.apply(this, arguments);
-		this._renderMonth(); // to focus date
 	};
 
 	/**
@@ -430,7 +372,7 @@ sap.ui.define([
 	 */
 	CalendarInCard.prototype._handlePrevious = function() {
 		Calendar.prototype._handlePrevious.apply(this, arguments);
-		this._handleArrowNavigation(1);
+		this._handleArrowNavigation(-1);
 	};
 
 	/**
@@ -441,7 +383,7 @@ sap.ui.define([
 	 */
 	CalendarInCard.prototype._handleNext = function() {
 		Calendar.prototype._handleNext.apply(this, arguments);
-		this._handleArrowNavigation(-1);
+		this._handleArrowNavigation(1);
 	};
 
 	/**
@@ -524,7 +466,7 @@ sap.ui.define([
 
 	CalendarInCard.prototype.onsapescape = function() {
 		this.fireCancel();
-		this._closedPickers();
+		this._closePickers();
 		this._oPickerBtn.setVisible(true);
 		this._oPickerBtn.setText(this._formatPickerText());
 	};
@@ -576,10 +518,6 @@ sap.ui.define([
 	 * @override
 	 */
 	CalendarInCard.prototype._setHeaderText = function() {};
-
-	function _getMonths (){
-		return 1;
-	}
 
 	return CalendarInCard;
 

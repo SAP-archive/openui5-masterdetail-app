@@ -22,7 +22,8 @@ sap.ui.define([], function () {
 		var oBindingInfos = oNSI.mBindingInfos;
 
 		oRm.openStart("div", oNSI)
-			.class("sapFCardHeaderSideIndicator");
+			.class("sapFCardHeaderSideIndicator")
+			.class("sapFCardHeaderSideIndicatorState" + oNSI.getState());
 
 		if (oBindingInfos.title || oBindingInfos.number || oBindingInfos.unit) {
 			oRm.class("sapFCardHeaderItemBinded");
@@ -39,7 +40,7 @@ sap.ui.define([], function () {
 		oRm.openStart("div")
 			.class("sapFCardHeaderSINumber");
 
-		if (oBindingInfos.title || oBindingInfos.number || oBindingInfos.unit) {
+		if (oBindingInfos.title || oBindingInfos.number || oBindingInfos.unit || oBindingInfos.state) {
 			oRm.class("sapFCardHeaderItemBinded");
 		}
 

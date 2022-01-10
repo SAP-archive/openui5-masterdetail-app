@@ -10,7 +10,7 @@ sap.ui.define(['sap/f/semantic/SemanticButton'], function(SemanticButton) {
 	/**
 	* Constructor for a new <code>SendEmailAction</code>.
 	* @param {string} [sId] ID for the new control, generated automatically if no ID is given
-	* @param {object} [mSettings] Custom initial settings for the new control
+	* @param {object} [mSettings] Optional initial settings for the new control:  a map/JSON-object with initial property values, event listeners etc. for the new object
 	*
 	* @class
 	* A semantic-specific button, eligible for the <code>sendEmailAction</code> aggregation of the
@@ -19,7 +19,7 @@ sap.ui.define(['sap/f/semantic/SemanticButton'], function(SemanticButton) {
 	* @extends sap.f.semantic.SemanticButton
 	*
 	* @author SAP SE
-	* @version 1.84.7
+	* @version 1.96.2
 	*
 	* @constructor
 	* @public

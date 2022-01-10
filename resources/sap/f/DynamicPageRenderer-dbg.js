@@ -31,6 +31,7 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 			bHeaderHasContent = aHeaderContent.length > 0,
 			bShowFooter = oDynamicPage.getShowFooter(),
 			bPreserveHeaderStateOnScroll = oDynamicPage._preserveHeaderStateOnScroll(),
+			bHeaderInTitleArea = bPreserveHeaderStateOnScroll || oDynamicPage._bHeaderInTitleArea,
 			oLandmarkInfo = oDynamicPage.getLandmarkInfo(),
 			sHeaderTag = oDynamicPage._getHeaderTag(oLandmarkInfo),
 			sFooterTag = oDynamicPage._getFooterTag(oLandmarkInfo);
@@ -69,7 +70,7 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 		// Sticky area
 		oRm.openStart("div", oDynamicPage.getId() + "-stickyPlaceholder");
 		oRm.openEnd();
-		if (bPreserveHeaderStateOnScroll) {
+		if (bHeaderInTitleArea) {
 			oRm.renderControl(oDynamicPageHeader);
 		}
 		oRm.close("div");
@@ -83,9 +84,17 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 			oRm.class("sapFDynamicPageContentWrapper" + oDynamicPage.getBackgroundDesign());
 		}
 		oRm.openEnd();
-		if (!bPreserveHeaderStateOnScroll) {
+
+
+		oRm.openStart("div", oDynamicPage.getId() + "-headerWrapper");
+		oRm.class("sapFDynamicPageHeaderWrapper");
+		oRm.openEnd();
+		if (!bHeaderInTitleArea) {
 			oRm.renderControl(oDynamicPageHeader);
 		}
+		oRm.close("div");
+
+
 		oRm.openStart("div", oDynamicPage.getId() + "-content");
 		oRm.class("sapFDynamicPageContent");
 		oRm.accessibilityState(oDynamicPage, oDynamicPage._formatLandmarkInfo(oLandmarkInfo, "Content"));
@@ -100,8 +109,6 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 		}
 		oRm.openEnd();
 		oRm.renderControl(oDynamicPageContent);
-		// Renders Dynamic Page Footer Spacer
-		DynamicPageRenderer.renderFooterSpacer(oRm, oDynamicPage, oDynamicPageFooter, bShowFooter);
 		oRm.close("div");
 		oRm.close("div");
 
@@ -116,7 +123,7 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 	DynamicPageRenderer.renderFooter = function (oRm, oDynamicPage, oDynamicPageFooter, bShowFooter, sFooterTag, oLandmarkInfo) {
 		if (oDynamicPageFooter) {
 			oRm.openStart(sFooterTag, oDynamicPage.getId() + "-footerWrapper");
-			oRm.class("sapContrast").class("sapContrastPlus").class("sapFDynamicPageFooter").class("sapFFooter-CTX");
+			oRm.class("sapContrast").class("sapContrastPlus").class("sapFDynamicPageFooter").class("sapMFooter-CTX");
 			if (!bShowFooter) {
 				oRm.class("sapUiHidden");
 			}
@@ -125,17 +132,6 @@ sap.ui.define(["sap/ui/Device"], function (Device) {
 			oDynamicPageFooter.addStyleClass("sapFDynamicPageActualFooterControl");
 			oRm.renderControl(oDynamicPageFooter);
 			oRm.close(sFooterTag);
-		}
-	};
-
-	DynamicPageRenderer.renderFooterSpacer = function (oRm, oDynamicPage, oDynamicPageFooter, bShowFooter) {
-		if (oDynamicPageFooter) {
-			oRm.openStart("div", oDynamicPage.getId() + "-spacer");
-			if (bShowFooter) {
-				oRm.class("sapFDynamicPageContentWrapperSpacer");
-			}
-			oRm.openEnd();
-			oRm.close("div");
 		}
 	};
 

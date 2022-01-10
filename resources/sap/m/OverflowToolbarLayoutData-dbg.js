@@ -22,7 +22,7 @@ sap.ui.define(['sap/m/ToolbarLayoutData', 'sap/m/library', "sap/base/Log"],
 	 * Holds layout data for the {@link sap.m.OverflowToolbar} items.
 	 * @extends sap.m.ToolbarLayoutData
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 *
 	 * @constructor
 	 * @public
@@ -49,7 +49,7 @@ sap.ui.define(['sap/m/ToolbarLayoutData', 'sap/m/library', "sap/base/Log"],
 			stayInOverflow : {type: "boolean", defaultValue: false, deprecated: true},
 
 			/**
-			 * Defines OverflowToolbar items priority, Available priorities ate NeverOverflow, High, Low, Disappear and AlwaysOverflow
+			 * Defines OverflowToolbar items priority. Available priorities are NeverOverflow, High, Low, Disappear and AlwaysOverflow.
 			 *
 			 * @public
 			 * @since 1.32
@@ -93,6 +93,26 @@ sap.ui.define(['sap/m/ToolbarLayoutData', 'sap/m/library', "sap/base/Log"],
 		return ToolbarLayoutData.prototype.invalidate.call(this);
 	};
 
-	return OverflowToolbarLayoutData;
+	/**
+	 * @override
+	 */
+	OverflowToolbarLayoutData.prototype.setPriority = function (sPriority) {
+		var vResult;
 
+		if (this.getPriority() === sPriority) {
+			return this;
+		}
+
+		if (this.isInvalidateSuppressed()) {
+			// Guarantee that OverflowLayoutData will always be invalidated and will fire event to its parent control
+			vResult = this.setProperty("priority", sPriority, true);
+			this.invalidate();
+		} else {
+			vResult = this.setProperty("priority", sPriority);
+		}
+
+		return vResult;
+	};
+
+	return OverflowToolbarLayoutData;
 });

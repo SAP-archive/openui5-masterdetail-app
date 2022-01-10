@@ -16,7 +16,6 @@ sap.ui.define([
 	"./Accessibility",
 	"sap/m/library",
 	"sap/ui/core/library",
-	"sap/ui/core/theming/Parameters",
 	"sap/m/HBox"
 ], function(
 	Title,
@@ -31,7 +30,6 @@ sap.ui.define([
 	Accessibility,
 	library,
 	coreLibrary,
-	Parameters,
 	HBox
 ) {
 	"use strict";
@@ -62,6 +60,7 @@ sap.ui.define([
 	};
 
 	Factory.prototype.getOverflowToolbar = function () {
+		var oAcc = this._oAcc;
 		if (!this._oControls.oOverflowToolbar) {
 			this._oControls.oOverflowToolbar = new OverflowToolbar({
 				design: ToolbarDesign.Transparent,
@@ -78,6 +77,10 @@ sap.ui.define([
 			._setEnableAccessibilty(false);
 			this._oControls.oOverflowToolbar._getOverflowButton().addStyleClass("sapFShellBarItem sapFShellBarOverflowButton");
 		}
+
+		this._oControls.oOverflowToolbar._getOverflowButton()._updateBadgeInvisibleText = function(vValue) {
+			this._getBadgeInvisibleText().setText(vValue + oAcc.getEntityTooltip("NOTIFICATIONS"));
+		};
 		return this._oControls.oOverflowToolbar;
 	};
 
@@ -110,7 +113,6 @@ sap.ui.define([
 						minWidth: "1px"
 				}));
 		}
-		this._oControls.oSecondTitle._sFontSize = Parameters.get("_sap_f_ShellBar_SecondTitle_FontSize");
 		return this._oControls.oSecondTitle;
 	};
 
@@ -140,7 +142,6 @@ sap.ui.define([
 				})
 			}).addStyleClass("sapFSHMegaMenu");
 		}
-		this._oControls.oMegaMenu._sFontSize = Parameters.get("_sap_f_ShellBar_PrimaryTitle_FontSize");
 
 		return this._oControls.oMegaMenu;
 	};
@@ -159,7 +160,6 @@ sap.ui.define([
 					})
 				).addStyleClass("sapFShellBarPrimaryTitle");
 		}
-		this._oControls.oPrimaryTitle._sFontSize = Parameters.get("_sap_f_ShellBar_PrimaryTitle_FontSize");
 		return this._oControls.oPrimaryTitle;
 	};
 
@@ -217,6 +217,7 @@ sap.ui.define([
 	Factory.prototype.getMenuButton = function () {
 		if (!this._oControls.oMenuButton) {
 			this._oControls.oMenuButton = new OverflowToolbarButton({
+				ariaHasPopup: Accessibility.AriaHasPopup.MENU,
 				icon: "sap-icon://menu2",
 				type: ButtonType.Transparent,
 				tooltip: this._oAcc.getEntityTooltip("MENU"),
@@ -229,12 +230,14 @@ sap.ui.define([
 	};
 
 	Factory.prototype.getNotifications = function () {
+		var oAcc = this._oAcc;
 		if (!this._oControls.oNotifications) {
 			this._oControls.oNotifications = new OverflowToolbarButton({
+				ariaHasPopup: Accessibility.AriaHasPopup.NOTIFICATIONS,
 				text: "Notifications",
 				icon: "sap-icon://bell",
 				type: ButtonType.Transparent,
-				tooltip: this._oAcc.getEntityTooltip("NOTIFICATIONS"),
+				tooltip: oAcc.getEntityTooltip("NOTIFICATIONS"),
 				press: function () {
 					this._oContext.fireEvent("notificationsPressed", {button: this._oControls.oNotifications});
 				}.bind(this)
@@ -243,6 +246,11 @@ sap.ui.define([
 			.setLayoutData(new OverflowToolbarLayoutData({
 				priority: OverflowToolbarPriority.Low
 			}));
+
+			this._oControls.oNotifications._updateBadgeInvisibleText = function(vValue) {
+				this._getBadgeInvisibleText().setText(vValue + oAcc.getEntityTooltip("NOTIFICATIONS"));
+			};
+
 		}
 		return this._oControls.oNotifications;
 	};
@@ -250,6 +258,7 @@ sap.ui.define([
 	Factory.prototype.getProductSwitcher = function () {
 		if (!this._oControls.oProductSwitcher) {
 			this._oControls.oProductSwitcher = new OverflowToolbarButton({
+				ariaHasPopup: Accessibility.AriaHasPopup.PRODUCTS,
 				text: "My products",
 				icon: "sap-icon://grid",
 				type: ButtonType.Transparent,

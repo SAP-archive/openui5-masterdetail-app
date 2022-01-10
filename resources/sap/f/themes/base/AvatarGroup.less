@@ -38,7 +38,7 @@
 }
 
 .sapFAvatarGroup:focus {
-	outline: 0.0625rem dotted @sapUiContentFocusColor;
+	outline: @sapContent_FocusWidth @sapContent_FocusStyle @sapUiContentFocusColor;
 }
 
 .sapFAvatarGroupGroup {
@@ -70,7 +70,7 @@
 	}
 
 	.sapFAvatarGroupItem:focus {
-		outline: 0.0625rem dotted @sapUiContentFocusColor;
+		outline: @sapContent_FocusWidth @sapContent_FocusStyle @sapUiContentFocusColor;
 	}
 
 	.sapFAvatarGroupItemXS {
@@ -151,12 +151,20 @@
 	padding: 0;
  }
 
+ .sapFAvatarGroupMoreButton.sapMBtn:focus .sapMBtnFocusDiv {
+	border: none;
+}
+
+.sapFAvatarGroupMoreButton.sapMBtn:focus > .sapMBtnInner.sapMFocusable.sapMIE {
+	outline: @sapContent_FocusWidth @sapContent_FocusStyle @sapUiContentFocusColor;
+}
+
  .sapFAvatarGroupMoreButton.sapMBtn:focus > .sapMFocusable.sapMBtnInner {
 	outline-offset: 0;
 }
 
  .sapFAvatarGroupMoreButton .sapMBtnInner {
-	border-radius: 50%;
+	border-radius: 3.5rem;
  }
 
  .sapMBtn.sapFAvatarGroupMoreButton.sapFAvatarGroupMoreButtonXS {

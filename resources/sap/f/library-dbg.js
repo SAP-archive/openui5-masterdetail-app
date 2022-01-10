@@ -29,7 +29,7 @@ sap.ui.define(["sap/ui/base/DataType",
 	// delegate further initialization of this library to the Core
 	sap.ui.getCore().initLibrary({
 		name : "sap.f",
-		version: "1.84.7",
+		version: "1.96.2",
 		dependencies : ["sap.ui.core", "sap.m", "sap.ui.layout"],
 		designtime: "sap/f/designtime/library.designtime",
 		interfaces: [
@@ -47,8 +47,11 @@ sap.ui.define(["sap/ui/base/DataType",
 			"sap.f.AvatarColor",
 			"sap.f.AvatarGroupType",
 			"sap.f.cards.HeaderPosition",
+			"sap.f.cards.NumericHeaderSideIndicatorsAlignment",
 			"sap.f.DynamicPageTitleArea",
 			"sap.f.DynamicPageTitleShrinkRatio",
+			"sap.f.IllustratedMessageSize",
+			"sap.f.IllustratedMessageType",
 			"sap.f.LayoutType"
 		],
 		controls: [
@@ -64,6 +67,7 @@ sap.ui.define(["sap/ui/base/DataType",
 			"sap.f.DynamicPage",
 			"sap.f.DynamicPageHeader",
 			"sap.f.DynamicPageTitle",
+			"sap.f.IllustratedMessage",
 			"sap.f.FlexibleColumnLayout",
 			"sap.f.semantic.SemanticPage",
 			"sap.f.GridList",
@@ -71,11 +75,13 @@ sap.ui.define(["sap/ui/base/DataType",
 			"sap.f.PlanningCalendarInCardLegend",
 			"sap.f.ProductSwitch",
 			"sap.f.ProductSwitchItem",
-			"sap.f.ShellBar"
+			"sap.f.ShellBar",
+			"sap.f.Illustration"
 		],
 		elements: [
 			"sap.f.DynamicPageAccessibleLandmarkInfo",
 			"sap.f.GridContainerItemLayoutData",
+			"sap.f.FlexibleColumnLayoutAccessibleLandmarkInfo",
 			"sap.f.semantic.AddAction",
 			"sap.f.semantic.CloseAction",
 			"sap.f.semantic.CopyAction",
@@ -128,7 +134,8 @@ sap.ui.define(["sap/ui/base/DataType",
 	 * @namespace
 	 * @alias sap.f
 	 * @author SAP SE
-	 * @version 1.84.7
+	 * @version 1.96.2
+	 * @since 1.44
 	 * @public
 	 */
 	var thisLib = sap.f;
@@ -324,7 +331,9 @@ sap.ui.define(["sap/ui/base/DataType",
 	/**
 	 * Types of shape for the {@link sap.f.Avatar} control.
 	 *
-	 * @enum {string}
+	 * This is an alias for {@link sap.m.AvatarShape} and only kept for compatibility reasons.
+	 *
+	 * @typedef {sap.m.AvatarShape}
 	 * @public
 	 * @since 1.46
 	 * @deprecated as of version 1.73. Use the {@link sap.m.AvatarShape} instead.
@@ -335,7 +344,9 @@ sap.ui.define(["sap/ui/base/DataType",
 	/**
 	 * Predefined sizes for the {@link sap.f.Avatar} control.
 	 *
-	 * @enum {string}
+	 * This is an alias for {@link sap.m.AvatarSize} and only kept for compatibility reasons.
+	 *
+	 * @typedef {sap.m.AvatarSize}
 	 * @public
 	 * @deprecated as of version 1.73. Use the {@link sap.m.AvatarSize} instead.
 	 * @since 1.46
@@ -370,7 +381,9 @@ sap.ui.define(["sap/ui/base/DataType",
 	/**
 	 * Types of {@link sap.f.Avatar} based on the displayed content.
 	 *
-	 * @enum {string}
+	 * This is an alias for {@link sap.m.AvatarType} and only kept for compatibility reasons.
+	 *
+	 * @typedef {sap.m.AvatarType}
 	 * @public
 	 * @deprecated as of version 1.73. Use the {@link sap.m.AvatarType} instead.
 	 * @since 1.46
@@ -389,7 +402,9 @@ sap.ui.define(["sap/ui/base/DataType",
 	 * chosen from the accent options (Accent1 to Accent10).</li>
 	 * </ul>
 	 *
-	 * @enum {string}
+	 * This is an alias for {@link sap.m.AvatarColor} and only kept for compatibility reasons.
+	 *
+	 * @typedef {sap.m.AvatarColor}
 	 * @public
 	 * @deprecated as of version 1.73. Use the {@link sap.m.AvatarColor} instead.
 	 * @since 1.69
@@ -400,7 +415,9 @@ sap.ui.define(["sap/ui/base/DataType",
 	/**
 	 * Types of image size and position that determine how an image fits in the {@link sap.f.Avatar} control area.
 	 *
-	 * @enum {string}
+	 * This is an alias for {@link sap.m.AvatarImageFitType} and only kept for compatibility reasons.
+	 *
+	 * @typedef {sap.m.AvatarImageFitType}
 	 * @public
 	 * @deprecated as of version 1.73. Use the {@link sap.m.AvatarImageFitType} instead.
 	 * @since 1.46
@@ -526,6 +543,191 @@ sap.ui.define(["sap/ui/base/DataType",
 		 * @public
 		 */
 		Bottom: "Bottom"
+	};
+
+	/**
+	 * Different options for the alignment of the side indicators in the numeric header.
+	 *
+	 * @enum {string}
+	 * @public
+	 * @since 1.96
+	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.cards.NumericHeaderSideIndicatorsAlignment = {
+		/**
+		 * Sets the alignment to the beginning (left or right depending on LTR/RTL).
+		 *
+		 * @public
+		 */
+		Begin: "Begin",
+		/**
+		 * Explicitly sets the alignment to the end (left or right depending on LTR/RTL).
+		 *
+		 * @public
+		 */
+		End: "End"
+	};
+
+	/**
+	 * Enumeration for different navigation directions.
+	 *
+	 * @enum {string}
+	 * @public
+	 * @since 1.85
+	 * @ui5-metamodel This interface also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.NavigationDirection = {
+		/**
+		 * The direction is up.
+		 *
+		 * @public
+		 */
+		Up: "Up",
+		/**
+		 * The direction is down.
+		 *
+		 * @public
+		 */
+		Down: "Down",
+		/**
+		 * The direction is left.
+		 *
+		 * @public
+		 */
+		Left: "Left",
+		/**
+		 * The direction is right.
+		 *
+		 * @public
+		 */
+		Right: "Right"
+	};
+
+	/** Available <code>Illustration</code> types for the {@link sap.f.IllustratedMessage} control.
+	 *
+	 * @enum {string}
+	 * @experimental Since 1.88 This enum is experimental. Its properties may change.
+	 * @public
+	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.IllustratedMessageType = {
+
+		/**
+		 * "Before Search" illustration type.
+		 * @public
+		 */
+		BeforeSearch: "sapIllus-BeforeSearch",
+
+		/**
+		 * "No Activities" illustration type.
+		 * @public
+		 */
+		NoActivities: "sapIllus-NoActivities",
+
+		/**
+		 * "No Data" illustration type.
+		 * @public
+		 */
+		NoData: "sapIllus-NoData",
+
+		/**
+		 * "No Email" illustration type.
+		 * @public
+		 */
+		NoMail: "sapIllus-NoMail",
+
+		/**
+		 * "No Entries" illustration type.
+		 * @public
+		 */
+		NoEntries: "sapIllus-NoEntries",
+
+		/**
+		 * "No Notifications" illustration type.
+		 * @public
+		 */
+		NoNotifications: "sapIllus-NoNotifications",
+
+		/**
+		 * "No Saved Items" illustration type.
+		 * @public
+		 */
+		NoSavedItems: "sapIllus-NoSavedItems",
+
+		/**
+		 * "No Search Results" illustration type.
+		 * @public
+		 */
+		NoSearchResults: "sapIllus-NoSearchResults",
+
+		/**
+		 * "No Tasks" illustration type.
+		 * @public
+		 */
+		NoTasks: "sapIllus-NoTasks",
+
+		/**
+		 * "Unable To Load" illustration type.
+		 * @public
+		 */
+		UnableToLoad: "sapIllus-UnableToLoad",
+
+		/**
+		 * "Unable To Upload" illustration type.
+		 * @public
+		 */
+		UnableToUpload: "sapIllus-UnableToUpload"
+	};
+
+	/**
+	 * Available <code>Illustration</code> sizes for the {@link sap.f.IllustratedMessage} control.
+	 *
+	 * @enum {string}
+	 * @experimental Since 1.88 This enum is experimental. Its properties may change.
+	 * @public
+	 * @ui5-metamodel This enumeration also will be described in the UI5 (legacy) designtime metamodel
+	 */
+	thisLib.IllustratedMessageSize = {
+
+		/**
+		 * Automatically decides the <code>Illustration</code> size (<code>Base</code>, <code>Spot</code>,
+		 * <code>Dialog</code>, or <code>Scene</code>) depending on the <code>IllustratedMessage</code> container width.
+		 *
+		 * <b>Note:</b> <code>Auto</code> is the only option where the illustration size is changed according to
+		 * the available container width. If any other <code>IllustratedMessageSize</code> is chosen, it remains
+		 * until changed by the app developer.
+		 *
+		 * @public
+		 */
+		Auto : "Auto",
+
+		/**
+		 * Base <code>Illustration</code> size (XS breakpoint). Suitable for cards (two columns).
+		 *
+		 * <b>Note:</b> When <code>Base</code> is in use, no illustration is displayed.
+		 *
+		 * @public
+		 */
+		Base : "Base",
+
+		/**
+		 * Spot <code>Illustration</code> size (S breakpoint). Suitable for cards (four columns).
+		 * @public
+		 */
+		Spot : "Spot",
+
+		/**
+		 * Dialog <code>Illustration</code> size (M breakpoint). Suitable for dialogs.
+		 * @public
+		 */
+		Dialog : "Dialog",
+
+		/**
+		 * Scene <code>Illustration</code> size (L breakpoint). Suitable for a <code>Page</code> or a table.
+		 * @public
+		 */
+		Scene : "Scene"
+
 	};
 
 	return thisLib;

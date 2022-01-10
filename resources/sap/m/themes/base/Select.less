@@ -21,7 +21,7 @@
 				text-overflow: ellipsis;
 				white-space: nowrap;
 				display: block;
-				box-sizing: border-box
+				box-sizing: border-box;
 			}
 
 			.sapMSelectListLastCell {
@@ -33,6 +33,9 @@
 			.sapMSelectListLastCell {
 				padding-top: 0.75rem;
 				padding-bottom: 0.75rem;
+				&:empty {
+					height: 2.5rem;
+				}
 			}
 		}
 
@@ -53,6 +56,9 @@
 				padding-bottom: 0.75rem;
 				line-height: 1rem;
 				height: auto;
+				&:empty {
+					height: 2.5rem;
+				}
 			}
 
 			.sapMSelectListRow {
@@ -111,18 +117,17 @@
 		.sapMSelectListLastCell {
 			padding-top: 0.5rem;
 			padding-bottom: 0.5rem;
+			&:empty {
+				height: 2rem;
+			}
 		}
 	}
 	&.sapMSelectListWrappedItems .sapMSelectListItem {
 		padding-top: 0.5rem;
 		padding-bottom: 0.5rem;
-	}
-}
-
-html[data-sap-ui-browser^="ie"].sap-desktop,
-html[data-sap-ui-browser^="ed"].sap-desktop {
-	.sapMSltPicker-CTX .sapMSelectList.sapMSelectListWrappedItems .sapMSelectListItemBaseSelected .sapMSelectListCell::before {
-		height: auto;
+		&:empty {
+			height: 2rem;
+		}
 	}
 }
 
@@ -239,7 +244,6 @@ html[data-sap-ui-browser^="ed"].sap-desktop {
 	text-align: start;
 	-webkit-user-select: none;
 	-moz-user-select: none;
-	-ms-user-select: none;
 	line-height: 2.375rem;
 	color: @sapUiFieldTextColor;
 	font-style: normal;
@@ -262,9 +266,6 @@ html[data-sap-ui-browser^="ed"].sap-desktop {
 	line-height: 2.375rem;
 	padding: 0 0.4375rem;
 	color: @sapUiContentIconColor;
-
-	/* prevent IE to focus the icon (non-focusable element) */
-	pointer-events: none;
 }
 
 .sapMSltAutoAdjustedWidth .sapMSltIcon {
@@ -280,16 +281,6 @@ html[data-sap-ui-browser^="ed"].sap-desktop {
 /* ------------------------------ */
 /* arrow                          */
 /* ------------------------------ */
-
-html[data-sap-ui-browser^="ie"] .sapMSltWithArrow .sapMSltLabel {
-	pointer-events: none;
-}
-
-/* TODO remove after the end of support for Internet Explorer */
-html[data-sap-ui-browser^="ie"] .sapMSltWithArrow .sapMSltArrow,
-html[data-sap-ui-browser^="ed"] .sapMSltWithArrow .sapMSltArrow {
-	pointer-events: auto;
-}
 
 .sapMSltArrow {
 	position: absolute;

@@ -49,7 +49,7 @@ sap.ui.define([
 	 *
 	 * For more information, see {@link sap.f.FlexibleColumnLayoutSemanticHelper#getCurrentUIState} and {@link sap.f.FlexibleColumnLayoutSemanticHelper#getNextUIState}
 	 *
-	 * @version 1.84.7
+	 * @version 1.96.2
 	 * @param {sap.f.FlexibleColumnLayout} oFlexibleColumnLayout
 	 * The <code>sap.f.FlexibleColumnLayout</code> object whose state will be manipulated.
 	 *
@@ -138,7 +138,7 @@ sap.ui.define([
 	/**
 	 * Instances of the class per flexible column layout object.
 	 *
-	 * @type {{}}
+	 * @type {Object<string,sap.m.FlexibleColumnLayoutSemanticHelper>}
 	 * @private
 	 */
 	FlexibleColumnLayoutSemanticHelper._oInstances = {};
@@ -189,7 +189,7 @@ sap.ui.define([
 	 * 	<li>actionButtonsInfo - an object with fields <code>midColumn, endColumn</code>, each containing an object, telling whether action buttons should be shown in the <code>mid</code> and <code>end</code> columns, and what value of the <code>layout</code> property should be set upon clicking these buttons.
 	 * 	Each of these objects has the following fields: <code>closeColumn, fullScreen, exitFullScreen</code>. If <code>null</code>, then the respective action button should not be shown, otherwise provides the value of <code>layout</code> property for the action button.</li></ul>
 	 *
-	 * <b>Note:</b> This method relies on the internal <code>FlexibleColumnLayout</code> reference to be rendered in the DOM tree. For convenience, use methods {@link sap.f.FlexibleColumnLayout#isDOMReady} and {@link sap.f.FlexibleColumnLayout#whenDOMReady}.
+	 * <b>Note:</b> This method relies on the internal <code>FlexibleColumnLayout</code> reference to be rendered in the DOM tree. For convenience, use methods {@link sap.f.FlexibleColumnLayoutSemanticHelper#isDOMReady} and {@link sap.f.FlexibleColumnLayoutSemanticHelper#whenDOMReady}.
 	 *
 	 * 	Example value:
 	 *
@@ -226,7 +226,7 @@ sap.ui.define([
 	 *  </code>
 	 *  </pre>
 	 * @public
-	 * @returns {Object} The object describing the current UI state
+	 * @returns {object} The object describing the current UI state
 	 */
 	FlexibleColumnLayoutSemanticHelper.prototype.getCurrentUIState = function () {
 		var sCurrentLayout = this._oFCL.getLayout();
@@ -242,7 +242,7 @@ sap.ui.define([
 	 * 2 - master-detail-detail, 3 and above - subsequent views
 	 *
 	 * @public
-	 * @returns {Object} The object describing the next UI state
+	 * @returns {object} The object describing the next UI state
 	 */
 	FlexibleColumnLayoutSemanticHelper.prototype.getNextUIState = function (iNextLevel) {
 
@@ -451,7 +451,7 @@ sap.ui.define([
 	 * <li>defaultThreeColumnLayoutType - the layout that will be suggested by default when 3 columns have to be shown side by side</li></ul>
 	 *
 	 * @public
-	 * @returns {Object} The object describing the default layout types for the different numbers of columns
+	 * @returns {object} The object describing the default layout types for the different numbers of columns
 	 */
 	FlexibleColumnLayoutSemanticHelper.prototype.getDefaultLayouts = function () {
 		return {
@@ -477,7 +477,7 @@ sap.ui.define([
 	};
 
 	/**
-	 * Abstract wrapper for {@link sap.f.FlexibleColumnLayout#isDOMReady}.
+	 * Abstract wrapper for {@link sap.f.FlexibleColumnLayoutSemanticHelper#isDOMReady}.
 	 * Returns <code>true</code> if criteria are met for the APIs in this helper to be used.
 	 *
 	 * @returns {boolean} true if this helper's API reliability criteria are met

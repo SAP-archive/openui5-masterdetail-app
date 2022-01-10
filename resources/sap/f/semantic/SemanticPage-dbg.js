@@ -5,7 +5,6 @@
  */
 sap.ui.define([
     "sap/ui/core/Control",
-    "sap/ui/base/ManagedObject",
     "sap/f/library",
     "sap/f/DynamicPage",
     "sap/f/DynamicPageTitle",
@@ -19,7 +18,6 @@ sap.ui.define([
     "./SemanticPageRenderer"
 ], function(
     Control,
-	ManagedObject,
 	library,
 	DynamicPage,
 	DynamicPageTitle,
@@ -97,7 +95,7 @@ sap.ui.define([
 	* @extends sap.ui.core.Control
 	*
 	* @author SAP SE
-	* @version 1.84.7
+	* @version 1.96.2
 	*
 	* @constructor
 	* @public
@@ -174,7 +172,7 @@ sap.ui.define([
 				* <code>titlePrimaryArea=Middle</code> can be achieved by setting a low number for the Content area to
 				* <code>titleAreaShrinkRatio</code>, for example <code>1.6:1:1.6</code>.
 				*/
-				titlePrimaryArea : {type: "sap.f.DynamicPageTitleArea", group: "Appearance", defaultValue: DynamicPageTitleArea.Begin},
+				titlePrimaryArea : {type: "sap.f.DynamicPageTitleArea", group: "Appearance", defaultValue: DynamicPageTitleArea.Begin, deprecated: true},
 
 				/**
 				* Assigns shrinking ratio to the <code>SemanticPage</code> title areas (Heading, Content, Actions).
@@ -579,6 +577,8 @@ sap.ui.define([
 				* The <code>customShareActions</code> are placed in the <code>ShareMenu</code> area of the
 				* <code>SemanticPage</code> title, right after the semantic actions.
 				*
+				* The text and icon of the button inside the <code>customShareActions</code> aggregation, can be customized.
+				*
 				* <b>Note:</b> If the <code>titleSnappedOnMobile</code> aggregation is set, its
 				* content overrides this aggregation when the control is viewed on a phone mobile
 				* device and the <code>SemanticPage</code> header is in its collapsed (snapped) state.
@@ -757,10 +757,10 @@ sap.ui.define([
 				this._onAddAggregation(oObject, sType);
 			}
 
-			return ManagedObject.prototype.setAggregation.call(this, sAggregationName, oObject, true);
+			return Control.prototype.setAggregation.call(this, sAggregationName, oObject, true);
 		}
 
-		return ManagedObject.prototype.setAggregation.call(this, sAggregationName, oObject, bSuppressInvalidate);
+		return Control.prototype.setAggregation.call(this, sAggregationName, oObject, bSuppressInvalidate);
 	};
 
 	SemanticPage.prototype.destroyAggregation = function (sAggregationName, bSuppressInvalidate) {
@@ -773,7 +773,7 @@ sap.ui.define([
 		}
 
 		if (sType && SemanticConfiguration.isKnownSemanticType(sType)) {
-			oObject = ManagedObject.prototype.getAggregation.call(this, sAggregationName);
+			oObject = Control.prototype.getAggregation.call(this, sAggregationName);
 
 			if (oObject) {
 				sPlacement = SemanticConfiguration.getPlacement(sType);
@@ -782,7 +782,7 @@ sap.ui.define([
 			}
 		}
 
-		return ManagedObject.prototype.destroyAggregation.call(this, sAggregationName, bSuppressInvalidate);
+		return Control.prototype.destroyAggregation.call(this, sAggregationName, bSuppressInvalidate);
 	};
 
 
