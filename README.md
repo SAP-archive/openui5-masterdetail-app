@@ -1,6 +1,9 @@
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/openui5-masterdetail-app)](https://api.reuse.software/info/github.com/SAP/openui5-masterdetail-app)
-[![Build Status](https://travis-ci.org/SAP/openui5-masterdetail-app.svg?branch=master)](https://travis-ci.org/SAP/openui5-masterdetail-app)
 ![OpenUI5 logo](http://openui5.org/images/OpenUI5_new_big_side.png)
+
+# DEPRECATED
+
+**⚠️ This project has been deprecated in favor of [OpenUI5 Sample App](https://github.com/SAP/openui5-sample-app).**
 
 # openui5-masterdetail-app
 OpenUI5 masterdetail app using the UI5 Build and Development Tooling.
@@ -9,7 +12,7 @@ This template implements a typical flexible column layout with two pages, one of
 It includes generic application functionality and tests that can be easily extended.
 
 ## More information
-* [Live Demo](http://sap.github.io/openui5-masterdetail-app/test/mockServer.html)
+* [Live Demo](http://sap-archive.github.io/openui5-masterdetail-app/test/mockServer.html)
 * [Documentation](https://openui5.hana.ondemand.com/#/topic/8ed9339f3a99418e82a02f0fb4b5d6b9)
 * [SAP Fiori Design Guidelines](https://experience.sap.com/fiori-design/)
 * [UI5 Tooling](https://github.com/SAP/ui5-tooling)
